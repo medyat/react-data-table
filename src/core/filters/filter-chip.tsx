@@ -2,22 +2,16 @@
 // açar (üstte operatör menüsü, tipe göre editör, altta durum + Clear); `boolean`'da popover yok, tıklama Yes ↔ No.
 import { Popover } from '@base-ui/react/popover'
 import { CaretDownIcon, CheckIcon, XIcon } from '@phosphor-icons/react'
-import { Fragment, lazy, Suspense, useRef, type ReactNode } from 'react'
+import { Fragment, useRef } from 'react'
 import type { ColumnDef } from '../../types/columns'
 import { ME, type FilterOp } from '../../types/query'
 import { Avatar } from '../cells/render-cell'
 import type { RemoteLabels } from '../cells/remote-labels'
-import { NumberEditor } from '../editors/number-editor'
-import { OptionsEditor } from '../editors/options-editor'
-import { StarEditor } from '../editors/star-editor'
-import { TextEditor } from '../editors/text-editor'
 import { useDataTableContext } from '../provider'
 import { DtMenu, DtMenuItem, DtMenuSeparator } from '../ui/menu'
 import { changeOperator, editorOf, isComplete, opLabel, operatorsOf, shapeOf, type Chip, type Summary } from './model'
 import { TYPE_ICONS } from './type-icons'
-
-// Takvim (react-day-picker) yalnızca tarih çipi açılınca yüklenir; çekirdek pakete girmez (R10).
-const DateEditor = lazy(() => import('../editors/date-editor'))
+import { ValueEditor } from './value-editor'
 
 export function FilterChip({
   chip,
@@ -30,6 +24,7 @@ export function FilterChip({
   onChange,
   onEditing,
   onRemove,
+  onOpen,
 }: {
   chip: Chip
   column: ColumnDef
@@ -41,6 +36,8 @@ export function FilterChip({
   onChange: (chip: Chip) => void
   onEditing: (open: boolean) => void
   onRemove: () => void
+  /** Telefon çipi (handoff 04 §3): operatör ve × yok; tamamı tek düğme, Filters alt sayfasını açar. */
+  onOpen?: () => void
 }) {
   const { i18n } = useDataTableContext()
   const type = column.type
@@ -62,8 +59,6 @@ export function FilterChip({
         : ''
 
   const update = (patch: Partial<Chip>) => onChange({ ...chip, ...patch })
-  const setValue = (value: unknown) =>
-    update({ value, currency: type === 'currency' ? (chip.currency ?? currencies[0]) : chip.currency })
   const setOp = (op: FilterOp) => onChange(changeOperator(chip, op, type))
   const close = () => onEditing(false)
   // Açılınca odak editörün ilk alanına (08 §2 · Popover); Base UI varsayılanı üstteki operatör düğmesini seçerdi.
@@ -81,53 +76,33 @@ export function FilterChip({
   )
   const people = complete ? (summary.people?.slice(0, 3) ?? []) : []
 
-  let content: ReactNode = null
-  if (editor === 'options')
-    content = (
-      <OptionsEditor
-        column={column}
-        op={chip.op}
-        value={Array.isArray(chip.value) ? (chip.value as Array<string | number>) : []}
-        rows={rows}
-        labels={labels}
-        onChange={setValue}
-        // Kişi listesinde Unassigned `is_empty` ile değişimli: boş değer `in` listesinde taşınamaz.
-        onUnassigned={() => setOp(chip.op === 'is_empty' ? 'in' : 'is_empty')}
-      />
-    )
-  else if (editor === 'text')
-    content = <TextEditor column={column} op={chip.op} value={chip.value} onChange={setValue} onDone={close} />
-  else if (editor === 'number')
-    content = (
-      <NumberEditor
-        column={column}
-        op={chip.op}
-        value={chip.value}
-        currency={chip.currency}
-        currencies={currencies}
-        onChange={setValue}
-        onCurrency={(currency) => update({ currency })}
-        onDone={close}
-      />
-    )
-  else if (editor === 'star')
-    content = <StarEditor column={column} value={chip.value} onChange={setValue} onDone={close} />
-  else if (editor === 'date')
-    content = (
-      <Suspense fallback={null}>
-        <DateEditor
-          op={chip.op}
-          value={chip.value}
-          onChange={(value, op) => (op ? onChange({ ...chip, op, value }) : setValue(value))}
-          onDone={close}
-        />
-      </Suspense>
-    )
+  const content = editor && (
+    <ValueEditor
+      chip={chip}
+      column={column}
+      rows={rows}
+      labels={labels}
+      currencies={currencies}
+      onChange={onChange}
+      onDone={close}
+    />
+  )
 
-  const cls = ['dt-chip', editing && 'is-editing', !complete && 'is-incomplete']
+  const cls = ['dt-chip', editing && 'is-editing', !complete && 'is-incomplete', onOpen && 'is-phone']
   return (
     <span className={cls.filter(Boolean).join(' ')} data-col={chip.column}>
-      {type === 'boolean' ? (
+      {onOpen ? (
+        <button
+          type="button"
+          className="dt-chip-body"
+          aria-label={i18n.t('mobile.chipAria', { summary: `${column.header} ${opText} ${summary.text}`.trim() })}
+          onClick={onOpen}
+        >
+          <Icon size={14} className="dt-chip-icon" aria-hidden="true" />
+          <span className="dt-chip-field">{column.header}</span>
+          <span className="dt-chip-value">{summary.text}</span>
+        </button>
+      ) : type === 'boolean' ? (
         <button
           type="button"
           className="dt-chip-body"
@@ -213,14 +188,16 @@ export function FilterChip({
           </Popover.Portal>
         </Popover.Root>
       )}
-      <button
-        type="button"
-        className="dt-chip-remove"
-        aria-label={i18n.t('filter.removeAria', { column: column.header })}
-        onClick={onRemove}
-      >
-        <XIcon size={12} aria-hidden="true" />
-      </button>
+      {!onOpen && (
+        <button
+          type="button"
+          className="dt-chip-remove"
+          aria-label={i18n.t('filter.removeAria', { column: column.header })}
+          onClick={onRemove}
+        >
+          <XIcon size={12} aria-hidden="true" />
+        </button>
+      )}
     </span>
   )
 }

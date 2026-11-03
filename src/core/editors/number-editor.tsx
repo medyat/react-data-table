@@ -68,6 +68,7 @@ export function NumberEditor({
   const field = (text: string, onText: (t: string) => void) => (
     <span className={suffix ? 'dt-input has-suffix' : 'dt-input'}>
       <input
+        autoFocus
         value={text}
         type="text"
         inputMode="decimal"

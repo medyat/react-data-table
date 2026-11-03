@@ -1,0 +1,598 @@
+/* Telefon düzeni (05 §11, 04 §9, handoff 04, T13): kart genişliği < 640 → `.dt-list.is-phone`; alt sayfa `.dt-bsheet` tüm
+   popover'ların yerini alır. Ölçüler handoff 04'ten; renk, yarıçap ve gölge token.
+   R9: Base UI açık tetikleyiciyi `data-popup-open` ile işaretler (reka: data-state="open"); ikisi de seçicide. */
+
+/* Kart ekranı doldurur: çerçeve yok. */
+.dt-list.is-phone {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Toolbar 52: dolgu 0 6 0 8, boşluk 2; sıra görünüm · boşluk · arama · Filter · ⋯ · ayırıcı · birincil (CSS order). */
+.dt-toolbar.is-phone {
+  gap: 2px;
+  padding: 4px 6px 4px 8px;
+}
+.dt-toolbar.is-phone > .dt-toolbar-spacer {
+  order: -1;
+}
+.dt-toolbar.is-phone .dt-view-trigger {
+  order: -2;
+  height: 44px;
+  max-width: 55%;
+  padding: 0 8px;
+  font-size: 14px;
+}
+.dt-toolbar.is-phone .dt-view-icon {
+  display: none;
+}
+/* Gruplar telefonda çözülür: düğmeler toolbar'ın doğrudan öğesi gibi CSS order'a girer (D43). */
+.dt-toolbar.is-phone .dt-btn-group {
+  display: contents;
+}
+.dt-toolbar.is-phone .dt-view-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dt-toolbar.is-phone .dt-view-edited {
+  display: none;
+}
+.dt-toolbar.is-phone .dt-view-trigger[data-state='open'],
+.dt-toolbar.is-phone .dt-view-trigger[data-popup-open] {
+  background: var(--dt-surface-3);
+}
+.dt-toolbar.is-phone .dt-btn-icon {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--dt-text-2);
+  box-shadow: none;
+}
+.dt-toolbar.is-phone .dt-more-trigger[data-state='open'],
+.dt-toolbar.is-phone .dt-more-trigger[data-popup-open] {
+  background: var(--dt-surface-3);
+}
+/* Filter: aktifken içte 36 px accent-soft kare; sağ üstte 16 px sayaç, zemin rengi halka. */
+.dt-toolbar.is-phone .dt-filter-trigger {
+  position: relative;
+}
+.dt-toolbar.is-phone .dt-filter-trigger.is-active {
+  border: 0;
+  background: transparent;
+  color: var(--dt-accent-text);
+}
+.dt-toolbar.is-phone .dt-filter-trigger.is-active::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: var(--dt-radius-inner);
+  background: var(--dt-accent-soft);
+}
+.dt-toolbar.is-phone .dt-filter-trigger > svg {
+  position: relative;
+}
+.dt-toolbar.is-phone .dt-filter-trigger .dt-counter {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+  box-shadow: 0 0 0 2px var(--dt-surface);
+}
+.dt-toolbar.is-phone .dt-toolbar-end {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+}
+/* Birincil: 44 px dokunma alanı içinde 34 × 34 ink kare (handoff 04 §2). */
+.dt-toolbar.is-phone .dt-toolbar-end .dt-btn-primary.dt-btn-icon {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--dt-radius-inner);
+  background: var(--dt-ink);
+  color: var(--dt-on-ink);
+}
+.dt-toolbar.is-phone .dt-toolbar-end .dt-btn-primary.dt-btn-icon::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+}
+/* Arama açık (T13-03): 40 px input, yarıçap 10, 15 px; sağda Cancel 44. */
+.dt-toolbar.is-phone .dt-search {
+  flex: 1;
+  width: auto;
+  height: 40px;
+  margin-left: 4px;
+}
+.dt-toolbar.is-phone .dt-search input {
+  padding-left: 38px;
+  border-radius: var(--dt-radius-pop);
+  font-size: 15px;
+}
+.dt-toolbar.is-phone .dt-search .dt-input-icon {
+  left: 12px;
+}
+.dt-toolbar.is-phone .dt-search .dt-input-clear {
+  width: 36px;
+  height: 36px;
+}
+.dt-toolbar.is-phone .dt-search-cancel {
+  height: 44px;
+  padding: 0 10px 0 8px;
+  color: var(--dt-text);
+  font-size: 15px;
+}
+
+/* Çip satırı 48: dolgu 0 12, aralık 6; telefon çipi 32 px, operatör ve × yok. */
+.dt-list.is-phone .dt-filter-row {
+  min-height: 48px;
+  padding: 0 12px;
+  border-top: 1px solid var(--dt-line);
+}
+.dt-list.is-phone .dt-chip {
+  height: 32px;
+  font-size: 13px;
+  box-shadow: none;
+}
+.dt-list.is-phone .dt-chip-body {
+  padding: 0 11px 0 10px;
+  border-radius: var(--dt-radius-md);
+}
+
+/* Izgara: seçim 48 (checkbox 16, dokunma 44) + birincil sola sabit; satır 48, header 40; sağ kenar 40 px solma (⋯ sütunu solunda biter). */
+.dt-grid.is-phone[data-density] {
+  --dt-row-h: 48px;
+  --dt-head-h: 40px;
+}
+.dt-grid.is-phone .dt-head-pin {
+  display: none;
+}
+.dt-grid.is-phone .dt-checkbox {
+  position: relative;
+}
+.dt-grid.is-phone .dt-checkbox::after {
+  content: '';
+  position: absolute;
+  inset: -14px;
+}
+.dt-grid.is-phone .dt-row-more {
+  position: relative;
+  color: var(--dt-text-3);
+}
+.dt-grid.is-phone .dt-row-more::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+.dt-grid.is-phone.is-scrolled-end .dt-scroll {
+  mask-image: linear-gradient(
+    to right,
+    #000 calc(100% - 40px - var(--dt-menu-w, 0px)),
+    transparent calc(100% - var(--dt-menu-w, 0px)),
+    #000 calc(100% - var(--dt-menu-w, 0px))
+  );
+}
+
+/* Footer 52: dolgu 0 4 0 16; Önceki / Sonraki 44 × 44 ikon. */
+.dt-list.is-phone .dt-footer {
+  height: 52px;
+  padding: 0 4px 0 16px;
+  font-size: 13px;
+}
+.dt-list.is-phone .dt-footer-count {
+  font-size: 13px;
+}
+.dt-list.is-phone .dt-footer-right {
+  gap: 0;
+}
+.dt-list.is-phone .dt-footer-prev,
+.dt-list.is-phone .dt-footer-next {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--dt-text-2);
+  box-shadow: none;
+}
+.dt-list.is-phone .dt-footer-prev:disabled,
+.dt-list.is-phone .dt-footer-next:disabled {
+  color: var(--dt-line-3);
+}
+.dt-list.is-phone .dt-footer-prev > span,
+.dt-list.is-phone .dt-footer-next > span {
+  display: none;
+}
+
+/* Bulk bar (handoff 04 §7, T13-08): yanlardan 10, alttan 30, yarıçap 14; aksiyonlar 44 px, ikon üstte etiket altta, eşit genişlik. */
+.dt-bulk.is-phone.is-floating {
+  left: 10px;
+  right: 10px;
+  bottom: 30px;
+  padding: 6px;
+  gap: 4px;
+  border-radius: var(--dt-radius-dialog);
+  transform: none;
+  animation-name: dt-bulk-in-phone;
+}
+@keyframes dt-bulk-in-phone {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.dt-bulk.is-phone .dt-bulk-sep {
+  height: 28px;
+}
+.dt-bulk.is-phone .dt-bulk-btn {
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  height: 44px;
+  padding: 0 4px;
+  font-size: 11px;
+}
+.dt-bulk.is-phone .dt-bulk-btn.dt-bulk-more {
+  width: auto;
+}
+.dt-bulk.is-phone .dt-bulk-btn.dt-bulk-icon {
+  flex: none;
+  width: 44px;
+}
+.dt-bulk.is-phone .dt-bulk-btn[data-state='open'],
+.dt-bulk.is-phone .dt-bulk-btn[data-popup-open] {
+  background: var(--dt-bulk-hover);
+}
+
+/* Alt sayfa (handoff 04 §6): alta yapışık, üst köşeler 18, en çok 776 px (~%92); tutamaç 36 × 4; başlık 48 (17/600);
+   satır 52 (15 px, yarıçap 10); bölüm etiketi 32 (12.5/500); alt birincil düğme 48 tam genişlik, dolgu 12 16 30. */
+.dt-bsheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  max-height: min(776px, 92dvh);
+  border-radius: var(--dt-radius-bottom-sheet) var(--dt-radius-bottom-sheet) 0 0;
+  background: var(--dt-surface);
+  color: var(--dt-text);
+  box-shadow: var(--dt-shadow-dialog);
+  font-family: var(--dt-font);
+  font-size: 15px;
+  outline: none;
+}
+.dt-bsheet-handle {
+  flex: none;
+  width: 36px;
+  height: 4px;
+  margin: 8px auto 6px;
+  border-radius: var(--dt-radius-pill);
+  background: var(--dt-line-3);
+}
+.dt-bsheet-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 48px;
+  padding: 0 8px 0 16px;
+}
+.dt-bsheet-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 17px;
+  font-weight: 600;
+}
+.dt-bsheet-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin-left: -12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--dt-text);
+  cursor: pointer;
+}
+.dt-bsheet-action {
+  flex: none;
+  height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--dt-text-2);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.dt-bsheet-action:disabled {
+  color: var(--dt-text-3);
+  cursor: default;
+}
+.dt-bsheet-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 8px 8px;
+}
+.dt-bsheet-foot {
+  flex: none;
+  padding: 12px 16px 30px;
+  border-top: 1px solid var(--dt-line);
+}
+.dt-bsheet-primary {
+  width: 100%;
+  height: 48px;
+  border: 0;
+  border-radius: var(--dt-radius-pop);
+  background: var(--dt-ink);
+  color: var(--dt-on-ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.dt-bsheet-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--dt-radius-pop);
+  background: transparent;
+  color: var(--dt-text);
+  font: inherit;
+  text-align: left;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+.dt-bsheet-row:active,
+.dt-bsheet-row:focus-visible {
+  background: var(--dt-surface-3);
+  outline: none;
+}
+.dt-bsheet-row:disabled {
+  color: var(--dt-text-3);
+  cursor: default;
+}
+.dt-bsheet-row.is-destructive {
+  color: var(--dt-r-fg);
+}
+.dt-bsheet-row.is-accent {
+  color: var(--dt-accent-text);
+  font-weight: 500;
+}
+.dt-bsheet-row.is-split {
+  padding: 0;
+}
+.dt-bsheet-row-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--dt-radius-pop);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.dt-bsheet-row-main:active {
+  background: var(--dt-surface-3);
+}
+.dt-bsheet-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--dt-text-2);
+  cursor: pointer;
+}
+.dt-bsheet-field {
+  color: var(--dt-text-2);
+}
+.dt-bsheet-value {
+  margin-left: auto;
+  color: var(--dt-text-3);
+  white-space: nowrap;
+}
+.dt-bsheet-value.is-strong {
+  color: var(--dt-text);
+  font-weight: 500;
+}
+.dt-bsheet-end {
+  margin-left: auto;
+}
+.dt-bsheet-check {
+  color: var(--dt-accent);
+}
+.dt-bsheet-icon {
+  color: var(--dt-text-3);
+}
+.dt-bsheet-label {
+  height: 32px;
+  padding: 12px 8px 0;
+  box-sizing: border-box;
+  color: var(--dt-text-3);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.dt-bsheet-sep {
+  height: 1px;
+  margin: 8px 8px;
+  background: var(--dt-line);
+}
+.dt-bsheet-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 0 0 8px;
+  color: var(--dt-text-3);
+  font-size: 13px;
+}
+.dt-bsheet-search {
+  width: 100%;
+  height: 44px;
+  margin: 4px 0 8px;
+}
+.dt-bsheet-search input,
+.dt-bsheet .dt-picker-search input {
+  border-radius: var(--dt-radius-pop);
+  font-size: 15px;
+}
+.dt-bsheet .dt-picker-search {
+  height: 44px;
+  margin: 4px 0 8px;
+}
+/* Sort satırı: sütun select'i + yön segmented (iki 44 × 32 düğme). Değer editörü: 44 px operatör select'i, 44 px arama. */
+.dt-bsheet-select {
+  flex: 1;
+}
+.dt-bsheet-select select {
+  width: 100%;
+  height: 44px;
+  padding: 0 32px 0 12px;
+  border-radius: var(--dt-radius-pop);
+  font-size: 15px;
+  box-shadow: var(--dt-shadow-sm);
+}
+.dt-bsheet-row.is-sort .dt-bsheet-select {
+  flex: 0 1 auto;
+}
+.dt-bsheet-row.is-sort .dt-bsheet-select select {
+  height: 36px;
+  padding-left: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.dt-bsheet-dir {
+  margin-left: auto;
+  height: 36px;
+}
+.dt-bsheet-dir .dt-seg-item {
+  width: 44px;
+  height: 32px;
+}
+.dt-bsheet-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 8px 0;
+}
+.dt-bsheet-editor .dt-options-search {
+  height: 44px;
+}
+.dt-bsheet-editor .dt-options-search input {
+  border-radius: var(--dt-radius-pop);
+  font-size: 15px;
+}
+.dt-bsheet-editor .dt-options-list {
+  max-height: none;
+}
+.dt-bsheet-editor .dt-option {
+  height: 52px;
+  gap: 12px;
+  padding: 0 4px;
+  border-radius: var(--dt-radius-pop);
+  font-size: 15px;
+  --dt-av: 26px;
+  --dt-av-fs: 10.5px;
+}
+.dt-bsheet-editor .dt-option .dt-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--dt-radius-sm);
+}
+.dt-bsheet-editor .dt-option .dt-option-only {
+  display: none;
+}
+/* Popover içerikleri alt sayfada (Views, Columns, Sort): 52 px satır, 15 px; kısayol rozeti yok; satır ⋯ hep görünür;
+   aktif görünümde solda 18 px Check (T13-06). */
+.dt-bsheet.dt-views {
+  width: auto;
+}
+.dt-bsheet .dt-view-item {
+  padding-left: 34px;
+}
+.dt-view-check {
+  position: absolute;
+  left: 8px;
+  color: var(--dt-accent);
+}
+/* Dokunmatikte vurgu yok: aktif görünümü Check gösterir (T13-06). */
+.dt-bsheet .dt-view-item[data-highlighted],
+.dt-bsheet .dt-view-row:hover .dt-view-item {
+  background: transparent;
+}
+.dt-bsheet .dt-pop-item,
+.dt-bsheet .dt-view-item {
+  min-height: 52px;
+  border-radius: var(--dt-radius-pop);
+  font-size: 15px;
+}
+.dt-bsheet .dt-view-action {
+  padding: 8px 8px;
+}
+.dt-bsheet .dt-view-action-sub,
+.dt-bsheet .dt-view-default,
+.dt-bsheet .dt-view-edited {
+  font-size: 13px;
+}
+.dt-bsheet .dt-kbd {
+  display: none;
+}
+.dt-bsheet .dt-pop-label {
+  height: 32px;
+  padding-top: 12px;
+  box-sizing: border-box;
+  font-size: 12.5px;
+}
+.dt-bsheet .dt-views-list {
+  max-height: none;
+}
+.dt-bsheet .dt-view-more {
+  width: 44px;
+  height: 44px;
+  opacity: 1;
+}
+.dt-bsheet .dt-pop-foot {
+  min-height: 44px;
+  font-size: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dt-bulk.is-phone.is-floating {
+    animation: none;
+  }
+}

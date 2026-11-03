@@ -1,12 +1,26 @@
 // Liste bileşeni (05): ızgara, footer, durum ekranları, yükleme geçişleri (R4). Paket veri çekmez (D18): sunucu modunda
 // `useQuery` sonucunu `result` olarak alır; istemci modunda satırlar `useDataTable({ rows })`'dan gelir.
 import { CheckIcon, CircleNotchIcon, FunnelIcon, PlusIcon, WarningIcon } from '@phosphor-icons/react'
-import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+} from 'react'
 import { optionLabel } from '../core/cells/format'
 import { readPath } from '../core/columns/read-path'
 import { RemoteLabels } from '../core/cells/remote-labels'
 import { ColumnPicker } from '../core/filters/column-picker'
 import { FilterBar } from '../core/filters/filter-bar'
+import { toCondition } from '../core/filters/model'
+
+// Telefon Filters sayfası ilk açılışta yüklenir.
+const FiltersSheet = lazy(() => import('../core/filters/filters-sheet').then((m) => ({ default: m.FiltersSheet })))
 import { summarize, type Chip } from '../core/filters/model'
 import { getFormat } from '../core/format'
 import type { HeaderSort } from '../core/grid/header-cell'
@@ -17,6 +31,7 @@ import { useDataTableContext } from '../core/provider'
 import { StateMessage } from '../core/states/state-message'
 import { DisplayPopover } from '../core/toolbar/display-popover'
 import { MoreMenu } from '../core/toolbar/more-menu'
+import { PhoneMoreSheet } from '../core/toolbar/phone-more-sheet'
 import { Toolbar, type ToolbarHandle, type ToolbarSize } from '../core/toolbar/toolbar'
 import { ConfirmDialog } from '../core/ui/confirm-dialog'
 import { nameError } from '../core/views/model'
@@ -131,6 +146,9 @@ export function DataTable<Row extends object>({
   const filterIds = new Set(filterable.map((c) => c.id as string))
   const chips = useChips({ defs, filters: q.filters, setFilters: table.setFilters })
   const [pickerOpen, setPickerOpen] = useState(false)
+  // Telefon Filters sayfası (04 §9): her açılışta yeni `key` ile taslak o anki çiplerden kurulur.
+  const [sheet, setSheet] = useState<{ key: number; open: boolean; column?: string } | null>(null)
+  const openSheet = (column?: string) => setSheet((s) => ({ key: (s?.key ?? 0) + 1, open: true, column }))
   const [labels] = useState(() => new RemoteLabels())
   // Seçenek editörü (renk) ve para birimi listesi yüklü satırlardan.
   const sourceRows: object[] = server ? rows : (table.allRows ?? [])
@@ -378,6 +396,26 @@ export function DataTable<Row extends object>({
     return gone && i18n.t('sr.filterRemoved', { column: headerOf(gone.column) })
   }
 
+  // Daralma eşikleri kartın kendi genişliğinden (05 §3): ≥1024 etiketli, 640–1023 ikon, <640 telefon (Faz 7).
+  const root = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(1440)
+  useLayoutEffect(() => {
+    const el = root.current
+    if (!el) return
+    const measure = () => setWidth(el.clientWidth || 1440)
+    measure()
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
+    ro?.observe(el)
+    return () => ro?.disconnect()
+  }, [])
+  const size: ToolbarSize = width >= 1024 ? 'full' : width >= 640 ? 'narrow' : 'phone'
+  const phone = size === 'phone'
+  // `layout` her çizimde yeni nesne; setter kararlı.
+  const { setPhone } = table.layout
+  useLayoutEffect(() => setPhone(phone), [setPhone, phone])
+  /** Picker / header hunisi / F: telefonda Filters sayfası o sütunun editörüyle açılır. */
+  const pick = (column: string) => (phone ? openSheet(column) : chips.pick(column))
+
   // Kısayollar (08 §3): kapsam sayfa. Alt←/→ sayfa (her zaman), R yenile (odak metin alanında değilken).
   const onKey = useEffectEvent((e: KeyboardEvent) => {
     if (e.defaultPrevented) return
@@ -415,7 +453,8 @@ export function DataTable<Row extends object>({
       toolbarRef.current?.focusSearch()
     } else if ((e.key === 'f' || e.key === 'F') && hasFilter) {
       e.preventDefault()
-      setPickerOpen(true)
+      if (phone) openSheet()
+      else setPickerOpen(true)
     } else if ((e.key === 'r' || e.key === 'R') && refetch) {
       e.preventDefault()
       refetch()
@@ -429,19 +468,6 @@ export function DataTable<Row extends object>({
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // Daralma eşikleri kartın kendi genişliğinden (05 §3): ≥1024 etiketli, 640–1023 ikon, <640 telefon (Faz 7).
-  const root = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState(1440)
-  useLayoutEffect(() => {
-    const el = root.current
-    if (!el) return
-    const measure = () => setWidth(el.clientWidth || 1440)
-    measure()
-    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
-    ro?.observe(el)
-    return () => ro?.disconnect()
-  }, [])
-  const size: ToolbarSize = width >= 1024 ? 'full' : width >= 640 ? 'narrow' : 'phone'
   const print =
     onPrint &&
     (() =>
@@ -524,7 +550,7 @@ export function DataTable<Row extends object>({
 
   return (
     // Kökün yazı boyutu (--dt-fs) kökteki yoğunluktan çözülür; yalnızca ızgarada olsaydı hep standard kalırdı.
-    <div ref={root} className="dt dt-list" data-density={table.density}>
+    <div ref={root} className={phone ? 'dt dt-list is-phone' : 'dt dt-list'} data-density={table.density}>
       {selectionBar === 'toolbar' && selectedRows.length > 0 && toolbar !== false ? (
         <BulkBar variant="toolbar" rows={selectedRows} actions={bulkActions ?? []} onClear={table.clearSelection}>
           {selectionActions?.({ rows: selectedRows, clear: table.clearSelection })}
@@ -567,6 +593,7 @@ export function DataTable<Row extends object>({
                   onDuplicate={openSaveAs}
                   onSetDefault={(id) => prefs.set({ defaultViewId: id })}
                   onDelete={setConfirmDelete}
+                  sheet={phone}
                 />
               )
             }
@@ -574,7 +601,22 @@ export function DataTable<Row extends object>({
             searchPlaceholder={searchPlaceholder ?? i18n.t('toolbar.search', { entity })}
             onSearch={table.setSearch}
             filter={
-              hasFilter && (
+              hasFilter &&
+              (phone ? (
+                <button
+                  type="button"
+                  className={
+                    q.filters.length
+                      ? 'dt-btn dt-btn-icon dt-filter-trigger is-active'
+                      : 'dt-btn dt-btn-icon dt-filter-trigger'
+                  }
+                  aria-label={i18n.t('toolbar.filter')}
+                  onClick={() => openSheet()}
+                >
+                  <FunnelIcon size={20} aria-hidden="true" />
+                  {q.filters.length > 0 && <span className="dt-counter">{q.filters.length}</span>}
+                </button>
+              ) : (
                 <ColumnPicker
                   columns={filterable}
                   chips={chips.chips}
@@ -599,10 +641,11 @@ export function DataTable<Row extends object>({
                     </button>
                   }
                 />
-              )
+              ))
             }
             display={
-              toolbar === 'auto' && (
+              toolbar === 'auto' &&
+              !phone && (
                 <DisplayPopover
                   density={table.density}
                   onDensity={(density) => prefs.set({ density })}
@@ -618,15 +661,34 @@ export function DataTable<Row extends object>({
               )
             }
             more={
-              moreMenu && (
-                <MoreMenu
-                  onRefresh={refetch && (() => refetch())}
-                  onPrint={print}
-                  autoRefresh={!!autoRefresh && !!refetch}
-                  autoRefreshOn={live}
-                  onAutoRefresh={setLive}
-                />
-              )
+              phone
+                ? toolbar === 'auto' && (
+                    <PhoneMoreSheet
+                      density={table.density}
+                      onDensity={(density) => prefs.set({ density })}
+                      columns={table.layout.panel}
+                      counts={table.layout.counts}
+                      onColumnsSave={table.layout.arrange}
+                      sort={q.sort}
+                      onSort={(sort) => table.setQuery({ sort })}
+                      persistent={prefs.persistent}
+                      onReset={table.resetDisplay}
+                      onRefresh={refetch && (() => refetch())}
+                      onPrint={print}
+                      autoRefresh={!!autoRefresh && !!refetch}
+                      autoRefreshOn={live}
+                      onAutoRefresh={setLive}
+                    />
+                  )
+                : moreMenu && (
+                    <MoreMenu
+                      onRefresh={refetch && (() => refetch())}
+                      onPrint={print}
+                      autoRefresh={!!autoRefresh && !!refetch}
+                      autoRefreshOn={live}
+                      onAutoRefresh={setLive}
+                    />
+                  )
             }
             end={toolbarEnd}
           />
@@ -656,6 +718,7 @@ export function DataTable<Row extends object>({
           onRemove={chips.remove}
           onEditing={chips.setEditing}
           onClearAll={chips.clear}
+          onOpen={phone ? openSheet : undefined}
           add={
             <ColumnPicker
               columns={filterable}
@@ -693,7 +756,7 @@ export function DataTable<Row extends object>({
         onSortSet={table.setSort}
         filtered={new Set(q.filters.map((f) => f.column))}
         canFilter={(id) => filterIds.has(id)}
-        onFilter={chips.pick}
+        onFilter={pick}
         notice={
           load.stillLoading && (
             <>
@@ -721,7 +784,13 @@ export function DataTable<Row extends object>({
         rowError={rowError}
       />
       {selectionBar === 'floating' && selectedRows.length > 0 && (
-        <BulkBar variant="floating" rows={selectedRows} actions={bulkActions ?? []} onClear={table.clearSelection}>
+        <BulkBar
+          variant="floating"
+          phone={phone}
+          rows={selectedRows}
+          actions={bulkActions ?? []}
+          onClear={table.clearSelection}
+        >
           {selectionActions?.({ rows: selectedRows, clear: table.clearSelection })}
         </BulkBar>
       )}
@@ -752,7 +821,29 @@ export function DataTable<Row extends object>({
         onCount={count}
         onPage={table.setPage}
         onPageSize={table.setPageSize}
+        phone={phone}
       />
+      {sheet && phone && hasFilter && (
+        <Suspense fallback={null}>
+          <FiltersSheet
+            key={sheet.key}
+            open={sheet.open}
+            onOpenChange={(o) => setSheet({ ...sheet, open: o })}
+            column={sheet.column}
+            columns={table.columns as ColumnDef[]}
+            chips={chips.chips}
+            sort={q.sort}
+            rows={sourceRows}
+            labels={labels}
+            summaryOf={summaryOf}
+            currenciesOf={currenciesOf}
+            onApply={(next, sort) => {
+              chips.setEditing(null)
+              table.setQuery({ filters: next.map(toCondition), sort })
+            }}
+          />
+        </Suspense>
+      )}
       <span className="dt-sr-only" aria-live="polite">
         {polite}
       </span>

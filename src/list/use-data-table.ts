@@ -7,7 +7,7 @@ import { useDataTableContext } from '../core/provider'
 import { defaultView } from '../core/views/model'
 import type { ColumnDef } from '../types/columns'
 import type { TableState, UseDataTableOptions } from '../types/list'
-import type { FilterCondition, TableQuery } from '../types/query'
+import type { FilterCondition, SortRule, TableQuery } from '../types/query'
 import type { ViewPatch, ViewState } from '../types/views'
 import { setSort, toggleSort } from './sort'
 import { useListTable } from './use-list-table'
@@ -177,6 +177,8 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
     /** Arama ve filtre değişince sayfa 1'e döner (D19). */
     setSearch: (search: string) => update({ search, page: 1 }),
     setFilters: (filters: FilterCondition[]) => update({ filters, page: 1 }),
+    /** Filtre ve sıralama tek istekte (telefon Filters › Show results, ⋯ › Sort); sayfa 1. */
+    setQuery: (patch: { filters?: FilterCondition[]; sort?: SortRule[] }) => update({ ...patch, page: 1 }),
     setPage: (page: number) => update({ page }),
     setPageSize: (pageSize: number) => {
       prefs.set({ pageSize })

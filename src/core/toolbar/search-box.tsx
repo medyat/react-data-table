@@ -1,5 +1,5 @@
 // Toolbar araması (04 §5, D3): çip üretmez; 250 ms gecikme; Esc önce temizler, ikinci Esc odaktan çıkar; `/` dışarıdan odaklar.
-import { MagnifyingGlassIcon, XIcon } from '@phosphor-icons/react'
+import { MagnifyingGlassIcon, XCircleIcon, XIcon } from '@phosphor-icons/react'
 import { useState, type Ref } from 'react'
 import { useDelay } from '../interaction/use-delay'
 import { useDataTableContext } from '../provider'
@@ -10,12 +10,15 @@ export function SearchBox({
   onChange,
   inputRef,
   onBlur,
+  phone,
 }: {
   value: string
   placeholder: string
   onChange: (value: string) => void
   inputRef?: Ref<HTMLInputElement>
   onBlur?: () => void
+  /** Telefon araması (T13-03): ikon 18, dolu XCircle temizleme, kısayol rozeti yok. */
+  phone?: boolean
 }) {
   const { i18n } = useDataTableContext()
   const [draft, setDraft] = useState(value)
@@ -43,7 +46,7 @@ export function SearchBox({
   return (
     <label className="dt-input dt-search has-icon" onBlur={onBlur}>
       <span className="dt-input-icon">
-        <MagnifyingGlassIcon size={16} aria-hidden="true" />
+        <MagnifyingGlassIcon size={phone ? 18 : 16} aria-hidden="true" />
       </span>
       <input
         ref={inputRef}
@@ -68,12 +71,18 @@ export function SearchBox({
             aria-label={i18n.t('common.clear')}
             onClick={() => commit('', true)}
           >
-            <XIcon size={14} aria-hidden="true" />
+            {phone ? (
+              <XCircleIcon size={20} weight="fill" aria-hidden="true" />
+            ) : (
+              <XIcon size={14} aria-hidden="true" />
+            )}
           </button>
         ) : (
-          <kbd className="dt-kbd" aria-hidden="true">
-            /
-          </kbd>
+          !phone && (
+            <kbd className="dt-kbd" aria-hidden="true">
+              /
+            </kbd>
+          )
         )}
       </span>
     </label>

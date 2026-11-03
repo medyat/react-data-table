@@ -21,6 +21,7 @@ export function FilterBar({
   onRemove,
   onEditing,
   onClearAll,
+  onOpen,
 }: {
   chips: Chip[]
   defOf: (column: string) => ColumnDef
@@ -35,6 +36,8 @@ export function FilterBar({
   onRemove: (column: string) => void
   onEditing: (column: string | null) => void
   onClearAll: () => void
+  /** Telefon (handoff 04 §3): çipler Filters alt sayfasını açar; Add filter ve Clear all orada. */
+  onOpen?: (column: string) => void
 }) {
   const { i18n } = useDataTableContext()
   const row = useRef<HTMLDivElement>(null)
@@ -95,13 +98,18 @@ export function FilterBar({
             onChange={onChange}
             onEditing={(open) => onEditing(open ? c.column : null)}
             onRemove={() => remove(c.column)}
+            onOpen={onOpen && (() => onOpen(c.column))}
           />
         ))}
       </div>
-      {add}
-      <button type="button" className="dt-btn dt-btn-ghost dt-filter-clear" onClick={onClearAll}>
-        {i18n.t('filter.clearAll')}
-      </button>
+      {!onOpen && (
+        <>
+          {add}
+          <button type="button" className="dt-btn dt-btn-ghost dt-filter-clear" onClick={onClearAll}>
+            {i18n.t('filter.clearAll')}
+          </button>
+        </>
+      )}
     </div>
   )
 }

@@ -161,7 +161,7 @@ export function HeaderCell<Row extends object>({
       >
         {/* Sayısal sütunda ok metnin solunda: sağa yaslı başlıkta metin kenara oturur. */}
         {sort && numeric && sortMark}
-        <span className="dt-head-text">{def.header}</span>
+        <span className="dt-head-text">{(layout.phone && def.headerShort) || def.header}</span>
         {unit && <span className="dt-head-unit">{unit}</span>}
         {sort && !numeric && sortMark}
         {column.pinned && <PushPinIcon size={12} className="dt-head-pin" aria-hidden="true" />}

@@ -39,6 +39,7 @@ export default function ColumnsDialog<Row extends object>({
   columns,
   onSave,
   finalFocus,
+  phone,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -46,6 +47,8 @@ export default function ColumnsDialog<Row extends object>({
   onSave: (draft: ColumnsDraft) => void
   /** Açan popover kapandığı için odak buraya döner. */
   finalFocus: RefObject<HTMLElement | null>
+  /** Telefon: sabitleme yok (yalnızca birincil sütun başta); kaydetmek mevcut sabitleme sayılarını korur. */
+  phone?: boolean
 }) {
   const { i18n } = useDataTableContext()
   return (
@@ -53,7 +56,7 @@ export default function ColumnsDialog<Row extends object>({
       <Dialog.Portal>
         <Dialog.Backdrop className="dt-scrim" />
         <Dialog.Popup
-          className="dt-dialog dt-cols-dialog"
+          className={phone ? 'dt-dialog dt-cols-dialog is-phone' : 'dt-dialog dt-cols-dialog'}
           finalFocus={finalFocus}
           aria-describedby={undefined}
           // Popup ok tuşlarının yayılmasını durdurur; klavyeyle sürüklerken dnd-kit tuşları window'da dinler.
@@ -63,7 +66,7 @@ export default function ColumnsDialog<Row extends object>({
         >
           <Dialog.Title className="dt-sr-only">{i18n.t('display.columns')}</Dialog.Title>
           {/* Popup kapanınca söküldüğü için gövde her açılışta taslağı sütunlardan yeniden kurar. */}
-          <Body columns={columns} onSave={onSave} close={() => onOpenChange(false)} />
+          <Body columns={columns} onSave={onSave} close={() => onOpenChange(false)} phone={phone} />
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
@@ -74,10 +77,12 @@ function Body<Row extends object>({
   columns,
   onSave,
   close,
+  phone,
 }: {
   columns: Array<PanelColumn<Row>>
   onSave: (draft: ColumnsDraft) => void
   close: () => void
+  phone?: boolean
 }) {
   const { i18n } = useDataTableContext()
   const pinCount = (side: Side) => Math.min(2, columns.filter((c) => c.pinned === side && c.visible && !c.fixed).length)
@@ -91,7 +96,7 @@ function Body<Row extends object>({
   /** Kaydedilince sabitlenecek sütunlar: listede raptiye ile gösterilir. */
   const free = rows.filter((c) => c.visible && !c.fixed).map((c) => c.id)
   const left = free.slice(0, pins.start)
-  const willPin = new Set([...left, ...(pins.end ? free.slice(left.length).slice(-pins.end) : [])])
+  const willPin = new Set(phone ? [] : [...left, ...(pins.end ? free.slice(left.length).slice(-pins.end) : [])])
   const hideable = rows.filter((c) => c.canHide && !c.fixed)
   const allShown = hideable.every((c) => c.visible)
 
@@ -134,31 +139,37 @@ function Body<Row extends object>({
   return (
     <>
       <div className="dt-cols-body">
-        <div className="dt-cols-pins">
-          {(['start', 'end'] as const).map((side) => (
-            <section key={side} className="dt-cols-section">
-              <h3 id={`dt-cols-${side}`} className="dt-cols-title">
-                {i18n.t(`columns.pin.${side}.title`)}
-              </h3>
-              <p className="dt-cols-desc">{i18n.t(`columns.pin.${side}.desc`)}</p>
-              <RadioGroup
-                className="dt-radio-group"
-                aria-labelledby={`dt-cols-${side}`}
-                value={pins[side]}
-                onValueChange={(v) => setPins((p) => ({ ...p, [side]: Number(v) }))}
-              >
-                {PIN_COUNTS.map((n) => (
-                  <label key={n} className="dt-radio-row">
-                    <Radio.Root className="dt-radio" value={n} data-state={pins[side] === n ? 'checked' : 'unchecked'}>
-                      <Radio.Indicator className="dt-radio-dot" />
-                    </Radio.Root>
-                    {i18n.t(`columns.pin.${side}.${n}`)}
-                  </label>
-                ))}
-              </RadioGroup>
-            </section>
-          ))}
-        </div>
+        {!phone && (
+          <div className="dt-cols-pins">
+            {(['start', 'end'] as const).map((side) => (
+              <section key={side} className="dt-cols-section">
+                <h3 id={`dt-cols-${side}`} className="dt-cols-title">
+                  {i18n.t(`columns.pin.${side}.title`)}
+                </h3>
+                <p className="dt-cols-desc">{i18n.t(`columns.pin.${side}.desc`)}</p>
+                <RadioGroup
+                  className="dt-radio-group"
+                  aria-labelledby={`dt-cols-${side}`}
+                  value={pins[side]}
+                  onValueChange={(v) => setPins((p) => ({ ...p, [side]: Number(v) }))}
+                >
+                  {PIN_COUNTS.map((n) => (
+                    <label key={n} className="dt-radio-row">
+                      <Radio.Root
+                        className="dt-radio"
+                        value={n}
+                        data-state={pins[side] === n ? 'checked' : 'unchecked'}
+                      >
+                        <Radio.Indicator className="dt-radio-dot" />
+                      </Radio.Root>
+                      {i18n.t(`columns.pin.${side}.${n}`)}
+                    </label>
+                  ))}
+                </RadioGroup>
+              </section>
+            ))}
+          </div>
+        )}
         <section className="dt-cols-section dt-cols-main">
           <h3 className="dt-cols-title">
             {i18n.t('columns.title')}

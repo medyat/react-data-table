@@ -1,8 +1,10 @@
 // Bulk bar (05 §6, handoff 03 §7, T5-01/03/04): [sayaç] │ aksiyonlar (en fazla 3 `inBar`) │ ⋯ (kalanlar, yıkıcı en altta) │ ×.
+// Telefonda bar'da en fazla 2 aksiyon, kalanlar "More" alt sayfasında.
 // Yüzer (varsayılan: kartın altında ortada, 64 px, düzeni kaydırmaz) ya da araç çubuğunun yerine. `run(rows)` beklenmez (D20).
 import { DotsThreeIcon, XIcon } from '@phosphor-icons/react'
-import { Fragment, type ReactNode } from 'react'
+import { Fragment, useState, type ReactNode } from 'react'
 import { useDataTableContext } from '../core/provider'
+import { BottomSheet } from '../core/ui/bottom-sheet'
 import { DtMenu, DtMenuItem, DtMenuSeparator } from '../core/ui/menu'
 import type { BulkAction } from '../types/list'
 
@@ -11,19 +13,22 @@ export function BulkBar<Row extends object>({
   actions,
   variant,
   onClear,
+  phone,
   children,
 }: {
   rows: Row[]
   actions: Array<BulkAction<Row>>
   variant: 'floating' | 'toolbar'
   onClear: () => void
+  phone?: boolean
   /** `bulkActions` yerine uygulamanın içeriği. */
   children?: ReactNode
 }) {
   const { i18n } = useDataTableContext()
+  const [moreOpen, setMoreOpen] = useState(false)
   // `when(rows)` false olan ne bar'da ne menüde (D36); menüde yıkıcılar en altta, ayırıcıdan sonra.
   const shown = actions.filter((a) => !a.when || a.when(rows))
-  const inBar = shown.filter((a) => a.inBar).slice(0, 3)
+  const inBar = shown.filter((a) => a.inBar).slice(0, phone ? 2 : 3)
   const others = shown.filter((a) => !inBar.includes(a))
   const rest = [...others.filter((a) => !a.destructive), ...others.filter((a) => a.destructive)]
   const firstDestructive = rest.findIndex((a) => a.destructive)
@@ -34,6 +39,7 @@ export function BulkBar<Row extends object>({
     return typeof d === 'string' ? d : a.description
   }
   const run = (a: BulkAction<Row>) => {
+    setMoreOpen(false)
     if (!disabledOf(a)) void a.run(rows)
   }
   const btn = variant === 'toolbar' ? 'dt-btn has-icon' : 'dt-bulk-btn'
@@ -50,7 +56,11 @@ export function BulkBar<Row extends object>({
   )
 
   return (
-    <div className={`dt-bulk is-${variant}`} role="toolbar" aria-label={i18n.t('bulk.aria')}>
+    <div
+      className={phone ? `dt-bulk is-${variant} is-phone` : `dt-bulk is-${variant}`}
+      role="toolbar"
+      aria-label={i18n.t('bulk.aria')}
+    >
       {variant === 'toolbar' && clear('dt-btn dt-btn-icon')}
       <span className="dt-bulk-count" role="status">
         {i18n.t('selection.selected', { count: rows.length })}
@@ -69,12 +79,47 @@ export function BulkBar<Row extends object>({
                 data-dt-tip={tipOf(a)}
                 onClick={() => run(a)}
               >
-                {Icon && <Icon size={16} aria-hidden="true" />}
+                {Icon && <Icon size={phone ? 18 : 16} aria-hidden="true" />}
                 <span>{a.label}</span>
               </button>
             )
           })}
-          {rest.length > 0 && (
+          {rest.length > 0 && phone && (
+            <BottomSheet
+              open={moreOpen}
+              onOpenChange={setMoreOpen}
+              title={i18n.t('bulk.moreAria')}
+              hideTitle
+              trigger={
+                <button type="button" className="dt-bulk-btn dt-bulk-more" aria-label={i18n.t('bulk.moreAria')}>
+                  <DotsThreeIcon size={18} weight="bold" aria-hidden="true" />
+                  <span>{i18n.t('common.more')}</span>
+                </button>
+              }
+            >
+              <div className="dt-bsheet-label">{i18n.t('selection.selected', { count: rows.length })}</div>
+              {rest.map((a, i) => {
+                const tip = tipOf(a)
+                return (
+                  <Fragment key={a.id}>
+                    {i === firstDestructive && <div className="dt-bsheet-sep" />}
+                    <button
+                      type="button"
+                      className={a.destructive ? 'dt-bsheet-row is-destructive' : 'dt-bsheet-row'}
+                      disabled={!!disabledOf(a)}
+                      onClick={() => run(a)}
+                    >
+                      <span className="dt-menu-text">
+                        <span>{a.label}</span>
+                        {tip && <span className="dt-menu-sub">{tip}</span>}
+                      </span>
+                    </button>
+                  </Fragment>
+                )
+              })}
+            </BottomSheet>
+          )}
+          {rest.length > 0 && !phone && (
             <DtMenu
               className="dt-bulk-menu"
               align="start"

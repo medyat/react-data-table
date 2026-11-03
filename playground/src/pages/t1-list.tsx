@@ -253,6 +253,7 @@ export function T1List({ density }: { density: Density }) {
         rowClick={rowClick}
         renderExpanded={({ row }) => <Operations row={row} />}
         autoRefresh={30}
+        onPrint={(p) => console.log('print', p)}
         onRowOpen={({ event, href }) => {
           event.preventDefault()
           console.log('open', href)

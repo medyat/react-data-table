@@ -1,8 +1,11 @@
 // Toolbar (05 §3, §11; T1, T13): yalnızca yapılandırılmış yuvalar; daralma kartın genişliğiyle (`size`, DataTable ölçer).
 // Sıra: görünüm · [arama · Filter] (tam ortada) · [Display · ⋯] │ birincil (köşeli parantez: birleşik düğme grubu, D43).
-// 640–1023 px'de arama ikona döner, tıklanınca açılır. Telefon düzeni Faz 7.
+// 640–1023 px'de arama ikona döner, tıklanınca açılır. <640 telefon (yanlar ve gruplar display: contents, düz flex sırası):
+// görünüm · boşluk · arama · Filter · ⋯ · ayırıcı · birincil (CSS order); arama açılınca araç çubuğunun yerini alır (T13-03),
+// Cancel temizleyip kapatır.
 import { MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react'
+import { useDataTableContext } from '../provider'
 import { SearchBox } from './search-box'
 
 export type ToolbarSize = 'full' | 'narrow' | 'phone'
@@ -37,9 +40,12 @@ export function Toolbar({
   end?: ReactNode
   ref?: Ref<ToolbarHandle>
 }) {
+  const { i18n } = useDataTableContext()
   const [open, setOpen] = useState(false)
   const input = useRef<HTMLInputElement>(null)
+  const phone = size === 'phone'
   const collapsed = size !== 'full' && !open && !search
+  const phoneSearch = phone && !collapsed
   const openSearch = () => {
     setOpen(true)
     requestAnimationFrame(() => input.current?.focus())
@@ -47,6 +53,23 @@ export function Toolbar({
   useImperativeHandle(ref, () => ({
     focusSearch: () => (collapsed ? openSearch() : input.current?.focus()),
   }))
+
+  if (phoneSearch)
+    return (
+      <div className="dt-toolbar is-phone" role="toolbar">
+        <SearchBox value={search ?? ''} placeholder={searchPlaceholder} onChange={onSearch} inputRef={input} phone />
+        <button
+          type="button"
+          className="dt-btn dt-btn-ghost dt-search-cancel"
+          onClick={() => {
+            setOpen(false)
+            onSearch('')
+          }}
+        >
+          {i18n.t('common.cancel')}
+        </button>
+      </div>
+    )
 
   return (
     <div className={`dt-toolbar is-${size} is-zoned`} role="toolbar">
@@ -61,7 +84,7 @@ export function Toolbar({
               data-dt-tip={searchPlaceholder}
               onClick={openSearch}
             >
-              <MagnifyingGlassIcon size={16} aria-hidden="true" />
+              <MagnifyingGlassIcon size={phone ? 20 : 16} aria-hidden="true" />
             </button>
           ) : (
             <SearchBox

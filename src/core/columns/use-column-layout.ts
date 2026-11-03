@@ -93,6 +93,9 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
   // Tip varsayılanları ve geliştiricinin `width`'i 13 px yazıya göre (02 · Ölçek); ızgara yoğunluğun --dt-fs'ini ölçüp
   // oranı bildirir. Kullanıcının sürüklediği genişlik (columnSizing) ölçeklenmez.
   const [scale, setScale] = useState(1)
+  // Telefonda (05 §11) yalnızca birincil sütun sola sabit, sağa sabit yok; kayıtlı sabitleme durumu değişmez. Kartın genişliğini
+  // DataTable ölçer ve bildirir.
+  const [phone, setPhone] = useState(false)
   const fixed = defs.filter((d) => d.primary).map((d) => d.id as string)
 
   const trackFor = (d: ColumnDef<Row>): Track => {
@@ -164,9 +167,13 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
     resizeHandler: (e) => headerById.get(col.id)?.getResizeHandler()(e),
   })
 
-  const startCols = table.getStartVisibleLeafColumns()
-  const centerCols = table.getCenterVisibleLeafColumns()
-  const endCols = table.getEndVisibleLeafColumns()
+  const isPrimary = (c: TColumn<Row>) => !!defById.get(c.id)?.primary
+  const startCols = phone ? table.getVisibleLeafColumns().filter(isPrimary) : table.getStartVisibleLeafColumns()
+  const centerCols = phone
+    ? table.getVisibleLeafColumns().filter((c) => !isPrimary(c))
+    : table.getCenterVisibleLeafColumns()
+  const endCols = phone ? [] : table.getEndVisibleLeafColumns()
+  const isPinnedCol = (c: TColumn<Row>) => (phone ? isPrimary(c) : c.getIsPinned() !== false)
   const start = startCols.map((c, i, all) => toLayoutColumn(c, 'start', i === all.length - 1))
   const center = centerCols.map((c) => toLayoutColumn(c, null, false))
   const end = endCols.map((c, i) => toLayoutColumn(c, 'end', i === 0))
@@ -201,7 +208,7 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
 
   /** Satır ve header'ın en az genişliği; kabı aşarsa yatay kayar. */
   const minWidth = (): number =>
-    table.getVisibleLeafColumns().reduce((sum, c) => sum + trackMin(trackOf(c, c.getIsPinned() !== false)), 0)
+    table.getVisibleLeafColumns().reduce((sum, c) => sum + trackMin(trackOf(c, isPinnedCol(c))), 0)
 
   /** Move left/right (D22: sürükleme yok): aynı sabitleme bölgesindeki görünür komşuyla yer değiştirir. */
   const move = (id: string, delta: -1 | 1) => {
@@ -285,6 +292,8 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
     end,
     scale,
     setScale,
+    phone,
+    setPhone,
     cols,
     offsets,
     minWidth,

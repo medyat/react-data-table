@@ -37,6 +37,7 @@ const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)
 // ⋯ sütunu içeriğe göre: dolgu 8 + ⋯ + 8; sayfada hatalı satır varsa (D35) + ikon + gap; inline aksiyon başına (D36, sayfadaki
 // en kalabalık satır) + düğme + gap.
 const SELECT_W = 40
+const SELECT_W_PHONE = 48
 const MENU_PAD = 8
 
 export interface GridProps<Row extends object> {
@@ -151,7 +152,8 @@ export function Grid<Row extends object>({
 
   const selectable = !!onSelectRows
   const expandable = !!renderExpanded
-  const selW = selectable ? SELECT_W : 0
+  const phone = layout.phone
+  const selW = selectable ? (phone ? SELECT_W_PHONE : SELECT_W) : 0
   const maxInline = rowActions.some((a) => a.inline)
     ? rows.reduce((m, r) => Math.max(m, inlineActionsOf(rowActions, r).length), 0)
     : 0
@@ -233,7 +235,7 @@ export function Grid<Row extends object>({
     setMetrics((p) => (p.row === next.row && p.head === next.head && p.bar === next.bar ? p : next))
     const k = Number.isFinite(fs) ? fs / 13 : 1
     if (k !== scale) setScale(k)
-  }, [density, setScale, scale])
+  }, [density, phone, setScale, scale])
 
   // İlk çizimde değil, anahtar değişince başa (05 §8).
   const lastScrollKey = useRef(scrollKey)
@@ -354,6 +356,7 @@ export function Grid<Row extends object>({
     skeleton && 'is-skeleton',
     dim && 'is-dim',
     verticalLines && 'has-vlines',
+    phone && 'is-phone',
   ]
   const header = (col: (typeof layout.columns)[number]) => {
     const sortable = !!onSort && (canSort?.(col.id) ?? false)

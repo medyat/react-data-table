@@ -196,7 +196,7 @@ Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:
 | 3a | Filtreler ve arama — **tamam** (aşağıdaki notlar) |
 | 3b | Görünümler (R6) ve tercihler — **tamam** |
 | 4 | Seçim, bulk bar, satır etkileşimleri, satır hatası (D35) — **tamam** (aşağıdaki notlar) |
-| 7 | Telefon, erişilebilirlik turu, belgeler |
+| 7 | Telefon — **tamam** (aşağıdaki notlar); erişilebilirlik turu, belgeler |
 
 Faz 2 notları:
 
@@ -257,6 +257,17 @@ Faz 4 notları:
   `data-popup-open` ile işaretlenir (R9 notu, `grid.css` / `list.css`).
 - Açılan detayın duyurusu (`sr.expanded`) detay çizildikten sonraki karede DOM'dan sayılır (Vue: `nextTick`).
 - Menüdeki Open bağlantılarının altı çizili; Vue'da da aynı (ortak eksik, `ui.css`).
+
+Faz 7 notları (telefon):
+
+- Kart < 640 px: kökte `is-phone`, `layout.setPhone` (yalnızca birincil sütun başa sabit, sona sabit yok), header'da
+  `headerShort`. Popover'ların telefon karşılığı `BottomSheet` (Base UI Dialog); Vue'daki `Layer`'ın sheet hâli.
+- Filters sayfası ve ⋯ › Sort tek istekle uygular: tabloya `setQuery({ filters?, sort? })` eklendi (sayfa 1).
+  Sayfa her açılışta yeni `key` ile kurulur, taslak o anki çiplerden başlar; ilk açılışta tembel yüklenir.
+- Telefon ⋯ sayfasında Export (D46) ve Import (R1) yok; Vue playground'unda bu yüzden 2 satır fazla.
+- Metin ve sayı editörü açılınca kendi kutusuna odaklanır (Vue: `onMounted` focus); sheet'te başka odak kaynağı yok.
+- Vue'dan farkı olmayan ama React'e özgü tuzak: metin editöründe Enter aynı olayda önce değeri yazar sonra Done
+  der; sayfanın taslağı updater ile güncellenir, yoksa Done eski taslağı görüp çipi boş sayar.
 
 Swors'un ürün ekranı 3b'den sonra pakete geçer. O zamana kadar Swors'taki `DataTable`'a özellik
 eklenmez.

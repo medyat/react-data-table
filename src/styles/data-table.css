@@ -6,6 +6,7 @@
 @import './list.css' layer(medyat-dt);
 @import './filters.css' layer(medyat-dt);
 @import './views.css' layer(medyat-dt);
+@import './phone.css' layer(medyat-dt);
 
 @layer medyat-dt {
   /* Bileşen kökü. Tüm ölçü ve renkler --dt-* token'larından (02); sabit değer yok. */

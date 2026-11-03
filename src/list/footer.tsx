@@ -35,6 +35,8 @@ export interface FooterProps {
   onCount: () => void
   onPage: (page: number) => void
   onPageSize: (size: number) => void
+  /** Telefon (handoff 04 §5): tazelik ve Rows per page yok; Önceki / Sonraki 44 px ikon. */
+  phone?: boolean
 }
 
 /** "Updated 3 min ago" kendiliğinden eskisin: metin render'da değil, bu saatle hesaplanır. */
@@ -103,7 +105,7 @@ export function Footer(p: FooterProps) {
             {count()}
           </>
         )}
-        {(p.updatedAt || p.freshness !== 'normal') && (
+        {!p.phone && (p.updatedAt || p.freshness !== 'normal') && (
           <>
             <span className="dt-footer-vsep" aria-hidden="true" />
             {p.freshness === 'live' ? (
@@ -141,37 +143,41 @@ export function Footer(p: FooterProps) {
         )}
       </div>
       <div className="dt-footer-right">
-        <label className="dt-footer-size">
-          <span className="dt-footer-size-label">{i18n.t('page.perPage')}</span>
-          <span className="dt-select">
-            <select value={p.page.size} disabled={p.busy} onChange={(e) => p.onPageSize(Number(e.target.value))}>
-              {p.pageSizes.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            <CaretDownIcon size={12} aria-hidden="true" />
-          </span>
-        </label>
-        <span className="dt-footer-vsep" aria-hidden="true" />
+        {!p.phone && (
+          <label className="dt-footer-size">
+            <span className="dt-footer-size-label">{i18n.t('page.perPage')}</span>
+            <span className="dt-select">
+              <select value={p.page.size} disabled={p.busy} onChange={(e) => p.onPageSize(Number(e.target.value))}>
+                {p.pageSizes.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+              <CaretDownIcon size={12} aria-hidden="true" />
+            </span>
+          </label>
+        )}
+        {!p.phone && <span className="dt-footer-vsep" aria-hidden="true" />}
         <button
           type="button"
           className="dt-btn dt-btn-sm has-icon dt-footer-prev"
+          aria-label={p.phone ? i18n.t('page.previous') : undefined}
           disabled={p.page.number <= 1 || p.busy}
           onClick={() => p.onPage(p.page.number - 1)}
         >
-          <CaretLeftIcon size={14} aria-hidden="true" />
+          <CaretLeftIcon size={p.phone ? 18 : 14} aria-hidden="true" />
           <span>{i18n.t('page.previous')}</span>
         </button>
         <button
           type="button"
           className="dt-btn dt-btn-sm dt-footer-next"
+          aria-label={p.phone ? i18n.t('page.next') : undefined}
           disabled={!p.hasMore || p.busy}
           onClick={() => p.onPage(p.page.number + 1)}
         >
           <span>{i18n.t('page.next')}</span>
-          <CaretRightIcon size={14} aria-hidden="true" />
+          <CaretRightIcon size={p.phone ? 18 : 14} aria-hidden="true" />
         </button>
       </div>
     </div>

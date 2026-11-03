@@ -44,6 +44,7 @@ export function TextEditor({
   return (
     <label className="dt-input dt-editor-text">
       <input
+        autoFocus
         value={draft}
         type="text"
         autoComplete="off"
