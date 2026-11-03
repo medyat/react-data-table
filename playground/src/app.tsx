@@ -1,35 +1,59 @@
-import { useEffect, useState } from 'react'
-import { DataTableProvider, useDataTableContext, type Density } from '@medyat/react-data-table'
+import { useEffect, useState, type ReactNode } from 'react'
+import { DataTableProvider, type Density } from '@medyat/react-data-table'
+import { T7Actions } from './pages/t7-actions'
+import { T8Cells } from './pages/t8-cells'
 import { applySettings, loadSettings, type Settings, type Theme } from './settings'
 
 const THEMES: Theme[] = ['light', 'dark-class', 'dark-attr']
 const DENSITIES: Density[] = ['comfortable', 'standard', 'compact']
 const LOCALES = ['en', 'tr', 'ru']
 
+/** DESIGN-BRIEF görev paketleri; her biri bir rota. Sayfa ilgili fazda eklenir. */
+const PAGES: Array<{ id: string; title: string; render: (s: Settings) => ReactNode }> = [
+  { id: 't7', title: 'T7 · Cell actions', render: (s) => <T7Actions density={s.density} /> },
+  { id: 't8', title: 'T8 · Cell types', render: (s) => <T8Cells density={s.density} /> },
+]
+
+const currentPage = () => location.hash.slice(2) || PAGES[0]!.id
+
 export function App() {
   const [settings, setSettings] = useState(loadSettings)
-  // Tema <html>'e yazılır: paket tokenları :root / .dark üzerinden okur.
+  const [page, setPage] = useState(currentPage)
+  // Tema <html>'e yazılır: paket token'ları :root / .dark üzerinden okur.
   useEffect(() => applySettings(settings), [settings])
+  useEffect(() => {
+    const onHash = () => setPage(currentPage())
+    addEventListener('hashchange', onHash)
+    return () => removeEventListener('hashchange', onHash)
+  }, [])
   const set = (patch: Partial<Settings>) => setSettings((s) => ({ ...s, ...patch }))
+  const active = PAGES.find((p) => p.id === page) ?? PAGES[0]!
 
   return (
     <DataTableProvider locale={settings.locale}>
       <header className="pg-bar">
-        <strong>react-data-table</strong>
+        <a href="#/" className="pg-brand">
+          @medyat/react-data-table
+        </a>
+        <nav className="pg-nav">
+          {PAGES.map((p) => (
+            <a key={p.id} href={`#/${p.id}`} aria-current={p.id === active.id ? 'page' : undefined}>
+              {p.title}
+            </a>
+          ))}
+        </nav>
         <Switch label="Theme" value={settings.theme} options={THEMES} onChange={(theme) => set({ theme })} />
         <Switch label="Density" value={settings.density} options={DENSITIES} onChange={(density) => set({ density })} />
         <Switch label="Locale" value={settings.locale} options={LOCALES} onChange={(locale) => set({ locale })} />
       </header>
-      <main className="pg-main">
-        <Phase0 density={settings.density} />
-      </main>
+      <main className="pg-stage">{active.render(settings)}</main>
     </DataTableProvider>
   )
 }
 
 function Switch<T extends string>(props: { label: string; value: T; options: T[]; onChange: (value: T) => void }) {
   return (
-    <label className="pg-switch">
+    <label>
       {props.label}
       <select value={props.value} onChange={(e) => props.onChange(e.target.value as T)}>
         {props.options.map((o) => (
@@ -37,54 +61,5 @@ function Switch<T extends string>(props: { label: string; value: T; options: T[]
         ))}
       </select>
     </label>
-  )
-}
-
-const SWATCHES = [
-  'surface',
-  'surface-2',
-  'surface-3',
-  'line',
-  'text',
-  'text-2',
-  'text-3',
-  'ink',
-  'accent',
-  'accent-soft',
-]
-const TONES = ['n', 'b', 'g', 'a', 'r', 'v', 'p', 'c']
-
-/** Faz 0 tanığı: token'lar, tema, yoğunluk ve dil. Izgara Faz 1'de gelir. */
-function Phase0({ density }: { density: Density }) {
-  const { i18n, locale } = useDataTableContext()
-  const entity = { one: 'order', other: 'orders' }
-  return (
-    <div className="dt pg-card" data-density={density}>
-      <p className="pg-row-h">
-        locale <code>{locale}</code> · density <code>{density}</code> · row height follows <code>--dt-row-h</code>
-      </p>
-      <ul className="pg-swatches">
-        {SWATCHES.map((s) => (
-          <li key={s} style={{ background: `var(--dt-${s})` }}>
-            {s}
-          </li>
-        ))}
-      </ul>
-      <ul className="pg-swatches">
-        {TONES.map((t) => (
-          <li key={t} style={{ background: `var(--dt-${t}-bg)`, color: `var(--dt-${t}-fg)` }}>
-            {t}
-          </li>
-        ))}
-      </ul>
-      <ul className="pg-messages">
-        <li>{i18n.t('state.emptyTitle', { entity })}</li>
-        <li>{i18n.t('state.noResults', { count: 1, entity })}</li>
-        <li>{i18n.t('state.noResults', { count: 3, entity })}</li>
-        <li>
-          {i18n.t('common.cancel')} · {i18n.t('common.apply')}
-        </li>
-      </ul>
-    </div>
   )
 }

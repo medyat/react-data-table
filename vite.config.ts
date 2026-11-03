@@ -30,7 +30,7 @@ export default defineConfig({
       cssFileName: 'style',
     },
     rolldownOptions: {
-      external: [/^react($|\/)/, /^react-dom($|\/)/],
+      external: [/^react($|\/)/, /^react-dom($|\/)/, /^@base-ui\//, /^@phosphor-icons\//, /^@tanstack\//],
     },
     sourcemap: true,
   },

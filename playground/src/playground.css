@@ -1,54 +1,213 @@
+/* Playground kabuğu; paket token'larını kullanır ki tema anahtarı burada da görünsün. */
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
   background: var(--dt-canvas);
   color: var(--dt-text);
+  font-family: var(--dt-font);
+  font-size: 13px;
 }
 .pg-bar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
   align-items: center;
-  padding: 10px 16px;
+  gap: 16px;
+  height: 44px;
+  padding: 0 16px;
   border-bottom: 1px solid var(--dt-line);
   background: var(--dt-surface);
 }
-.pg-switch {
+.pg-brand {
+  font-weight: 600;
+  color: inherit;
+  text-decoration: none;
+}
+.pg-nav {
   display: flex;
+  gap: 8px;
+  flex: 1;
+  overflow-x: auto;
+}
+.pg-nav a {
+  color: var(--dt-text-2);
+  text-decoration: none;
+  padding: 4px 6px;
+  border-radius: var(--dt-radius-item);
+}
+.pg-nav a[aria-current='page'] {
+  background: var(--dt-surface-3);
+  color: var(--dt-text);
+}
+.pg-bar label,
+.pg-title label {
+  display: inline-flex;
   gap: 6px;
   align-items: center;
-  font-size: 13px;
+  color: var(--dt-text-2);
 }
-.pg-main {
-  padding: 16px;
+.pg-stage {
+  height: calc(100dvh - 44px);
+  padding: 20px 24px 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
-.pg-card {
-  padding: 16px;
-  border: 1px solid var(--dt-line);
-  border-radius: var(--dt-radius-card);
+.pg-page {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
 }
-.pg-row-h {
+@media (max-width: 639px) {
+  .pg-stage {
+    padding: 0;
+  }
+  /* Üst çubuk telefon genişliğinde taşmasın (sayfa genişlerse mobil tarayıcı küçültür). */
+  .pg-bar {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+.pg-scroll {
+  overflow: auto;
+}
+.pg-title {
   display: flex;
   align-items: center;
-  height: var(--dt-row-h);
-  margin: 0 0 12px;
-  border-bottom: 1px solid var(--dt-line);
-}
-.pg-swatches {
-  display: flex;
-  flex-wrap: wrap;
   gap: 8px;
-  padding: 0;
-  margin: 0 0 12px;
-  list-style: none;
+  height: 24px;
+  margin-bottom: 16px;
+  font-size: 13px;
 }
-.pg-swatches li {
-  padding: 8px 10px;
-  border: 1px solid var(--dt-line);
-  border-radius: var(--dt-radius-md);
-  font-size: 12px;
+.pg-title label {
+  margin-left: auto;
 }
-.pg-messages {
+.pg-title h1 {
   margin: 0;
-  padding-left: 18px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.pg-crumb {
+  color: var(--dt-text-3);
+}
+.pg-crumb-sep {
+  color: var(--dt-line-3);
+}
+.pg-sub {
+  margin: -8px 0 16px;
+  color: var(--dt-text-2);
+}
+.pg-group h2 {
+  margin: 20px 0 8px;
+  font-size: 14px;
+}
+.pg-fixed {
+  flex: none;
+}
+
+/* T7 · uygulamanın çizdiği hücreler */
+.pg-qty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+.pg-qty-track {
+  width: 64px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--dt-track);
+  overflow: hidden;
+}
+.pg-qty-fill {
+  display: block;
+  height: 100%;
+  background: var(--dt-n-dot);
+}
+.pg-qty-text {
+  font-variant-numeric: tabular-nums;
+}
+.pg-qty-total {
+  color: var(--dt-text-3);
+}
+.pg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--dt-badge-h);
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--tone-bg);
+  color: var(--tone-fg);
+}
+.pg-badge-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--dt-surface);
+  font-size: 11px;
+}
+.pg-badge-amber {
+  --tone-bg: var(--dt-a-bg);
+  --tone-fg: var(--dt-a-fg);
+}
+.pg-badge-blue {
+  --tone-bg: var(--dt-b-bg);
+  --tone-fg: var(--dt-b-fg);
+}
+.pg-badge-green {
+  --tone-bg: var(--dt-g-bg);
+  --tone-fg: var(--dt-g-fg);
+}
+.pg-badge-red {
+  --tone-bg: var(--dt-r-bg);
+  --tone-fg: var(--dt-r-fg);
+}
+.pg-badge-gray {
+  --tone-bg: var(--dt-n-bg);
+  --tone-fg: var(--dt-n-fg);
+}
+.pg-decide {
+  display: inline-flex;
+  gap: 6px;
+}
+.pg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 8px;
+  border: 1px solid var(--dt-line-2);
+  border-radius: var(--dt-radius-item);
+  background: var(--dt-surface);
+  color: var(--dt-text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  box-shadow: var(--dt-shadow-sm);
+  cursor: pointer;
+}
+.pg-btn.is-md {
+  height: 28px;
+}
+.pg-btn.is-sm {
+  height: 24px;
+}
+.pg-btn:hover {
+  background: var(--dt-surface-3);
+}
+.pg-decided {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.is-green {
+  color: var(--dt-g-dot);
+}
+.is-red {
+  color: var(--dt-r-dot);
 }

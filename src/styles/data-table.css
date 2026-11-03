@@ -1,5 +1,8 @@
 /* R9: paket stilleri tek katmanda; uygulama katman sırasıyla ezer (README · Stil). */
 @import './tokens.css' layer(medyat-dt);
+@import './ui.css' layer(medyat-dt);
+@import './cells.css' layer(medyat-dt);
+@import './grid.css' layer(medyat-dt);
 
 @layer medyat-dt {
   /* Bileşen kökü. Tüm ölçü ve renkler --dt-* token'larından (02); sabit değer yok. */
@@ -17,6 +20,24 @@
   .dt *::before,
   .dt *::after {
     box-sizing: inherit;
+  }
+
+  /* Liste kartı (05 §2): ebeveynin yüksekliğini doldurur; yalnızca gövde kayar. */
+  .dt-list {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    border: 1px solid var(--dt-line);
+    border-radius: var(--dt-radius-card);
+    box-shadow: var(--dt-shadow-sm);
+    overflow: hidden;
+  }
+
+  /* Base UI menü konumlandırıcısı: popup'ın z-index'i (ui.css) konumlandırıcının yığın bağlamında kalır. */
+  .dt-positioner {
+    z-index: 40;
   }
 
   .dt-sr-only {

@@ -1,0 +1,607 @@
+/* Ortak bileşen dili (handoff 02-ortak, 02 tokens): buton, input, segmented, switch, popover, menü, kbd, rozet sayaç. */
+
+.dt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dt-space-sm);
+  height: var(--dt-control-h);
+  padding: 0 12px;
+  border: 1px solid var(--dt-line-2);
+  border-radius: var(--dt-radius-md);
+  background: var(--dt-surface);
+  color: var(--dt-text);
+  font: inherit;
+  font-size: var(--dt-ui-fs);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: var(--dt-shadow-sm);
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.dt-btn.has-icon {
+  padding-left: 10px;
+}
+.dt-btn:hover {
+  background: var(--dt-surface-3);
+}
+.dt-btn:disabled,
+.dt-btn[aria-disabled='true'] {
+  background: var(--dt-surface-2);
+  border-color: var(--dt-line);
+  color: var(--dt-text-3);
+  box-shadow: none;
+  cursor: default;
+}
+.dt-btn-primary {
+  background: var(--dt-ink);
+  border-color: var(--dt-ink);
+  color: var(--dt-on-ink);
+}
+.dt-btn-primary:hover {
+  background: var(--dt-ink);
+  opacity: 0.92;
+}
+.dt-btn-danger {
+  background: var(--dt-danger);
+  border-color: var(--dt-danger);
+  color: var(--dt-on-danger);
+}
+.dt-btn-danger:hover {
+  background: var(--dt-danger-hover);
+  border-color: var(--dt-danger-hover);
+}
+.dt-btn-ghost {
+  height: var(--dt-control-h-sm);
+  padding: 0 8px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--dt-text-2);
+  box-shadow: none;
+}
+.dt-btn-ghost:hover {
+  background: var(--dt-surface-3);
+}
+.dt-btn-xs {
+  height: var(--dt-control-h-xs);
+  padding: 0 8px;
+  border-radius: var(--dt-radius-sm);
+  font-size: var(--dt-ui-fs-xs);
+}
+.dt-btn-sm {
+  height: var(--dt-control-h-sm);
+  border-radius: var(--dt-radius-item);
+  font-size: var(--dt-ui-fs-sm);
+}
+/* Birleşik düğme grubu (D43): kenarlıklar üst üste biner, iç köşeler düz; odaktaki öğe üstte. */
+.dt-btn-group {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.dt-btn-group > * + * {
+  margin-left: -1px;
+}
+.dt-btn-group > :not(:first-child),
+.dt-btn-group > :not(:first-child) input {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.dt-btn-group > :not(:last-child),
+.dt-btn-group > :not(:last-child) input {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.dt-btn-group > :focus-visible,
+.dt-btn-group > :focus-within {
+  position: relative;
+  z-index: 1;
+}
+.dt-btn-icon {
+  width: var(--dt-control-h);
+  padding: 0;
+  justify-content: center;
+}
+.dt-btn-icon.dt-btn-sm {
+  width: var(--dt-control-h-sm);
+}
+.dt-btn.is-active {
+  background: var(--dt-accent-soft);
+  border-color: var(--dt-accent-soft-2);
+  color: var(--dt-accent-text);
+  box-shadow: none;
+}
+.dt-counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--dt-radius-pill);
+  background: var(--dt-accent);
+  color: var(--dt-on-accent);
+  font-size: var(--dt-ui-fs-2xs);
+  font-weight: 600;
+}
+
+.dt-input {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: var(--dt-control-h);
+}
+.dt-input input {
+  width: 100%;
+  height: 100%;
+  padding: 0 10px;
+  border: 1px solid var(--dt-line-2);
+  border-radius: var(--dt-radius-md);
+  background: var(--dt-surface);
+  color: var(--dt-text);
+  font: inherit;
+  font-size: var(--dt-ui-fs);
+  box-shadow: var(--dt-shadow-sm);
+  outline: none;
+}
+.dt-input input::placeholder {
+  color: var(--dt-text-3);
+}
+.dt-input input:focus {
+  border-color: var(--dt-accent);
+  box-shadow: 0 0 0 3px var(--dt-focus-soft);
+}
+.dt-input.has-icon input {
+  padding-left: 34px;
+}
+.dt-input-icon {
+  position: absolute;
+  left: 10px;
+  display: inline-flex;
+  color: var(--dt-text-3);
+  pointer-events: none;
+}
+.dt-input-end {
+  position: absolute;
+  right: 5px;
+  display: inline-flex;
+  align-items: center;
+}
+.dt-input-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--dt-radius-sm);
+  background: transparent;
+  color: var(--dt-text-3);
+  cursor: pointer;
+}
+.dt-input-clear:hover {
+  background: var(--dt-surface-3);
+  color: var(--dt-text);
+}
+
+.dt-kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--dt-radius-xs);
+  background: var(--dt-surface-3);
+  color: var(--dt-text-2);
+  font-family: var(--dt-font-mono);
+  font-size: var(--dt-ui-fs-3xs);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.dt-seg {
+  display: inline-flex;
+  height: var(--dt-control-h);
+  padding: 2px;
+  border-radius: var(--dt-radius-inner);
+  background: var(--dt-surface-3);
+  box-sizing: border-box;
+}
+.dt-seg.dt-seg-sm {
+  height: var(--dt-control-h-sm);
+}
+.dt-seg-item {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--dt-radius-item);
+  background: transparent;
+  color: var(--dt-text-2);
+  font: inherit;
+  font-size: var(--dt-ui-fs-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.dt-seg-item[data-state='on'] {
+  background: var(--dt-seg-on);
+  color: var(--dt-text);
+  box-shadow: var(--dt-shadow-sm);
+}
+
+.dt-switch {
+  position: relative;
+  flex: none;
+  width: 28px;
+  height: 16px;
+  padding: 2px;
+  border: 0;
+  border-radius: var(--dt-radius-pill);
+  background: var(--dt-line-3);
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+.dt-switch[data-state='checked'] {
+  background: var(--dt-accent);
+}
+.dt-switch-thumb {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: var(--dt-radius-pill);
+  background: var(--dt-switch-knob);
+  transition: transform 150ms ease;
+}
+.dt-switch[data-state='checked'] .dt-switch-thumb {
+  transform: translateX(12px);
+}
+
+/* Popover ve menü (02 §6 handoff): yarıçap 10, dolgu 4, --dt-shadow-pop. */
+.dt-pop,
+.dt-menu {
+  padding: var(--dt-pop-pad);
+  border-radius: var(--dt-radius-pop);
+  background: var(--dt-surface);
+  color: var(--dt-text);
+  box-shadow: var(--dt-shadow-pop);
+  font-family: var(--dt-font);
+  font-size: var(--dt-ui-fs);
+  z-index: 40;
+  outline: none;
+}
+.dt-menu {
+  min-width: calc(220 * var(--dt-ui-fs) / 13);
+}
+.dt-menu-item,
+.dt-pop-item {
+  display: flex;
+  align-items: center;
+  gap: var(--dt-space);
+  min-height: var(--dt-control-h);
+  padding: 0 var(--dt-item-x);
+  border: 0;
+  border-radius: var(--dt-radius-item);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  outline: none;
+  cursor: default;
+  user-select: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+.dt-menu-item[data-highlighted],
+.dt-pop-item:hover,
+.dt-pop-item:focus-visible {
+  background: var(--dt-surface-3);
+}
+.dt-menu-item[data-disabled] {
+  color: var(--dt-text-3);
+}
+.dt-menu-item.is-destructive {
+  color: var(--dt-r-fg);
+}
+.dt-menu-item .dt-kbd {
+  margin-left: auto;
+  background: transparent;
+  color: var(--dt-text-3);
+}
+.dt-menu-sep,
+.dt-pop-sep {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--dt-line);
+}
+.dt-menu-label,
+.dt-pop-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--dt-control-h-sm);
+  padding: 0 8px;
+  color: var(--dt-text-3);
+  font-size: var(--dt-ui-fs-2xs);
+  font-weight: 500;
+}
+.dt-pop-label .dt-pop-action {
+  font-weight: 500;
+}
+.dt-pop-action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--dt-text-2);
+  font: inherit;
+  font-size: var(--dt-ui-fs-xs);
+  cursor: pointer;
+}
+.dt-pop-action:hover {
+  color: var(--dt-text);
+  text-decoration: underline;
+}
+.dt-pop-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--dt-control-h-lg);
+  margin-top: 4px;
+  padding: 0 var(--dt-item-x);
+  border-top: 1px solid var(--dt-line);
+  color: var(--dt-text-3);
+  font-size: var(--dt-ui-fs-xs);
+}
+.dt-pop-value {
+  margin-left: auto;
+  color: var(--dt-text-3);
+  font-size: var(--dt-ui-fs-sm);
+}
+.dt-icon-btn-xs {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dt-control-h-2xs);
+  height: var(--dt-control-h-2xs);
+  padding: 0;
+  border: 0;
+  border-radius: var(--dt-radius-xs);
+  background: transparent;
+  color: var(--dt-text-2);
+  cursor: pointer;
+}
+.dt-icon-btn-xs:hover {
+  background: var(--dt-surface-3);
+  color: var(--dt-text);
+}
+.dt-icon-btn-xs:disabled {
+  color: var(--dt-line-3);
+  cursor: default;
+  background: transparent;
+}
+.dt-icon-btn-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dt-control-h-xs);
+  height: var(--dt-control-h-xs);
+  padding: 0;
+  border: 0;
+  border-radius: var(--dt-radius-sm);
+  background: transparent;
+  color: var(--dt-text-2);
+  cursor: pointer;
+}
+.dt-icon-btn-sm:hover {
+  background: var(--dt-surface-3);
+  color: var(--dt-text);
+}
+
+/* Odak halkası kalıbı (02). */
+.dt
+  :is(
+    .dt-btn,
+    .dt-seg-item,
+    .dt-switch,
+    .dt-radio,
+    .dt-icon-btn-xs,
+    .dt-icon-btn-sm,
+    .dt-pop-item,
+    .dt-pop-action,
+    .dt-input-clear
+  ):focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--dt-surface),
+    0 0 0 4px var(--dt-focus);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dt-btn,
+  .dt-switch,
+  .dt-switch-thumb {
+    transition: none;
+  }
+}
+
+/* Dialog (02 §6 handoff): 460, dolgu 20, yarıçap 14, --dt-shadow-dialog; arkada --dt-scrim. Başlık 16/600, gövde 13 text-2. */
+.dt-scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--dt-scrim);
+  z-index: 50;
+}
+.dt-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: calc(460 * var(--dt-ui-fs) / 13);
+  max-width: calc(100vw - 32px);
+  padding: 20px;
+  border-radius: var(--dt-radius-dialog);
+  background: var(--dt-surface);
+  color: var(--dt-text);
+  box-shadow: var(--dt-shadow-dialog);
+  font-family: var(--dt-font);
+  font-size: var(--dt-ui-fs);
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  outline: none;
+  z-index: 51;
+}
+.dt-dialog-title {
+  margin: 0;
+  font-size: var(--dt-ui-fs-xl);
+  font-weight: 600;
+}
+.dt-dialog-body {
+  margin: 4px 0 0;
+  color: var(--dt-text-2);
+  line-height: 1.45;
+}
+.dt-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--dt-space);
+  margin-top: 16px;
+}
+.dt-dialog-confirm .dt-dialog-actions {
+  margin-top: 20px;
+}
+.dt-field {
+  display: block;
+  margin-top: 16px;
+}
+.dt-field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.dt-field .dt-input {
+  display: flex;
+}
+.dt-field-error {
+  display: block;
+  margin-top: 6px;
+  color: var(--dt-r-fg);
+  font-size: var(--dt-ui-fs-sm);
+}
+.dt-check-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dt-space);
+  margin-top: 10px;
+}
+
+/* Yüksek kontrast (forced-colors, 08 §6): çerçeveler sistem renkleriyle; işaret renkleri korunur. */
+@media (forced-colors: active) {
+  .dt-btn,
+  .dt-input input,
+  .dt-select select,
+  .dt-badge,
+  .dt-chip,
+  .dt-pop,
+  .dt-menu,
+  .dt-dialog {
+    border: 1px solid CanvasText;
+  }
+  .dt-btn-primary,
+  .dt-btn-danger {
+    forced-color-adjust: none;
+  }
+  .dt-checkbox,
+  .dt-switch,
+  .dt-mark,
+  .dt-sheet-dot,
+  .dt-fill-handle,
+  .dt-badge-dot,
+  .dt-avatar {
+    forced-color-adjust: none;
+  }
+  .dt-row.is-selected,
+  .dt-sheet-grid .dt-cell[data-col].is-active,
+  .dt-sheet-grid .dt-cell[data-col].is-editing,
+  .dt-head-label:focus-visible,
+  .dt-btn:focus-visible,
+  .dt-menu-item[data-highlighted],
+  .dt-pop-item:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+    box-shadow: none;
+  }
+  .dt-sheet-grid .dt-cell[data-col].is-selected,
+  .dt-sheet-grid .dt-cell[data-col].is-changed,
+  .dt-sheet-grid .dt-cell[data-col].is-match {
+    outline: 1px solid Highlight;
+    outline-offset: -1px;
+  }
+  .dt-sheet-grid .dt-cell[data-col].is-error,
+  .dt-sheet-grid .dt-cell[data-col].is-warning {
+    outline: 2px dashed CanvasText;
+    outline-offset: -2px;
+  }
+  .dt-cell-tip,
+  .dt-tip,
+  .dt-toast,
+  .dt-bulk,
+  .dt-fill-label {
+    border: 1px solid CanvasText;
+  }
+}
+
+/* Ölçek (02 · Ölçek): phosphor ikonları --dt-icon'a göre; 16 → --dt-icon, diğerleri aynı farkla. */
+[class*='dt-'] svg[width='10'] {
+  width: calc(var(--dt-icon) + -6px);
+  height: calc(var(--dt-icon) + -6px);
+}
+[class*='dt-'] svg[width='11'] {
+  width: calc(var(--dt-icon) + -5px);
+  height: calc(var(--dt-icon) + -5px);
+}
+[class*='dt-'] svg[width='12'] {
+  width: calc(var(--dt-icon) + -4px);
+  height: calc(var(--dt-icon) + -4px);
+}
+[class*='dt-'] svg[width='13'] {
+  width: calc(var(--dt-icon) + -3px);
+  height: calc(var(--dt-icon) + -3px);
+}
+[class*='dt-'] svg[width='14'] {
+  width: calc(var(--dt-icon) + -2px);
+  height: calc(var(--dt-icon) + -2px);
+}
+[class*='dt-'] svg[width='15'] {
+  width: calc(var(--dt-icon) + -1px);
+  height: calc(var(--dt-icon) + -1px);
+}
+[class*='dt-'] svg[width='16'] {
+  width: calc(var(--dt-icon) + 0px);
+  height: calc(var(--dt-icon) + 0px);
+}
+[class*='dt-'] svg[width='17'] {
+  width: calc(var(--dt-icon) + 1px);
+  height: calc(var(--dt-icon) + 1px);
+}
+[class*='dt-'] svg[width='18'] {
+  width: calc(var(--dt-icon) + 2px);
+  height: calc(var(--dt-icon) + 2px);
+}
+[class*='dt-'] svg[width='19'] {
+  width: calc(var(--dt-icon) + 3px);
+  height: calc(var(--dt-icon) + 3px);
+}
+[class*='dt-'] svg[width='20'] {
+  width: calc(var(--dt-icon) + 4px);
+  height: calc(var(--dt-icon) + 4px);
+}
+[class*='dt-'] svg[width='21'] {
+  width: calc(var(--dt-icon) + 5px);
+  height: calc(var(--dt-icon) + 5px);
+}
+[class*='dt-'] svg[width='22'] {
+  width: calc(var(--dt-icon) + 6px);
+  height: calc(var(--dt-icon) + 6px);
+}

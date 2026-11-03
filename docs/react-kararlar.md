@@ -135,7 +135,9 @@ uygulamanın sınıfları paketi ezer, paket uygulamanın temel stillerini ezer.
 Paket kaynak kodu derleyiciye uygun yazılır ve kütüphane derlemesinde React Compiler'dan geçer;
 tüketicinin derleyicisi `node_modules`'ü işlemez. TanStack Table ve Virtualizer örneğini değiştirerek
 çalışan dosyalar `"use no memo"` ile dışarıda kalır (Swors'ta derleyicinin bu nesneleri önbelleğe
-alması ekranı donduruyordu). Faz 1'de ölçülerek doğrulanır.
+alması ekranı donduruyordu). Derleme çıktısında bu dosyalar önbelleksiz, geri kalanı önbellekli
+çıkar; Rolldown'un "directive may not be preserved" uyarısı bu yüzden zararsızdır (yönerge bundling'den
+önce, dosya başına işlenir).
 
 ## R12 · Laraql
 
@@ -159,7 +161,7 @@ Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:
 | Faz | Kapsam |
 |---|---|
 | 0 | Kurulum, token'lar, i18n, provider, playground — **tamam** |
-| 1 | Izgara, hücre tipleri, `cell` / `actions`, etkileşim guard'ı, sanal gövde |
+| 1 | Izgara, hücre tipleri, `cell` / `actions`, etkileşim guard'ı, sanal gövde — **tamam** (60 fps / resize süresi ölçümü ve Playwright e2e Vue'daki gibi sonraya) |
 | 2 | Veri akışı (R4), durumlar, sıralama, sayfalama, araç çubuğu, sütun yönetimi |
 | 3a | Filtreler ve arama |
 | 3b | Görünümler (R6) ve tercihler |

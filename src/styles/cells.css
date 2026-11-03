@@ -1,0 +1,303 @@
+/* Hücre içerikleri (03, T8). Ölçüler yoğunluk token'larından; renkler ton token'larından. */
+
+.dt-empty {
+  color: var(--dt-text-3);
+}
+
+.dt-mono {
+  font-family: var(--dt-font-mono);
+  font-size: var(--dt-mono-fs);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.dt-ccy {
+  margin-left: 6px;
+  font-family: var(--dt-font-mono);
+  font-size: var(--dt-currency-fs);
+  font-weight: 500;
+  color: var(--dt-text-3);
+}
+
+.dt-link {
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--dt-radius-xs);
+}
+.dt-link:hover {
+  color: var(--dt-accent-text);
+  text-decoration: underline;
+}
+.dt-link-icon {
+  margin-left: 4px;
+  vertical-align: -1px;
+  color: var(--dt-text-3);
+}
+
+/* Tonlar: her ton -bg / -fg / -dot (02). Özel ton: tema başına açık renk, zemin %12 karışım. */
+.dt-tone-gray {
+  --dt-tone-bg: var(--dt-n-bg);
+  --dt-tone-fg: var(--dt-n-fg);
+  --dt-tone-dot: var(--dt-n-dot);
+}
+.dt-tone-blue {
+  --dt-tone-bg: var(--dt-b-bg);
+  --dt-tone-fg: var(--dt-b-fg);
+  --dt-tone-dot: var(--dt-b-dot);
+}
+.dt-tone-green {
+  --dt-tone-bg: var(--dt-g-bg);
+  --dt-tone-fg: var(--dt-g-fg);
+  --dt-tone-dot: var(--dt-g-dot);
+}
+.dt-tone-amber {
+  --dt-tone-bg: var(--dt-a-bg);
+  --dt-tone-fg: var(--dt-a-fg);
+  --dt-tone-dot: var(--dt-a-dot);
+}
+.dt-tone-red {
+  --dt-tone-bg: var(--dt-r-bg);
+  --dt-tone-fg: var(--dt-r-fg);
+  --dt-tone-dot: var(--dt-r-dot);
+}
+.dt-tone-violet {
+  --dt-tone-bg: var(--dt-v-bg);
+  --dt-tone-fg: var(--dt-v-fg);
+  --dt-tone-dot: var(--dt-v-dot);
+}
+.dt-tone-pink {
+  --dt-tone-bg: var(--dt-p-bg);
+  --dt-tone-fg: var(--dt-p-fg);
+  --dt-tone-dot: var(--dt-p-dot);
+}
+.dt-tone-teal {
+  --dt-tone-bg: var(--dt-c-bg);
+  --dt-tone-fg: var(--dt-c-fg);
+  --dt-tone-dot: var(--dt-c-dot);
+}
+.dt-tone-custom {
+  --dt-tone-fg: var(--dt-tone-light);
+  --dt-tone-dot: var(--dt-tone-light);
+  --dt-tone-bg: color-mix(in srgb, var(--dt-tone-light) 12%, transparent);
+}
+.dark .dt-tone-custom,
+[data-theme='dark'] .dt-tone-custom {
+  --dt-tone-fg: var(--dt-tone-dark);
+  --dt-tone-dot: var(--dt-tone-dark);
+  --dt-tone-bg: color-mix(in srgb, var(--dt-tone-dark) 15%, transparent);
+}
+
+.dt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dt-space-sm);
+  max-width: 100%;
+  height: var(--dt-badge-h);
+  padding: 0 8px;
+  border-radius: var(--dt-radius-pill);
+  background: var(--dt-tone-bg);
+  color: var(--dt-tone-fg);
+  font-size: var(--dt-ui-fs-xs);
+  font-weight: 500;
+  line-height: 1;
+  vertical-align: middle;
+}
+.dt-badge-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--dt-radius-pill);
+  background: var(--dt-tone-dot);
+}
+.dt-badge-icon {
+  flex: none;
+  color: var(--dt-tone-dot);
+}
+.dt-badge-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dt-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.dt-more {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--dt-radius-sm);
+  background: var(--dt-surface-3);
+  color: var(--dt-text-2);
+  font-size: var(--dt-ui-fs-xs);
+  font-weight: 500;
+  line-height: 1;
+}
+.dt-more-pill {
+  height: 20px;
+  border-radius: var(--dt-radius-pill);
+  font-size: var(--dt-ui-fs-2xs);
+}
+
+.dt-user {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dt-space);
+  max-width: 100%;
+  vertical-align: middle;
+}
+.dt-user.is-empty {
+  color: var(--dt-text-3);
+}
+.dt-user-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dt-avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--dt-av);
+  height: var(--dt-av);
+  border-radius: var(--dt-radius-pill);
+  background: var(--dt-tone-bg) center / cover no-repeat;
+  color: var(--dt-tone-fg);
+  font-size: var(--dt-avatar-fs);
+  font-weight: 600;
+  line-height: 1;
+}
+.dt-avatar.is-empty {
+  background: transparent;
+  border: 1px dashed var(--dt-line-3);
+  box-sizing: border-box;
+}
+.dt-avatars {
+  gap: 0;
+}
+.dt-avatars .dt-avatar {
+  box-shadow: 0 0 0 1.5px var(--dt-row-bg, var(--dt-surface));
+}
+.dt-avatars .dt-avatar + .dt-avatar,
+.dt-avatars .dt-more {
+  margin-left: -4px;
+}
+
+.dt-bar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--dt-space);
+  width: 100%;
+}
+.dt-bar-track {
+  width: 90px;
+  max-width: 60%;
+  height: 6px;
+  border-radius: var(--dt-radius-pill);
+  background: var(--dt-track);
+  overflow: hidden;
+}
+.dt-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--dt-radius-pill);
+  background: var(--dt-n-dot);
+}
+.dt-bar-label {
+  min-width: 36px;
+  text-align: right;
+}
+
+.dt-stars {
+  display: inline-flex;
+  gap: 2px;
+  color: var(--dt-line-2);
+  vertical-align: middle;
+}
+.dt-stars .is-on {
+  color: var(--dt-a-dot);
+}
+
+.dt-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px var(--dt-swatch-line);
+  vertical-align: -2px;
+}
+
+.dt-late {
+  color: var(--dt-r-fg);
+}
+
+/* text: ilk satır esner ve kesilir, genişlet düğmesi sağda sabit (03). */
+.dt-text {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.dt-text-first {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--dt-text-2);
+}
+.dt-text-expand {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--dt-control-h-xs);
+  height: var(--dt-control-h-xs);
+  padding: 0;
+  border: 0;
+  border-radius: var(--dt-radius-sm);
+  background: transparent;
+  color: var(--dt-text-3);
+  vertical-align: middle;
+  cursor: pointer;
+}
+.dt-text-expand:hover {
+  background: var(--dt-surface-3);
+  color: var(--dt-text-2);
+}
+
+.dt-struct {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  margin-right: 8px;
+  padding: 0 5px;
+  border-radius: var(--dt-radius-xs);
+  background: var(--dt-surface-3);
+  color: var(--dt-text-2);
+  font-family: var(--dt-font-mono);
+  font-size: var(--dt-ui-fs-3xs);
+  font-weight: 500;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.dt-secondary {
+  display: block;
+  margin-top: 1px;
+  font-size: var(--dt-ui-fs-xs);
+  line-height: 1.25;
+  color: var(--dt-text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
