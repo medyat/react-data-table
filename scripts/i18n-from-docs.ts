@@ -6,7 +6,7 @@ import { docMessages } from './docs.ts'
 const { en, tr } = docMessages()
 
 const file = (name: string, messages: Record<string, string>): string =>
-  `// Üretilmiş dosya: scripts/i18n-from-docs.ts ← data-table/docs/data-table/09-i18n.md. Elle düzenlemeyin; dokümanı değiştirip \`pnpm gen:docs\` çalıştırın.\n` +
+  `// Üretilmiş dosya: scripts/i18n-from-docs.ts ← data-table/docs/data-table/09-i18n.md (+ docs.ts REACT_MESSAGES). Elle düzenlemeyin; dokümanı değiştirip \`pnpm gen:docs\` çalıştırın.\n` +
   `export const ${name}: Record<string, string> = {\n` +
   Object.entries(messages)
     .map(([k, v]) => `  ${JSON.stringify(k)}: ${JSON.stringify(v)},`)

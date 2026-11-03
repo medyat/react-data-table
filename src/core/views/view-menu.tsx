@@ -1,8 +1,8 @@
 // Görünüm seçici + menüsü (04 §7, handoff 03 §4.1, T3-01/02/03): üstte kaydetme bölümü (yalnızca düzenlenmişse, D27),
 // Find a view…, System / My views bölümleri (D30: paylaşım yok), satır ⋯ menüsü, altta New view. Kısayol `V` DataTable'da.
-// Vue'daki reka Listbox'ın karşılığı burada: odak aramada kalır, ↑↓ vurguyu taşır (`aria-activedescendant`), Enter seçer;
-// Tab satırların ⋯ düğmelerine ve New view'a gider. Base UI Combobox liste içindeki düğmeleri Tab sırasından çıkardığı için
-// kullanılmadı.
+// Liste ARIA'nın combobox + grid popup kalıbıdır (Vue'da reka Listbox; 7c'de axe'e göre ayrıldı): odak aramada kalır, ↑↓
+// vurguyu taşır (`aria-activedescendant` satırın görünüm hücresine), Enter seçer; Tab satırların ⋯ düğmelerine ve New
+// view'a gider. Base UI Combobox liste içindeki düğmeleri Tab sırasından çıkardığı için kullanılmadı.
 import { Popover } from '@base-ui/react/popover'
 import {
   CaretDownIcon,
@@ -127,9 +127,11 @@ export function ViewMenu({
       <span className="dt-view-icon" aria-hidden="true">
         <StackIcon size={16} />
       </span>
+      {/* Boşluk görünmez (flex) ama görünen metni "All orders Edited" yapar; ad onu içermeli (WCAG 2.5.3). */}
       <span className="dt-view-name">{name}</span>
       {edited && (
         <>
+          {' '}
           <span className="dt-view-dot" aria-hidden="true" />
           <span className="dt-view-edited">{i18n.t('views.edited')}</span>
         </>
@@ -173,6 +175,7 @@ export function ViewMenu({
           type="text"
           role="combobox"
           aria-expanded="true"
+          aria-haspopup="grid"
           aria-controls={listId}
           aria-activedescendant={hl && flat.some((v) => v.id === hl) ? optionId(hl) : undefined}
           autoComplete="off"
@@ -205,18 +208,26 @@ export function ViewMenu({
           }}
         />
       </label>
-      <div id={listId} role="listbox" className="dt-views-list" aria-label={i18n.t('views.title')} onBlur={leave}>
+      {/* Combobox + grid popup (ARIA 1.2): satır = görünüm hücresi + ⋯ hücresi. listbox yalnızca option alabildiği için
+          satırdaki ⋯ düğmesi onu bozuyordu (axe aria-required-children). Grup başlığı satır değil: rowgroup'un adı. */}
+      <div
+        id={listId}
+        role={groups.length ? 'grid' : undefined}
+        className="dt-views-list"
+        aria-label={groups.length ? i18n.t('views.title') : undefined}
+        onBlur={leave}
+      >
         {groups.map((g) => (
-          <div key={g.key} role="group" aria-labelledby={`${listId}-${g.key}`}>
-            <div id={`${listId}-${g.key}`} className="dt-pop-label">
+          <div key={g.key} role="rowgroup" aria-labelledby={`${listId}-${g.key}`}>
+            <div id={`${listId}-${g.key}`} className="dt-pop-label" aria-hidden="true">
               {i18n.t(g.title)}
               <span>{i18n.t(g.hint)}</span>
             </div>
             {g.views.map((v) => (
-              <div key={v.id} className={v.id === active?.id ? 'dt-view-row is-active' : 'dt-view-row'}>
+              <div key={v.id} role="row" className={v.id === active?.id ? 'dt-view-row is-active' : 'dt-view-row'}>
                 <div
                   id={optionId(v.id)}
-                  role="option"
+                  role="gridcell"
                   aria-selected={v.id === active?.id}
                   className="dt-view-item"
                   data-highlighted={v.id === hl ? '' : undefined}
@@ -233,33 +244,35 @@ export function ViewMenu({
                   )}
                   {v.id === defaultId && <span className="dt-view-default">{i18n.t('views.default')}</span>}
                 </div>
-                <DtMenu
-                  side="right"
-                  align="start"
-                  className="dt-view-row-menu"
-                  trigger={
-                    <button type="button" className="dt-icon-btn-sm dt-view-more" aria-label={i18n.t('common.more')}>
-                      <DotsThreeIcon size={16} weight="bold" aria-hidden="true" />
-                    </button>
-                  }
-                >
-                  {canEdit(v) && (
-                    <DtMenuItem onSelect={() => after(() => onRename(v))}>{i18n.t('views.rename')}</DtMenuItem>
-                  )}
-                  {canSave && (
-                    <DtMenuItem onSelect={() => after(() => onDuplicate(v))}>{i18n.t('views.duplicate')}</DtMenuItem>
-                  )}
-                  <DtMenuItem onSelect={() => onSetDefault(v.id)}>{i18n.t('views.setDefault')}</DtMenuItem>
-                  {canEdit(v) && (
-                    <>
-                      <DtMenuSeparator />
-                      <DtMenuItem destructive onSelect={() => after(() => onDelete(v))}>
-                        {i18n.t('views.delete')}
-                      </DtMenuItem>
-                    </>
-                  )}
-                  {v.kind === 'system' && <div className="dt-view-note">{i18n.t('views.systemNote')}</div>}
-                </DtMenu>
+                <div role="gridcell" className="dt-view-more-cell">
+                  <DtMenu
+                    side="right"
+                    align="start"
+                    className="dt-view-row-menu"
+                    trigger={
+                      <button type="button" className="dt-icon-btn-sm dt-view-more" aria-label={i18n.t('common.more')}>
+                        <DotsThreeIcon size={16} weight="bold" aria-hidden="true" />
+                      </button>
+                    }
+                  >
+                    {canEdit(v) && (
+                      <DtMenuItem onSelect={() => after(() => onRename(v))}>{i18n.t('views.rename')}</DtMenuItem>
+                    )}
+                    {canSave && (
+                      <DtMenuItem onSelect={() => after(() => onDuplicate(v))}>{i18n.t('views.duplicate')}</DtMenuItem>
+                    )}
+                    <DtMenuItem onSelect={() => onSetDefault(v.id)}>{i18n.t('views.setDefault')}</DtMenuItem>
+                    {canEdit(v) && (
+                      <>
+                        <DtMenuSeparator />
+                        <DtMenuItem destructive onSelect={() => after(() => onDelete(v))}>
+                          {i18n.t('views.delete')}
+                        </DtMenuItem>
+                      </>
+                    )}
+                    {v.kind === 'system' && <div className="dt-view-note">{i18n.t('views.systemNote')}</div>}
+                  </DtMenu>
+                </div>
               </div>
             ))}
           </div>

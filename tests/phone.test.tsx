@@ -101,6 +101,10 @@ describe('telefon düzeni', () => {
     await flush()
     expect(screen.queryByRole('button', { name: 'Add filter' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Clear all' })).toBeNull()
+    // Operatör görünür: "is" ile "is not" telefonda da ayırt edilir; ad görünen metinle başlar (WCAG 2.5.3).
+    const body = document.querySelector<HTMLElement>('.dt-chip-body')!
+    expect(body.textContent).toBe('Name contains “Pump”')
+    expect(body.getAttribute('aria-label')).toBe('Name contains “Pump”. Open filters')
     fireEvent.click(document.querySelector('.dt-chip-body')!)
     await screen.findByRole('dialog')
     await flush()

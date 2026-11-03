@@ -76,6 +76,14 @@ describe('yuvalar ve daralma', () => {
     expect(display.classList).toContain('dt-btn-icon')
     expect(display.dataset.dtTip).toBe('Display')
   })
+  it('640–1023 px kartta Filter etiketli kalır (Vue: yalnızca telefonda ikon); ad görünen metinle aynı', async () => {
+    mockCardWidth(800)
+    await mount(<Table />)
+    const filter = document.querySelector<HTMLElement>('.dt-toolbar .dt-filter-trigger')!
+    expect(filter.classList).not.toContain('dt-btn-icon')
+    expect(filter.textContent).toBe('Filter')
+    expect(screen.getByRole('combobox', { name: 'Filter' })).toBe(filter)
+  })
 })
 
 describe('Display', () => {

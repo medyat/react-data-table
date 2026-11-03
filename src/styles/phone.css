@@ -129,7 +129,8 @@
   font-size: 15px;
 }
 
-/* Çip satırı 48: dolgu 0 12, aralık 6; telefon çipi 32 px, operatör ve × yok. */
+/* Çip satırı 48: dolgu 0 12, aralık 6; telefon çipi 32 px, × yok. Operatör görünür (Vue'dan sapma, 7c: "is" / "is not"
+   ayırt edilsin, ad görünen metinle uyuşsun). */
 .dt-list.is-phone .dt-filter-row {
   min-height: 48px;
   padding: 0 12px;

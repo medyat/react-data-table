@@ -125,6 +125,12 @@ export interface DocMessages {
 // R1: sheet ve içe aktarma bu pakette yok; metinleri de taşınmaz.
 const SKIPPED_SECTIONS = ['Toplu düzenleme (sheet)', 'İçe aktarma']
 
+// React'in bilinçli sapmaları (Vue'ya taşınmaz; docs/react-kararlar.md · Faz 7c): anahtar → [EN, TR], dokümandakini ezer.
+const REACT_MESSAGES: Record<string, [string, string]> = {
+  // WCAG 2.5.3: eksik çipin adı görünen metinle ("Status is Select…") başlar.
+  'filter.chooseValueAria': ['{column} {op} {value}. Choose a value', '{column} {op} {value}. Bir değer seçin'],
+}
+
 /** 09-i18n.md'deki anahtar tabloları: `| \`key\` | EN | TR |`. */
 export function docMessages(): DocMessages {
   const en: Record<string, string> = {}
@@ -139,6 +145,11 @@ export function docMessages(): DocMessages {
       en[key] = r[1]!
       tr[key] = r[2]!
     }
+  }
+  for (const [key, [e, t]] of Object.entries(REACT_MESSAGES)) {
+    if (!(key in en)) throw new Error(`REACT_MESSAGES: dokümanda olmayan anahtar: ${key}`)
+    en[key] = e
+    tr[key] = t
   }
   return { en, tr }
 }

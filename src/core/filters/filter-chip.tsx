@@ -49,7 +49,7 @@ export function FilterChip({
   const tip = summary.full && summary.full !== summary.text ? summary.full : undefined
   const aria = complete
     ? i18n.t('filter.valueAria', { column: column.header, op: opText, value: summary.text })
-    : i18n.t('filter.chooseValueAria', { column: column.header })
+    : i18n.t('filter.chooseValueAria', { column: column.header, op: opText, value: i18n.t('filter.selectValue') })
   const editor = editorOf(chip.op, type)
   const status =
     editor === 'options' && Array.isArray(chip.value) && chip.value.length
@@ -70,8 +70,8 @@ export function FilterChip({
   const head = (
     <>
       <Icon size={14} className="dt-chip-icon" aria-hidden="true" />
-      <span className="dt-chip-field">{column.header}</span>
-      <span className="dt-chip-op">{opText}</span>
+      {/* Boşluklar görünmez (flex) ama metni "Status is Draft" yapar: erişilebilir ad görünen metni içermeli (WCAG 2.5.3). */}
+      <span className="dt-chip-field">{column.header}</span> <span className="dt-chip-op">{opText}</span>{' '}
     </>
   )
   const people = complete ? (summary.people?.slice(0, 3) ?? []) : []
@@ -99,7 +99,7 @@ export function FilterChip({
           onClick={onOpen}
         >
           <Icon size={14} className="dt-chip-icon" aria-hidden="true" />
-          <span className="dt-chip-field">{column.header}</span>
+          <span className="dt-chip-field">{column.header}</span> <span className="dt-chip-op">{opText}</span>{' '}
           <span className="dt-chip-value">{summary.text}</span>
         </button>
       ) : type === 'boolean' ? (

@@ -1,4 +1,4 @@
-// Üretilmiş dosya: scripts/i18n-from-docs.ts ← data-table/docs/data-table/09-i18n.md. Elle düzenlemeyin; dokümanı değiştirip `pnpm gen:docs` çalıştırın.
+// Üretilmiş dosya: scripts/i18n-from-docs.ts ← data-table/docs/data-table/09-i18n.md (+ docs.ts REACT_MESSAGES). Elle düzenlemeyin; dokümanı değiştirip `pnpm gen:docs` çalıştırın.
 export const en: Record<string, string> = {
   "common.cancel": "Cancel",
   "common.apply": "Apply",
@@ -46,7 +46,7 @@ export const en: Record<string, string> = {
   "filter.selectValue": "Select…",
   "filter.removeAria": "Remove {column} filter",
   "filter.valueAria": "{column} {op} {value}. Edit value",
-  "filter.chooseValueAria": "{column}: choose a value",
+  "filter.chooseValueAria": "{column} {op} {value}. Choose a value",
   "filter.sheetNote": "Filters only change what you see — hidden rows keep their edits.",
   "picker.search": "Filter by…",
   "picker.filtered": "Filtered",

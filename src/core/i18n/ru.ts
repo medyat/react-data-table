@@ -47,7 +47,7 @@ export const ru: Record<string, string> = {
   'filter.selectValue': 'Выберите…',
   'filter.removeAria': 'Удалить фильтр «{column}»',
   'filter.valueAria': '{column} {op} {value}. Изменить значение',
-  'filter.chooseValueAria': '{column}: выберите значение',
+  'filter.chooseValueAria': '{column} {op} {value}. Выберите значение',
   'filter.sheetNote': 'Фильтры меняют только то, что вы видите: изменения в скрытых строках сохраняются.',
   'picker.search': 'Фильтровать по…',
   'picker.filtered': 'С фильтром',

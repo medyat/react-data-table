@@ -190,23 +190,24 @@ function Body<Row extends object>({
               onChange={(e) => setFind(e.target.value)}
             />
           </label>
-          <ul className="dt-cols-list">
-            {!find &&
-              fixedRows.map((c) => (
-                <li key={c.id} className="dt-col-row is-fixed">
-                  <Name column={c} />
-                  <LockIcon size={14} className="dt-col-lock" aria-label={i18n.t('columns.alwaysShown')} />
-                </li>
-              ))}
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={onDragEnd}
-              accessibility={{
-                announcements,
-                screenReaderInstructions: { draggable: i18n.t('columns.dragInstructions') },
-              }}
-            >
+          {/* dnd-kit canlı bölgesini yerinde çizer: listenin dışında ama dialog'un içinde kalmalı (ul yalnızca li alır). */}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={onDragEnd}
+            accessibility={{
+              announcements,
+              screenReaderInstructions: { draggable: i18n.t('columns.dragInstructions') },
+            }}
+          >
+            <ul className="dt-cols-list">
+              {!find &&
+                fixedRows.map((c) => (
+                  <li key={c.id} className="dt-col-row is-fixed">
+                    <Name column={c} />
+                    <LockIcon size={14} className="dt-col-lock" aria-label={i18n.t('columns.alwaysShown')} />
+                  </li>
+                ))}
               <SortableContext items={listed.map((c) => c.id)} strategy={verticalListSortingStrategy}>
                 {listed.map((c) => (
                   <SortableRow
@@ -218,8 +219,8 @@ function Body<Row extends object>({
                   />
                 ))}
               </SortableContext>
-            </DndContext>
-          </ul>
+            </ul>
+          </DndContext>
         </section>
       </div>
       <div className="dt-cols-foot">

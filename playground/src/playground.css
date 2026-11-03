@@ -65,6 +65,9 @@ body {
     overflow-x: auto;
     white-space: nowrap;
   }
+  .pg-title {
+    flex-wrap: wrap;
+  }
 }
 .pg-scroll {
   overflow: auto;

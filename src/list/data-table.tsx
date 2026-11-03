@@ -6,6 +6,7 @@ import {
   Suspense,
   useEffect,
   useEffectEvent,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -468,6 +469,25 @@ export function DataTable<Row extends object>({
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // Filter düğmesinin adı görünen parçalarından ("Filter 2"): Combobox tetikleyicisi (role=combobox) adını içerikten
+  // almaz, sabit aria-label de sayacı dışarıda bırakıp görünen metinle uyuşmaz (WCAG 2.5.3). İkon kipinde etiket gizli.
+  const filterId = useId()
+  const filterLabelledBy = q.filters.length ? `${filterId}-l ${filterId}-n` : `${filterId}-l`
+  const filterText = (labelShown: boolean) => (
+    <>
+      <span id={`${filterId}-l`} className={labelShown ? undefined : 'dt-sr-only'}>
+        {i18n.t('toolbar.filter')}
+      </span>
+      {q.filters.length > 0 && (
+        <>
+          {' '}
+          <span id={`${filterId}-n`} className="dt-counter">
+            {q.filters.length}
+          </span>
+        </>
+      )}
+    </>
+  )
   const print =
     onPrint &&
     (() =>
@@ -610,11 +630,11 @@ export function DataTable<Row extends object>({
                       ? 'dt-btn dt-btn-icon dt-filter-trigger is-active'
                       : 'dt-btn dt-btn-icon dt-filter-trigger'
                   }
-                  aria-label={i18n.t('toolbar.filter')}
+                  aria-labelledby={filterLabelledBy}
                   onClick={() => openSheet()}
                 >
                   <FunnelIcon size={20} aria-hidden="true" />
-                  {q.filters.length > 0 && <span className="dt-counter">{q.filters.length}</span>}
+                  {filterText(false)}
                 </button>
               ) : (
                 <ColumnPicker
@@ -626,18 +646,16 @@ export function DataTable<Row extends object>({
                   trigger={
                     <button
                       type="button"
-                      className={[
-                        'dt-btn has-icon dt-filter-trigger',
-                        q.filters.length > 0 && 'is-active',
-                        size !== 'full' && !q.filters.length && 'dt-btn-icon',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                      aria-label={size !== 'full' ? i18n.t('toolbar.filter') : undefined}
+                      // Dar kartta da etiketli (Vue: ikon yalnızca telefonda).
+                      className={
+                        q.filters.length
+                          ? 'dt-btn has-icon dt-filter-trigger is-active'
+                          : 'dt-btn has-icon dt-filter-trigger'
+                      }
+                      aria-labelledby={filterLabelledBy}
                     >
                       <FunnelIcon size={16} aria-hidden="true" />
-                      {size === 'full' && <span>{i18n.t('toolbar.filter')}</span>}
-                      {q.filters.length > 0 && <span className="dt-counter">{q.filters.length}</span>}
+                      {filterText(true)}
                     </button>
                   }
                 />
@@ -728,6 +746,7 @@ export function DataTable<Row extends object>({
                 <button
                   type="button"
                   className="dt-btn dt-btn-ghost dt-btn-sm has-icon dt-filter-add dt-filter-trigger"
+                  aria-label={i18n.t('filter.addFilter')}
                 >
                   <PlusIcon size={14} aria-hidden="true" />
                   {i18n.t('filter.addFilter')}

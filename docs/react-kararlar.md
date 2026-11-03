@@ -129,6 +129,8 @@ Paket kendi metinlerini taşır (`en`, `tr`, `ru`), i18next'e bağımlı değild
 ile. Uygulama `locale` verir ve gerekirse `messages` ile anahtar ezer.
 
 `en` ve `tr` Vue'daki 09-i18n.md'den üretilir (`pnpm gen:docs`); sheet ve içe aktarma bölümleri atlanır.
+React'in bilinçli metin sapmaları `scripts/docs.ts` içindeki `REACT_MESSAGES`'tadır (Vue'ya taşınmaz); üretici ve
+doküman testi ikisini birlikte okur.
 `ru` elle yazılır. Rusçada few/many ikisi de `.other`'a düştüğü için sayılı metinler sayıdan bağımsız
 kalıpla yazılır ("Выбрано: {count}"). Sağlayıcı `locale` değişince metinler sayfa yenilenmeden değişir.
 
@@ -196,7 +198,7 @@ Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:
 | 3a | Filtreler ve arama — **tamam** (aşağıdaki notlar) |
 | 3b | Görünümler (R6) ve tercihler — **tamam** |
 | 4 | Seçim, bulk bar, satır etkileşimleri, satır hatası (D35) — **tamam** (aşağıdaki notlar) |
-| 7 | Telefon — **tamam** (aşağıdaki notlar); erişilebilirlik turu, belgeler |
+| 7 | Telefon — **tamam**; erişilebilirlik turu sürüyor (aşağıdaki notlar); belgeler |
 
 Faz 2 notları:
 
@@ -268,6 +270,24 @@ Faz 7 notları (telefon):
 - Metin ve sayı editörü açılınca kendi kutusuna odaklanır (Vue: `onMounted` focus); sheet'te başka odak kaynağı yok.
 - Vue'dan farkı olmayan ama React'e özgü tuzak: metin editöründe Enter aynı olayda önce değeri yazar sonra Done
   der; sayfanın taslağı updater ile güncellenir, yoksa Done eski taslağı görüp çipi boş sayar.
+
+Faz 7c notları (erişilebilirlik):
+
+- `pnpm test:e2e` (Playwright, port 5179): `e2e/a11y.spec.ts` axe ile WCAG 2.1 A/AA'da kritik/ciddi ihlal arar; masaüstü
+  (açık/koyu), telefon alt sayfaları, hareket azaltma ve yüksek kontrast. Vue'nun sheet ekranları React'te yok.
+- Görünüm menüsü Vue'dan ayrılır: reka Listbox yerine ARIA combobox + grid popup. listbox yalnızca option alabildiği için
+  satırdaki ⋯ düğmesi yapıyı bozuyordu (Vue'da da aynı, düzeltilmedi). Satır = görünüm hücresi + ⋯ hücresi; grup başlığı
+  `rowgroup` adı. Klavye ve görünüm aynı (piksel farkı yok).
+- Base UI Combobox tetikleyicisi `role="combobox"` taşır, ad içerikten gelmez. Filter düğmesinin adı görünen
+  parçalarından `aria-labelledby` ile kurulur ("Filter 2"; ikon kipinde etiket `dt-sr-only`), Add filter'da `aria-label`.
+  Dar kartta (640–1023) Filter etiketli kalır; React'te ikona dönüyordu, Vue'da ikon yalnızca telefonda.
+- Ad görünen metni içermeli (WCAG 2.5.3): bitişik `span`'lar arasına boşluk konur (çip, görünüm tetikleyicisi, Filter).
+  Flex içinde görünmez, piksel farkı yok.
+- Telefon çipi operatörü gösterir ("Status is Draft"; Vue'da "Status Draft"): "is" ile "is not" ayırt edilir, ad
+  görünen metinle uyuşur.
+- dnd-kit canlı bölgesini `DndContext`'in yerinde çizer: Columns listesinin (`ul`) dışında, dialog'un içinde.
+- Eksik çipin adı görünen metinle başlar (WCAG 2.5.3): "Status is Select…. Choose a value" (`filter.chooseValueAria`,
+  `REACT_MESSAGES`; Vue'da "Status: choose a value").
 
 Swors'un ürün ekranı 3b'den sonra pakete geçer. O zamana kadar Swors'taki `DataTable`'a özellik
 eklenmez.

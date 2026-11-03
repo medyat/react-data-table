@@ -125,6 +125,10 @@ describe('picker ve eksik çip', () => {
     await flush()
     expect(chip('status')!.classList).toContain('is-incomplete')
     expect(chipText('status')).toBe('Status is Select…')
+    // WCAG 2.5.3: erişilebilir ad görünen metinle başlar (sesli komut "Status is Select…" ile bulur).
+    expect(chip('status')!.querySelector('.dt-chip-body')!.getAttribute('aria-label')).toBe(
+      'Status is Select…. Choose a value',
+    )
     expect(pop()).not.toBeNull()
     expect(req().filters).toEqual([])
     expect(document.querySelector('.dt-filter-trigger .dt-counter')).toBeNull()

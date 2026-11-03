@@ -169,6 +169,28 @@ describe('açılış ve seçim', () => {
     expect(trigger().textContent).toBe('Late orders')
     expect(document.querySelector('.dt-chip[data-col="status"]')).not.toBeNull()
   })
+  it('liste combobox + grid: satırda görünüm hücresi ve ⋯ hücresi; ↑↓ vurguyu taşır, Enter seçer', async () => {
+    await mount({})
+    await openMenu()
+    const grid = within(menu()!).getByRole('grid', { name: 'Views' })
+    const search = within(menu()!).getByRole('combobox', { name: 'Find a view…' })
+    expect(search.getAttribute('aria-haspopup')).toBe('grid')
+    expect(search.getAttribute('aria-controls')).toBe(grid.id)
+    within(grid).getByRole('rowgroup', { name: /^System views/ })
+    const rows = within(grid).getAllByRole('row')
+    expect(rows.map((r) => within(r).getAllByRole('gridcell').length)).toEqual([2, 2])
+    expect(within(rows[1]!).getAllByRole('gridcell')[1]!.querySelector('.dt-view-more')).not.toBeNull()
+
+    const cell = (r: HTMLElement) => within(r).getAllByRole('gridcell')[0]!
+    expect(search.getAttribute('aria-activedescendant')).toBe(cell(rows[0]!).id)
+    expect(cell(rows[0]!).getAttribute('aria-selected')).toBe('true')
+    fireEvent.keyDown(search, { key: 'ArrowDown' })
+    expect(search.getAttribute('aria-activedescendant')).toBe(cell(rows[1]!).id)
+    fireEvent.keyDown(search, { key: 'Enter' })
+    await flush()
+    expect(trigger().textContent).toBe('Late orders')
+  })
+
   it('kişisel varsayılan: liste gelince ona geçilir; kullanıcı önce seçtiyse geçilmez', async () => {
     const adapter = memoryAdapter([
       { id: 'p1', name: 'Mine', kind: 'personal', state: { sort: [{ column: 'value', dir: 'desc' }] } },
