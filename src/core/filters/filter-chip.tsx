@@ -59,9 +59,7 @@ export function FilterChip({
       ? i18n.t('option.selected', { count: chip.value.length })
       : shape === 'range'
         ? i18n.t('number.boundsIncluded')
-        : shape === 'dateRange'
-          ? i18n.t('date.presetsRelative')
-          : ''
+        : ''
 
   const update = (patch: Partial<Chip>) => onChange({ ...chip, ...patch })
   const setValue = (value: unknown) =>
@@ -117,7 +115,12 @@ export function FilterChip({
   else if (editor === 'date')
     content = (
       <Suspense fallback={null}>
-        <DateEditor op={chip.op} value={chip.value} onChange={setValue} onDone={close} />
+        <DateEditor
+          op={chip.op}
+          value={chip.value}
+          onChange={(value, op) => (op ? onChange({ ...chip, op, value }) : setValue(value))}
+          onDone={close}
+        />
       </Suspense>
     )
 

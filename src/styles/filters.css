@@ -413,16 +413,62 @@
 .dt-cal-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 2px;
   margin-bottom: 4px;
 }
+/* Başlık düğmesi: metin önceki düz başlıkla aynı yerde (4 px), tıklanınca ay / yıl ızgarası açılır. */
 .dt-cal-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: var(--dt-control-h-xs);
+  margin-right: auto;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--dt-radius-item);
+  background: transparent;
+  color: var(--dt-text);
+  font: inherit;
   font-size: var(--dt-ui-fs);
   font-weight: 600;
 }
+button.dt-cal-title {
+  cursor: pointer;
+}
+button.dt-cal-title:hover {
+  background: var(--dt-surface-3);
+}
+button.dt-cal-title svg {
+  color: var(--dt-text-3);
+}
+button.dt-cal-title:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--dt-focus);
+}
+.dt-cal-body {
+  position: relative;
+}
+.dt-cal-hidden {
+  visibility: hidden;
+}
+/* Ay / yıl ızgarası gizli gün takviminin alanını aynen kaplar. */
+.dt-cal-pick {
+  position: absolute;
+  inset: 4px 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 4px;
+  padding: 0 2px;
+}
+.dt-cal-pick .dt-cal-day {
+  height: 100%;
+}
+/* Gün kutuları arasında yatay boşluk hücre dolgusundan gelir: aralık bandı hücreye çizildiği için kesilmez. */
 .dt-cal-grid {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0 4px;
 }
 .dt-cal-dow {
   height: var(--dt-control-h-xs);
@@ -432,47 +478,64 @@
   text-align: center;
 }
 .dt-cal-cell {
-  padding: 0;
+  position: relative;
+  padding: 0 2px;
   text-align: center;
 }
+/* Bant ayrı katmanda: ortada hücre boşluğunu doldurur, uçlarda kutunun kenarında biter. */
+.dt-cal-cell.is-band::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--dt-accent-soft);
+}
+.dt-cal-cell.is-band-start::before,
+.dt-cal-cell.is-band:first-child::before {
+  left: 2px;
+  border-top-left-radius: var(--dt-radius-inner);
+  border-bottom-left-radius: var(--dt-radius-inner);
+}
+.dt-cal-cell.is-band-end::before,
+.dt-cal-cell.is-band:last-child::before {
+  right: 2px;
+  border-top-right-radius: var(--dt-radius-inner);
+  border-bottom-right-radius: var(--dt-radius-inner);
+}
 .dt-cal-day {
-  display: inline-flex;
+  position: relative;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--dt-control-h);
+  width: 100%;
   height: var(--dt-control-h);
   border: 0;
-  border-radius: var(--dt-radius-item);
-  background: transparent;
+  border-radius: var(--dt-radius-inner);
+  background: var(--dt-surface-3);
   color: var(--dt-text);
   font: inherit;
   font-size: var(--dt-ui-fs-sm);
   font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
-.dt-cal-day:hover {
-  background: var(--dt-surface-3);
+.dt-cal-day[data-outside-view],
+.is-band .dt-cal-day {
+  background: transparent;
 }
 .dt-cal-day[data-outside-view] {
   color: var(--dt-text-3);
 }
+.dt-cal-day:hover {
+  background: var(--dt-line);
+}
 .dt-cal-day[data-today] {
   font-weight: 600;
   color: var(--dt-accent-text);
+  box-shadow: inset 0 0 0 1.5px var(--dt-accent);
 }
-.dt-cal-day[data-selected],
+/* Tek gün ya da aralığın uçları dolu; aradaki günleri yalnızca bant gösterir. */
+.dt-cal-day[data-selected]:not(.is-band .dt-cal-day),
 .dt-cal-day[data-selection-start],
 .dt-cal-day[data-selection-end] {
-  background: var(--dt-accent);
-  color: var(--dt-on-accent);
-}
-.dt-cal-day[data-highlighted],
-.dt-cal-day[data-selected][data-outside-view] {
-  background: var(--dt-accent-soft);
-  color: var(--dt-accent-text);
-}
-.dt-cal-day[data-selection-start][data-highlighted],
-.dt-cal-day[data-selection-end][data-highlighted] {
   background: var(--dt-accent);
   color: var(--dt-on-accent);
 }

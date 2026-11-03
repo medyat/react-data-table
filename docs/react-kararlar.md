@@ -202,9 +202,22 @@ Faz 3a notları:
 
 - Tarih editöründe seçim `mode` + kontrollü `selected` ile verilir, tıklamayı `onDayClick` yönetir (`onSelect`
   boş): böylece Tab takvime seçili güne girer, aralığın ilk/ikinci uç mantığı Vue'daki gibi kalır.
+- Hazır tarih aralıkları göreli kalmaz (Vue'dan sapma, ürün kararı): seçildiği günün tarihleriyle `{ from, to }`
+  yazılır, çipte "Nov 1 – 7" görünür; kaydedilen görünüm de bu sabit tarihleri taşır. Overdue `before <bugün>`
+  olur. Hazır aralık, değer bugünkü tarihleriyle aynıysa işaretli görünür. Custom range düğmesi yok: takvim her
+  zaman aralık seçer (anahtarı i18n'de duruyor). Tek gün operatörlerinde (`eq`, `before`, `after`) hazırlar bugün, dün,
+  evvelsi gün, yarın, öbür gün; adları `Intl.RelativeTimeFormat`'tan, yeni çeviri anahtarı yok. Popover'daki
+  "Presets stay relative" notu kalktı (anahtar Vue belgesinden üretildiği için i18n'de duruyor). Model dışarıdan
+  gelen `{ preset }` değerini (eski adres, sunucu) okumayı sürdürür.
 - Tarih editörü sapmaları: takvim gezinme düğmelerinin etiketleri çeviriden gelir (Vue'da İngilizce sabit
   "Previous page"); ızgaranın ay adıyla etiketi var; klavyeyle görünen ayın dışındaki bir güne gidilince
-  görünüm o güne kayar (Vue'da kalır). Ölçüler, ekran görüntüsü ve ok/Page/Home/End davranışı Vue ile aynı.
+  görünüm o güne kayar (Vue'da kalır). Ok/Page/Home/End davranışı Vue ile aynı.
+- Takvim görünümü Vue'dan ayrılır (ürün kararı): başlık solda, oklar sağda; gün adları kısa (`Sun`, `Paz`); ayın
+  günleri dolgulu kutu, taşan günler kutusuz; hep 6 hafta (ay değişince popover boyu oynamaz); seçili aralık
+  hücrelere `::before` ile çizilen kesintisiz bant, uçlar dolu, bugün çerçeveli. Popover 572×432.
+- Takvim başlığı düğmedir: tıklanınca gün → ay → yıl (12'li) ızgarası açılır, seçim bir alt görünüme döner, Esc
+  popover'ı kapatmadan bir üst görünüme çıkar. Izgara gizlenen gün takviminin üstüne oturur, popover boyu oynamaz.
+  Başlık ve oklar editörün; react-day-picker'ın gösterdiği ay kontrollüdür (`month`).
 - Clear'dan sonra düğme devre dışı kalır ve odak `body`'ye düşer; Vue'da da aynı (ortak eksik, Faz 7
   erişilebilirlik turunda).
 - Column picker Base UI Combobox'tır; açılışta ilk öğe vurgulanmaz (Vue'da vurgulu). Yazınca ilk eşleşme
