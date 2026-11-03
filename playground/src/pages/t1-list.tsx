@@ -25,7 +25,12 @@ class ApiError extends Error {
 }
 
 async function fetchOrders(query: TableQuery, signal: AbortSignal) {
-  const q = new URLSearchParams({ page: String(query.page.number), size: String(query.page.size), q: query.search })
+  const q = new URLSearchParams({
+    page: String(query.page.number),
+    size: String(query.page.size),
+    q: query.search,
+    filters: JSON.stringify(query.filters),
+  })
   const s = query.sort[0]
   if (s) {
     q.set('sort', s.column)
@@ -45,7 +50,8 @@ async function fetchOrders(query: TableQuery, signal: AbortSignal) {
 }
 
 async function countOrders(query: QueryWithoutPage, signal: AbortSignal) {
-  const res = await fetch(`/api/orders/count?q=${encodeURIComponent(query.search)}`, { signal })
+  const q = new URLSearchParams({ q: query.search, filters: JSON.stringify(query.filters) })
+  const res = await fetch(`/api/orders/count?${q}`, { signal })
   return ((await res.json()) as { total: number }).total
 }
 

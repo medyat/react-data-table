@@ -10,6 +10,7 @@ export function DtMenu({
   onOpenChange,
   className,
   finalFocus,
+  align = 'end',
 }: {
   /** Tetikleyici öğe (düğme); Base UI ona aria ve olay işleyicilerini ekler. */
   trigger: ReactElement
@@ -17,14 +18,15 @@ export function DtMenu({
   open?: boolean
   onOpenChange?: (open: boolean) => void
   className?: string
-  /** false: kapanınca odak tetikleyiciye dönmez (ör. menü bir editör açtıysa). */
-  finalFocus?: boolean
+  /** false: kapanınca odak tetikleyiciye dönmez (ör. menü bir editör açtıysa); fonksiyon kapanışta karar verir. */
+  finalFocus?: boolean | (() => boolean)
+  align?: 'start' | 'end'
 }) {
   return (
     <Menu.Root open={open} onOpenChange={onOpenChange ? (o) => onOpenChange(o) : undefined}>
       <Menu.Trigger render={trigger} />
       <Menu.Portal>
-        <Menu.Positioner className="dt-positioner" align="end" sideOffset={4}>
+        <Menu.Positioner className="dt-positioner" align={align} sideOffset={align === 'start' ? 6 : 4}>
           <Menu.Popup className={className ? `dt-menu ${className}` : 'dt-menu'} finalFocus={finalFocus}>
             {children}
           </Menu.Popup>
@@ -39,18 +41,17 @@ export function DtMenuItem({
   onSelect,
   disabled,
   destructive,
+  selected,
 }: {
   children: ReactNode
   onSelect: () => void
   disabled?: boolean
   destructive?: boolean
+  selected?: boolean
 }) {
+  const cls = ['dt-menu-item', destructive && 'is-destructive', selected && 'is-selected']
   return (
-    <Menu.Item
-      className={destructive ? 'dt-menu-item is-destructive' : 'dt-menu-item'}
-      disabled={disabled}
-      onClick={onSelect}
-    >
+    <Menu.Item className={cls.filter(Boolean).join(' ')} disabled={disabled} onClick={onSelect}>
       {children}
     </Menu.Item>
   )

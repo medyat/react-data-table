@@ -1,8 +1,13 @@
 // Liste bileşeni (05): ızgara, footer, durum ekranları, yükleme geçişleri (R4). Paket veri çekmez (D18): sunucu modunda
 // `useQuery` sonucunu `result` olarak alır; istemci modunda satırlar `useDataTable({ rows })`'dan gelir.
-// Filtre ve arama Faz 3a, görünümler 3b.
-import { CircleNotchIcon, WarningIcon } from '@phosphor-icons/react'
+// Görünümler 3b'de.
+import { CircleNotchIcon, FunnelIcon, PlusIcon, WarningIcon } from '@phosphor-icons/react'
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
+import { optionLabel } from '../core/cells/format'
+import { RemoteLabels } from '../core/cells/remote-labels'
+import { ColumnPicker } from '../core/filters/column-picker'
+import { FilterBar } from '../core/filters/filter-bar'
+import { summarize, type Chip } from '../core/filters/model'
 import { getFormat } from '../core/format'
 import type { HeaderSort } from '../core/grid/header-cell'
 import { Grid } from '../core/grid/grid'
@@ -12,11 +17,13 @@ import { useDataTableContext } from '../core/provider'
 import { StateMessage } from '../core/states/state-message'
 import { DisplayPopover } from '../core/toolbar/display-popover'
 import { MoreMenu } from '../core/toolbar/more-menu'
-import { Toolbar, type ToolbarSize } from '../core/toolbar/toolbar'
+import { Toolbar, type ToolbarHandle, type ToolbarSize } from '../core/toolbar/toolbar'
+import type { ColumnDef } from '../types/columns'
 import type { DataTableResult } from '../types/list'
-import type { QueryWithoutPage } from '../types/query'
+import type { FilterCondition, QueryWithoutPage } from '../types/query'
 import { Footer, type Freshness } from './footer'
-import { isSortable } from './use-list-table'
+import { useChips } from './use-chips'
+import { isFilterable, isSearchable, isSortable } from './use-list-table'
 import type { DataTableInstance } from './use-data-table'
 import { useLoadState } from './use-load-state'
 
@@ -38,6 +45,7 @@ export function DataTable<Row extends object>({
   empty,
   toolbar = 'auto',
   toolbarEnd,
+  searchPlaceholder,
   autoRefresh,
   onPrint,
   shortcuts = true,
@@ -54,11 +62,13 @@ export function DataTable<Row extends object>({
   toolbar?: 'auto' | 'minimal' | false
   /** Ekrana özgü birincil aksiyon, araç çubuğunun sonunda (ör. "New order"). */
   toolbarEnd?: ReactNode
+  /** Verilmezse "Search {entity}…". */
+  searchPlaceholder?: string
   /** Saniye. Verilirse ⋯ menüsünde Auto-refresh; açıkken footer "Live". */
   autoRefresh?: number
   /** Verilirse ⋯ › Print. Sorgu sayfasızdır. */
   onPrint?: (payload: { query: QueryWithoutPage; visibleColumns: string[] }) => void
-  /** Tek harfli kısayollar (R). Alt←/→ her zaman çalışır. */
+  /** Tek harfli kısayollar (/ arama, F filtre, R yenile). Alt←/→ her zaman çalışır. */
   shortcuts?: boolean
   /** Satır gövdesine düz tık; hücredeki düğme, link ve metin seçimi tetiklemez (05 §7). */
   onRowClick?: (row: Row, event: MouseEvent) => void
@@ -73,6 +83,33 @@ export function DataTable<Row extends object>({
   const hasRows = rows.length > 0
   const refetch = server ? result?.refetch : undefined
   const busy = load.busy
+
+  // Filtreler (04): tam koşullar tablonun durumunda, eksik çip ve açık editör burada.
+  const defs = new Map(table.columns.map((c) => [c.id as string, c as ColumnDef]))
+  const filterable = table.columns.filter((c) => isFilterable(c as ColumnDef)) as ColumnDef[]
+  const filterIds = new Set(filterable.map((c) => c.id as string))
+  const chips = useChips({ defs, filters: q.filters, setFilters: table.setFilters })
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [labels] = useState(() => new RemoteLabels())
+  // Seçenek editörü (renk) ve para birimi listesi yüklü satırlardan.
+  const sourceRows: object[] = server ? rows : (table.allRows ?? [])
+  const labelOf = (def: ColumnDef) => (v: string | number) => {
+    if (def.type === 'select' || def.type === 'multiselect' || (def.type === 'user' && def.options))
+      return optionLabel(def.options, v)
+    if ((def.type === 'user' || def.type === 'ajax') && def.remote) return labels.label(def.id as string, def.remote, v)
+    return String(v)
+  }
+  const summaryOf = (chip: Chip) =>
+    summarize(chip, defs.get(chip.column)!, { i18n, fmt, labelOf: labelOf(defs.get(chip.column)!) })
+  const currenciesOf = (def: ColumnDef): string[] => {
+    if (def.type !== 'currency') return []
+    if (typeof def.currency === 'string') return [def.currency]
+    const of = def.currency
+    return [...new Set(sourceRows.map((r) => of(r)))]
+  }
+  const hasFilter = toolbar === 'auto' && filterable.length > 0
+  const hasSearch = toolbar !== false && table.columns.some((c) => isSearchable(c as ColumnDef))
+  const toolbarRef = useRef<ToolbarHandle>(null)
 
   // Count total (05 §8): sonuç arama/filtre/sıralama değişene kadar geçerli; değişince bekleyen sayım iptal edilir.
   const countKey = JSON.stringify([q.search, q.filters, q.sort])
@@ -98,14 +135,16 @@ export function DataTable<Row extends object>({
   const page = server ? load.page : q.page
   const hasMore = server ? !!result?.data?.hasMore : page.number * page.size < (table.total ?? 0)
 
-  const bodyState: 'error' | 'noRowsOnPage' | 'empty' | null =
+  const bodyState: 'error' | 'noResults' | 'noRowsOnPage' | 'empty' | null =
     load.skeleton || hasRows || load.pending
       ? null
       : load.errorKind === 'error'
         ? 'error'
-        : q.page.number > 1
-          ? 'noRowsOnPage'
-          : 'empty'
+        : q.search || q.filters.length
+          ? 'noResults'
+          : q.page.number > 1
+            ? 'noRowsOnPage'
+            : 'empty'
   const err = errorInfo(result?.error)
   // Auto-refresh (05 §3): açıkken footer "Live".
   const [live, setLive] = useState(false)
@@ -127,19 +166,36 @@ export function DataTable<Row extends object>({
   // Ekran okuyucu (08 §5): tek polite bölge; son değişen olay okunur. İlk çizimde duyuru yok.
   const first = q.sort[0]
   const said = {
+    filters: JSON.stringify(q.filters),
     sort: JSON.stringify(q.sort),
     loaded: `${load.updatedAt?.getTime() ?? 0}|${rows.length}`,
     total: countedNow ? countedNow.at.getTime() : 0,
   }
   const [seen, setSeen] = useState({ ...said, text: '' })
   let polite = seen.text
-  if (seen.sort !== said.sort || seen.loaded !== said.loaded || seen.total !== said.total) {
-    if (seen.total !== said.total && countedNow)
+  if (
+    seen.filters !== said.filters ||
+    seen.sort !== said.sort ||
+    seen.loaded !== said.loaded ||
+    seen.total !== said.total
+  ) {
+    if (seen.filters !== said.filters) polite = filterNews(JSON.parse(seen.filters) as FilterCondition[]) ?? polite
+    else if (seen.total !== said.total && countedNow)
       polite = i18n.t('sr.total', { count: fmt.int(countedNow.total), entity })
     else if (seen.sort !== said.sort && first)
       polite = i18n.t('sr.sorted', { column: headerOf(first.column), dir: i18n.t(`sr.${first.dir}`) })
     else if (seen.loaded !== said.loaded && !load.pending) polite = i18n.t('sr.loaded', { count: rows.length })
     setSeen({ ...said, text: polite })
+  }
+
+  /** Eklenen ya da değişen filtre özetiyle, kaldırılan adıyla okunur (08 §5). */
+  function filterNews(before: FilterCondition[]): string | undefined {
+    const prev = new Map(before.map((f) => [f.column, JSON.stringify(f)]))
+    const changed = q.filters.find((f) => defs.has(f.column) && prev.get(f.column) !== JSON.stringify(f))
+    if (changed)
+      return i18n.t('sr.filterAdded', { summary: `${headerOf(changed.column)} ${summaryOf(changed).text}`.trim() })
+    const gone = before.find((f) => !q.filters.some((n) => n.column === f.column))
+    return gone && i18n.t('sr.filterRemoved', { column: headerOf(gone.column) })
   }
 
   // Kısayollar (08 §3): kapsam sayfa. Alt←/→ sayfa (her zaman), R yenile (odak metin alanında değilken).
@@ -156,7 +212,13 @@ export function DataTable<Row extends object>({
     }
     const target = e.target instanceof Element ? e.target : null
     if (!shortcuts || e.ctrlKey || e.metaKey || e.altKey || (target && isTextInput(target))) return
-    if ((e.key === 'r' || e.key === 'R') && refetch) {
+    if (e.key === '/' && hasSearch) {
+      e.preventDefault()
+      toolbarRef.current?.focusSearch()
+    } else if ((e.key === 'f' || e.key === 'F') && hasFilter) {
+      e.preventDefault()
+      setPickerOpen(true)
+    } else if ((e.key === 'r' || e.key === 'R') && refetch) {
       e.preventDefault()
       refetch()
     }
@@ -217,6 +279,34 @@ export function DataTable<Row extends object>({
           )
         }
       />
+    ) : bodyState === 'noResults' ? (
+      <StateMessage
+        kind={q.search ? 'noResultsSearch' : 'noResults'}
+        title={i18n.t(
+          q.search && q.filters.length ? 'state.noResultsBoth' : q.search ? 'state.noResultsSearch' : 'state.noResults',
+          { entity, q: q.search, count: q.filters.length },
+        )}
+        actions={
+          <>
+            {q.filters.length === 1 ? (
+              <button type="button" className="dt-btn" onClick={() => chips.remove(q.filters[0]!.column)}>
+                {i18n.t('state.removeFilter', { column: headerOf(q.filters[0]!.column) })}
+              </button>
+            ) : (
+              q.filters.length > 1 && (
+                <button type="button" className="dt-btn" onClick={chips.clear}>
+                  {i18n.t('state.clearAllFilters')}
+                </button>
+              )
+            )}
+            {q.search && (
+              <button type="button" className="dt-btn" onClick={() => table.setSearch('')}>
+                {i18n.t('state.clearSearch')}
+              </button>
+            )}
+          </>
+        }
+      />
     ) : bodyState === 'noRowsOnPage' ? (
       <StateMessage
         kind="noRowsOnPage"
@@ -236,7 +326,39 @@ export function DataTable<Row extends object>({
     <div ref={root} className="dt dt-list" data-density={table.density}>
       {toolbar !== false && (
         <Toolbar
+          ref={toolbarRef}
           size={size}
+          search={hasSearch ? q.search : null}
+          searchPlaceholder={searchPlaceholder ?? i18n.t('toolbar.search', { entity })}
+          onSearch={table.setSearch}
+          filter={
+            hasFilter && (
+              <ColumnPicker
+                columns={filterable}
+                chips={chips.chips}
+                open={pickerOpen}
+                onOpenChange={setPickerOpen}
+                onPick={chips.pick}
+                trigger={
+                  <button
+                    type="button"
+                    className={[
+                      'dt-btn has-icon dt-filter-trigger',
+                      q.filters.length > 0 && 'is-active',
+                      size !== 'full' && !q.filters.length && 'dt-btn-icon',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    aria-label={size !== 'full' ? i18n.t('toolbar.filter') : undefined}
+                  >
+                    <FunnelIcon size={16} aria-hidden="true" />
+                    {size === 'full' && <span>{i18n.t('toolbar.filter')}</span>}
+                    {q.filters.length > 0 && <span className="dt-counter">{q.filters.length}</span>}
+                  </button>
+                }
+              />
+            )
+          }
           display={
             toolbar === 'auto' && (
               <DisplayPopover
@@ -282,6 +404,37 @@ export function DataTable<Row extends object>({
           )}
         </div>
       )}
+      {chips.chips.length > 0 && (
+        <FilterBar
+          chips={chips.chips}
+          defOf={(column) => defs.get(column)!}
+          editing={chips.editing}
+          rows={sourceRows}
+          labels={labels}
+          summaryOf={summaryOf}
+          currenciesOf={currenciesOf}
+          onChange={chips.update}
+          onRemove={chips.remove}
+          onEditing={chips.setEditing}
+          onClearAll={chips.clear}
+          add={
+            <ColumnPicker
+              columns={filterable}
+              chips={chips.chips}
+              onPick={chips.pick}
+              trigger={
+                <button
+                  type="button"
+                  className="dt-btn dt-btn-ghost dt-btn-sm has-icon dt-filter-add dt-filter-trigger"
+                >
+                  <PlusIcon size={14} aria-hidden="true" />
+                  {i18n.t('filter.addFilter')}
+                </button>
+              }
+            />
+          }
+        />
+      )}
       <Grid
         layout={table.layout}
         rows={rows}
@@ -294,11 +447,14 @@ export function DataTable<Row extends object>({
         verticalLines={table.prefs.prefs.verticalLines}
         rowCount={total === undefined ? -1 : total + 1}
         rowIndexOffset={(page.number - 1) * page.size}
-        scrollKey={q.page.number}
+        scrollKey={JSON.stringify([q.page.number, q.search, q.filters])}
         sort={sort}
         canSort={(id) => sortable.has(id)}
         onSort={table.toggleSort}
         onSortSet={table.setSort}
+        filtered={new Set(q.filters.map((f) => f.column))}
+        canFilter={(id) => filterIds.has(id)}
+        onFilter={chips.pick}
         notice={
           load.stillLoading && (
             <>

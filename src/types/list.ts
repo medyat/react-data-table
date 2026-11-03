@@ -1,10 +1,14 @@
 // R3/R4/R5: liste bileşeninin sözleşmesi. TanStack tipi yok (D23).
 import type { ColumnDef } from './columns'
 import type { Density, Plural } from './core'
-import type { QueryWithoutPage, SortRule } from './query'
+import type { FilterCondition, QueryWithoutPage, SortRule } from './query'
 
 /** Uygulamanın açabildiği durum (R5). Her alan ayrı ayrı controlled olabilir: `state`'te olan alan dışarıdan okunur. */
 export interface TableState {
+  /** Toolbar araması (D3): filtre değildir, görünüme girmez. */
+  search: string
+  /** Yalnızca tam koşullar; değeri seçilmemiş çip ekranda kalır, buraya girmez (04 §1). */
+  filters: FilterCondition[]
   sort: SortRule[]
   /** 1 tabanlı. */
   page: number

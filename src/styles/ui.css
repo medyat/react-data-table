@@ -87,8 +87,10 @@
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }
-.dt-btn-group > :not(:last-child),
-.dt-btn-group > :not(:last-child) input {
+/* R9 sapması: Base UI tetikleyicinin arkasına gizli yardımcılar koyar (form alanı, odak bekçileri, portal bağı); sağ
+   köşeyi yalnızca arkadaki gerçek bir kardeş düzleştirir. */
+.dt-btn-group > :has(~ :not([aria-hidden='true'], [aria-owns])),
+.dt-btn-group > :has(~ :not([aria-hidden='true'], [aria-owns])) input {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
 }

@@ -1,7 +1,15 @@
 // Header hücresi (05 §4 · Header, T4): etiket düğmesi, birim, sıralama oku, raptiye, ⋯ sütun menüsü, resize tutamacı.
-// Klavye (08 §3): ↵/Space sırala, ⇧F10 menü, ⇧←/→ ±16 px, ⌥⇧←/→ taşı. Filtre işareti Faz 3a'da eklenir.
-import { ArrowUpIcon, DotsThreeIcon, PushPinIcon } from '@phosphor-icons/react'
-import { useId, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent, type TouchEvent } from 'react'
+// Klavye (08 §3): ↵/Space sırala, ⇧F10 menü, ⇧←/→ ±16 px, ⌥⇧←/→ taşı. Filtrelenen sütunda huni çipi açar.
+import { ArrowUpIcon, DotsThreeIcon, FunnelIcon, PushPinIcon } from '@phosphor-icons/react'
+import {
+  useId,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type KeyboardEvent,
+  type MouseEvent,
+  type TouchEvent,
+} from 'react'
 import { alignOf, isNumericType, typeLabelKey } from '../cells/specs'
 import type { ColumnLayoutApi, LayoutColumn } from '../columns/use-column-layout'
 import { MOVE_KBD } from '../interaction/kbd'
@@ -22,6 +30,8 @@ export function HeaderCell<Row extends object>({
   sort,
   onSort,
   onSortSet,
+  filtered,
+  onFilter,
 }: {
   column: LayoutColumn<Row>
   layout: ColumnLayoutApi<Row>
@@ -31,6 +41,9 @@ export function HeaderCell<Row extends object>({
   /** Verilmezse sütun sıralanamaz. */
   onSort?: (additive: boolean) => void
   onSortSet?: (dir: 'asc' | 'desc' | null) => void
+  filtered?: boolean
+  /** Verilmezse sütun filtrelenemez. Çipi açar, yoksa oluşturur. */
+  onFilter?: () => void
 }) {
   const { i18n } = useDataTableContext()
   const def = column.def
@@ -40,6 +53,8 @@ export function HeaderCell<Row extends object>({
   const descId = useId()
   const tip = def.description ? `${def.header}\n${def.description}` : def.header
   const [menuOpen, setMenuOpen] = useState(false)
+  // Filter by this column… ile kapanınca odak ⋯'ya dönmez: açılan çip editörü alır (08 §2 · Popover).
+  const toFilter = useRef(false)
   // Yalnızca sürüklenen sütunun başlığı yeniden çizilir; diğerleri sabit -1 okur.
   const resizing = useSyncExternalStore(layout.subscribeSizing, () => {
     const r = layout.resizing()
@@ -125,6 +140,16 @@ export function HeaderCell<Row extends object>({
         setMenuOpen(true)
       }}
     >
+      {filtered && onFilter && (
+        <button
+          type="button"
+          className="dt-head-icon dt-head-filtered"
+          aria-label={i18n.t('header.filterBy')}
+          onClick={onFilter}
+        >
+          <FunnelIcon size={14} weight="fill" aria-hidden="true" />
+        </button>
+      )}
       <button
         type="button"
         className={onSort ? 'dt-head-label' : 'dt-head-label is-static'}
@@ -150,6 +175,11 @@ export function HeaderCell<Row extends object>({
         open={menuOpen}
         onOpenChange={setMenuOpen}
         className="dt-col-menu"
+        finalFocus={() => {
+          const keep = !toFilter.current
+          toFilter.current = false
+          return keep
+        }}
         trigger={
           <button
             type="button"
@@ -167,6 +197,19 @@ export function HeaderCell<Row extends object>({
             <DtMenuItem onSelect={() => onSortSet('desc')}>{i18n.t('header.sortDesc')}</DtMenuItem>
             <DtMenuItem disabled={!sort} onSelect={() => onSortSet(null)}>
               {i18n.t('header.clearSort')}
+            </DtMenuItem>
+            <DtMenuSeparator />
+          </>
+        )}
+        {onFilter && (
+          <>
+            <DtMenuItem
+              onSelect={() => {
+                toFilter.current = true
+                onFilter()
+              }}
+            >
+              {i18n.t('header.filterBy')}
             </DtMenuItem>
             <DtMenuSeparator />
           </>

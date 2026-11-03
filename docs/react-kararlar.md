@@ -90,7 +90,8 @@ kalıbıyla açılır: `state` + `onStateChange` verilirse controlled, verilmezs
 uncontrolled.
 
 `TableState = { view, search, filters, sort, page, pageSize, layout }`; alanlar fazlarla eklenir (Faz 2:
-`sort`, `page`, `pageSize`). Her alan ayrı ayrı controlled olabilir: `state`'te verilen alan dışarıdan
+`sort`, `page`, `pageSize`; Faz 3a: `search`, `filters`). `filters` yalnızca tam koşulları taşır: değeri
+seçilmemiş çip ekranda kalır, duruma ve adrese girmez. Her alan ayrı ayrı controlled olabilir: `state`'te verilen alan dışarıdan
 okunur, diğerleri içeride kalır (TanStack Table'ın `state` kalıbı). Uncontrolled sayfa boyutu
 tercihten (`preferences`) gelir; sayfa boyutu değişimi controlled olsa da tercihe yazılır.
 
@@ -141,6 +142,7 @@ uygulamanın sınıfları paketi ezer, paket uygulamanın temel stillerini ezer.
 | Tablo mantığı | `@tanstack/react-table` 9.x | D23 sınırı aynen |
 | Sanal satırlar | `@tanstack/react-virtual` | |
 | Sürükle-bırak | `@dnd-kit/core` + `@dnd-kit/sortable` | Yalnızca Columns dialog'unda, tembel yüklenir |
+| Takvim | `react-day-picker` | Base UI'da takvim yok. Yalnızca tarih çipi açılınca tembel yüklenir; başlık ve gün düğmesi reka sınıf/nitelikleriyle çizilir, `filters.css` aynen geçer |
 | İkonlar | `@phosphor-icons/react` (peer) | |
 | Excel | `write-excel-file` (peer, `import()`) | D46 |
 
@@ -179,7 +181,7 @@ Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:
 | 0 | Kurulum, token'lar, i18n, provider, playground — **tamam** |
 | 1 | Izgara, hücre tipleri, `cell` / `actions`, etkileşim guard'ı, sanal gövde — **tamam** (60 fps / resize süresi ölçümü ve Playwright e2e Vue'daki gibi sonraya) |
 | 2 | Veri akışı (R4), durumlar, sıralama, sayfalama, araç çubuğu, sütun yönetimi — **tamam** (aşağıdaki notlar) |
-| 3a | Filtreler ve arama |
+| 3a | Filtreler ve arama — **tamam** (aşağıdaki notlar) |
 | 3b | Görünümler (R6) ve tercihler |
 | 4 | Seçim, bulk bar, satır etkileşimleri |
 | 7 | Telefon, erişilebilirlik turu, belgeler |
@@ -195,6 +197,23 @@ Faz 2 notları:
   (Vue'da "just now"da kalıyor).
 - Base UI Dialog ok tuşlarının yayılmasını durdurur; Columns dialog'u klavyeyle sürükleme sürerken
   `preventBaseUIHandler` ile bunu atlar, yoksa dnd-kit tuşları duymaz.
+
+Faz 3a notları:
+
+- Tarih editöründe seçim `mode` + kontrollü `selected` ile verilir, tıklamayı `onDayClick` yönetir (`onSelect`
+  boş): böylece Tab takvime seçili güne girer, aralığın ilk/ikinci uç mantığı Vue'daki gibi kalır.
+- Tarih editörü sapmaları: takvim gezinme düğmelerinin etiketleri çeviriden gelir (Vue'da İngilizce sabit
+  "Previous page"); ızgaranın ay adıyla etiketi var; klavyeyle görünen ayın dışındaki bir güne gidilince
+  görünüm o güne kayar (Vue'da kalır). Ölçüler, ekran görüntüsü ve ok/Page/Home/End davranışı Vue ile aynı.
+- Clear'dan sonra düğme devre dışı kalır ve odak `body`'ye düşer; Vue'da da aynı (ortak eksik, Faz 7
+  erişilebilirlik turunda).
+- Column picker Base UI Combobox'tır; açılışta ilk öğe vurgulanmaz (Vue'da vurgulu). Yazınca ilk eşleşme
+  vurgulanır, yani "yaz + Enter" aynı; yalnızca hiç yazmadan Enter önce ↓ ister. `autoHighlight="always"`
+  Combobox'ın genel API'sinde yok.
+- Combobox tetikleyicinin arkasına gizli yardımcılar koyar; `.dt-btn-group` köşe kuralı bunları sayamaz
+  (`ui.css`, R9 sapması).
+- Vue'dan bilinçli sapmalar: metin editörü yazarken duraklayınca sondaki boşluğu silmez (Vue'da "Atlas K"
+  yazılamıyor, tarayıcıda doğrulandı); arama kutusu adresten geç dönen kendi değeriyle taslağı ezmez.
 
 Swors'un ürün ekranı 3b'den sonra pakete geçer. O zamana kadar Swors'taki `DataTable`'a özellik
 eklenmez.

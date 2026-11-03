@@ -4,6 +4,7 @@
 @import './cells.css' layer(medyat-dt);
 @import './grid.css' layer(medyat-dt);
 @import './list.css' layer(medyat-dt);
+@import './filters.css' layer(medyat-dt);
 
 @layer medyat-dt {
   /* Bileşen kökü. Tüm ölçü ve renkler --dt-* token'larından (02); sabit değer yok. */

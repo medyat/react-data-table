@@ -58,6 +58,11 @@ export interface GridProps<Row extends object> {
   canSort?: (id: string) => boolean
   onSort?: (id: string, additive: boolean) => void
   onSortSet?: (id: string, dir: 'asc' | 'desc' | null) => void
+  /** Filtrelenen sütunlar: header'da huni. */
+  filtered?: ReadonlySet<string>
+  /** Verilirse filtrelenebilir sütunlarda header menüsünde "Filter by this column…". */
+  canFilter?: (id: string) => boolean
+  onFilter?: (id: string) => void
   /** Satır gövdesine düz tık (05 §7): hücredeki widget'a, metin seçimine, sürüklemeye ve değiştirici tuşa karşı tek guard. */
   onRowClick?: (row: Row, event: MouseEvent) => void
 }
@@ -81,6 +86,9 @@ export function Grid<Row extends object>({
   canSort,
   onSort,
   onSortSet,
+  filtered,
+  canFilter,
+  onFilter,
   onRowClick,
 }: GridProps<Row>) {
   const ctx = useDataTableContext()
@@ -218,6 +226,8 @@ export function Grid<Row extends object>({
         sort={sort?.get(col.id)}
         onSort={sortable ? (additive) => onSort(col.id, additive) : undefined}
         onSortSet={sortable && onSortSet ? (dir) => onSortSet(col.id, dir) : undefined}
+        filtered={filtered?.has(col.id)}
+        onFilter={onFilter && canFilter?.(col.id) ? () => onFilter(col.id) : undefined}
       />
     )
   }

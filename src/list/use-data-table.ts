@@ -6,7 +6,7 @@ import { usePreferences } from '../core/preferences/use-preferences'
 import { useDataTableContext } from '../core/provider'
 import type { ColumnDef } from '../types/columns'
 import type { TableState, UseDataTableOptions } from '../types/list'
-import type { TableQuery } from '../types/query'
+import type { FilterCondition, TableQuery } from '../types/query'
 import { setSort, toggleSort } from './sort'
 import { useListTable } from './use-list-table'
 
@@ -44,6 +44,8 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
   // R5: `state`'teki alan dışarıdan, diğerleri içeriden. Uncontrolled sayfa boyutu tercihi izler.
   const [inner, setInner] = useState<Partial<TableState>>(() => options.initialState ?? {})
   const state: TableState = {
+    search: options.state?.search ?? inner.search ?? '',
+    filters: options.state?.filters ?? inner.filters ?? [],
     sort: options.state?.sort ?? inner.sort ?? [],
     page: options.state?.page ?? inner.page ?? 1,
     pageSize: options.state?.pageSize ?? inner.pageSize ?? prefs.prefs.pageSize,
@@ -57,7 +59,7 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
   // Sütun taşımak ya da gizlemek isteği değiştirmez (R4): alanlar yalnızca yeni görünen sütunla, ya da sorgu değişince
   // yeniden kurulur. Önceki isteğin alanları render'lar arasında saklanır.
   const visible = fieldsOf(options.columns, new Set(layout.columns.map((c) => c.id)), rowKey, options.fields)
-  const identity = JSON.stringify([state.sort, state.page, state.pageSize])
+  const identity = JSON.stringify([state.search, state.filters, state.sort, state.page, state.pageSize])
   const [sent, setSent] = useState({ identity, fields: visible })
   let fields = sent.fields
   if (sent.identity !== identity || visible.some((f) => !sent.fields.includes(f))) {
@@ -65,8 +67,8 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
     setSent({ identity, fields })
   }
   const request: TableQuery = {
-    search: '',
-    filters: [],
+    search: state.search,
+    filters: state.filters,
     sort: state.sort,
     page: { number: state.page, size: state.pageSize },
     fields,
@@ -77,6 +79,8 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
     rows: options.rows,
     rowId,
     locale: ctx.locale,
+    search: state.search,
+    filters: state.filters,
     sort: state.sort,
     page: state.page,
     pageSize: state.pageSize,
@@ -89,6 +93,8 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
     /** Sunucu modunda `useQuery` anahtarına ve isteğe girer (R4). */
     request,
     state,
+    /** İstemci modu: verilen tüm satırlar (filtre öncesi). Sunucu modunda undefined. */
+    allRows: options.rows,
     /** İstemci modu: sayfadaki satırlar ve toplam. Sunucu modunda undefined. */
     rows: client.rows,
     total: client.total,
@@ -102,6 +108,9 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
     toggleSort: (column: string, multi: boolean) => update({ sort: toggleSort(state.sort, column, multi), page: 1 }),
     setSort: (column: string, dir: 'asc' | 'desc' | null) =>
       update({ sort: setSort(state.sort, column, dir), page: 1 }),
+    /** Arama ve filtre değişince sayfa 1'e döner (D19). */
+    setSearch: (search: string) => update({ search, page: 1 }),
+    setFilters: (filters: FilterCondition[]) => update({ filters, page: 1 }),
     setPage: (page: number) => update({ page }),
     setPageSize: (pageSize: number) => {
       prefs.set({ pageSize })

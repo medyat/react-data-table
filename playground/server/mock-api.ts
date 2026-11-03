@@ -1,8 +1,10 @@
 // Sahte Laravel API'si (Vite dev middleware): Vue playground'undaki mock-api.ts'in sipariş kısmı, aynı tohumla aynı veri.
-// GET /api/orders?page=1&size=100&sort=dueAt&dir=asc&q=&delay=ms&fail=1 → { items, hasMore } (simplePaginate gibi)
-// GET /api/orders/count?q=                                              → { total }
-// Filtreler Faz 3a'da eklenir.
+// GET /api/orders?page=1&size=100&sort=dueAt&dir=asc&q=&filters=[…]&delay=ms&fail=1 → { items, hasMore } (simplePaginate gibi)
+// GET /api/orders/count?q=&filters=[…]                                              → { total }
+// `filters` JSON FilterCondition[]: sahte sunucu paketin `matches` eşlemesiyle uygular (hazır tarih aralıkları sunucuda çözülür, 04).
 import type { Plugin } from 'vite'
+import { matches } from '../../src/core/filters/model'
+import type { FilterCondition } from '../../src/types'
 
 export interface Order {
   id: number
@@ -122,9 +124,13 @@ export function mockApi(): Plugin {
         const search = (q.get('q') ?? '').toLocaleLowerCase('tr')
         const get = (o: Order, path: string): unknown =>
           path.split('.').reduce<unknown>((v, k) => (v as Record<string, unknown> | null)?.[k], o)
+        const filters = JSON.parse(q.get('filters') || '[]') as FilterCondition[]
+        const cell = (o: Order, column: string) => (column === 'owner' ? (o.owner?.id ?? null) : get(o, column))
         const matching = orders.filter(
           (o) =>
-            !search || [o.number, o.product.name, o.customer].some((s) => s.toLocaleLowerCase('tr').includes(search)),
+            (!search ||
+              [o.number, o.product.name, o.customer].some((s) => s.toLocaleLowerCase('tr').includes(search))) &&
+            filters.every((f) => matches(f, cell(o, f.column), { locale: 'tr' })),
         )
 
         if (url.pathname === '/orders/count') return json(200, { total: matching.length })

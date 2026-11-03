@@ -302,7 +302,13 @@ describe('durum (R5) ve tercihler', () => {
     await flush()
     fireEvent.click(label('score'))
     await flush()
-    expect(onStateChange).toHaveBeenLastCalledWith({ sort: [{ column: 'score', dir: 'asc' }], page: 1, pageSize: 100 })
+    expect(onStateChange).toHaveBeenLastCalledWith({
+      search: '',
+      filters: [],
+      sort: [{ column: 'score', dir: 'asc' }],
+      page: 1,
+      pageSize: 100,
+    })
     expect(label('score').closest('[role="columnheader"]')!.classList).not.toContain('is-sorted')
     view.rerender(
       <Harness options={{ rows: people(3), state: { sort: [{ column: 'score', dir: 'desc' }] }, onStateChange }} />,

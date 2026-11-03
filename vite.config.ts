@@ -37,6 +37,7 @@ export default defineConfig({
         /^@phosphor-icons\//,
         /^@tanstack\//,
         /^@dnd-kit\//,
+        /^react-day-picker/,
       ],
     },
     sourcemap: true,
