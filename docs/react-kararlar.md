@@ -195,7 +195,7 @@ Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:
 | 2 | Veri akışı (R4), durumlar, sıralama, sayfalama, araç çubuğu, sütun yönetimi — **tamam** (aşağıdaki notlar) |
 | 3a | Filtreler ve arama — **tamam** (aşağıdaki notlar) |
 | 3b | Görünümler (R6) ve tercihler — **tamam** |
-| 4 | Seçim, bulk bar, satır etkileşimleri — **tamam** (aşağıdaki notlar; satır hatası D35 yok) |
+| 4 | Seçim, bulk bar, satır etkileşimleri, satır hatası (D35) — **tamam** (aşağıdaki notlar) |
 | 7 | Telefon, erişilebilirlik turu, belgeler |
 
 Faz 2 notları:
@@ -256,7 +256,6 @@ Faz 4 notları:
 - Menüdeki Open / Open in new tab Base UI `Menu.LinkItem`'dır (`closeOnClick`). Açık ⋯ ve bulk ⋯ düğmesi
   `data-popup-open` ile işaretlenir (R9 notu, `grid.css` / `list.css`).
 - Açılan detayın duyurusu (`sr.expanded`) detay çizildikten sonraki karede DOM'dan sayılır (Vue: `nextTick`).
-- Satır hatası (D35, `rowError`) taşınmadı; ⋯ sütun genişliği hata ikonu payı olmadan hesaplanır.
 - Menüdeki Open bağlantılarının altı çizili; Vue'da da aynı (ortak eksik, `ui.css`).
 
 Swors'un ürün ekranı 3b'den sonra pakete geçer. O zamana kadar Swors'taki `DataTable`'a özellik

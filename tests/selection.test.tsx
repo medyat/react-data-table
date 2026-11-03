@@ -323,3 +323,48 @@ describe('expand', () => {
     expect(document.querySelector('[aria-live="polite"]')!.textContent).toBe('WO-1 expanded, 1 rows')
   })
 })
+
+describe('satır hatası (D35)', () => {
+  const rowError = (r: Order) => (r.id === 2 ? ['Open despatch DS-1042', 'Stock reserved'] : r.id === 3 ? '' : null)
+  const row = (i: number) => document.querySelector<HTMLElement>(`.dt-row[data-index="${i}"]`)!
+
+  it('hatalı satır: zemin sınıfı, ⋯ hücresinde ikon, satırda tooltip ve aria-describedby; boş metin hata değil', async () => {
+    await mount({ rowError, selectable: true })
+    expect(row(1).classList).toContain('is-error')
+    expect(row(1).getAttribute('data-dt-tip')).toBe('Open despatch DS-1042\nStock reserved')
+    const icon = row(1).querySelector<HTMLElement>('.dt-cell-menu .dt-row-error')!
+    expect(icon.getAttribute('role')).toBe('img')
+    expect(icon.getAttribute('aria-label')).toBe('Open despatch DS-1042\nStock reserved')
+    expect(row(1).getAttribute('aria-describedby')).toBe(icon.id)
+    // İkon ⋯'nın solunda.
+    expect(icon.nextElementSibling?.classList).toContain('dt-row-more')
+    for (const i of [0, 2]) {
+      expect(row(i).classList).not.toContain('is-error')
+      expect(row(i).hasAttribute('aria-describedby')).toBe(false)
+      expect(row(i).querySelector('.dt-row-error')).toBeNull()
+    }
+  })
+
+  it('sayfada hatalı satır varken ⋯ sütunu ikon payı kadar genişler', async () => {
+    await mount({ rowError: () => null })
+    const cols = () => document.querySelector<HTMLElement>('.dt-grid')!.style.getPropertyValue('--dt-menu-w')
+    expect(cols()).not.toContain('--dt-icon')
+    cleanup()
+    await mount({ rowError })
+    expect(cols()).toContain('var(--dt-icon)')
+  })
+
+  it('⋯ sütunu yoksa ikon ilk görünür hücrenin başında', async () => {
+    const plain: Array<ColumnDef<Order>> = [{ id: 'status', header: 'Status', type: 'string' }]
+    function Plain() {
+      const t = useDataTable<Order>({ id: 'plain', columns: plain, rows: orders(3) })
+      return <DataTable table={t} rowError={rowError} />
+    }
+    render(<Plain />)
+    await flush()
+    const first = row(1).querySelector<HTMLElement>('[data-col="status"]')!
+    expect(first.classList).toContain('has-expand')
+    expect(first.firstElementChild!.classList).toContain('dt-row-error')
+    expect(document.querySelector('.dt-cell-menu')).toBeNull()
+  })
+})

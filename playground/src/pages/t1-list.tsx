@@ -142,6 +142,8 @@ function Operations({ row }: { row: Order }) {
 
 export function T1List({ density }: { density: Density }) {
   const [rowClick, setRowClick] = useState<RowClickMode>('none')
+  /** Toplu aksiyonun kısmi hatası (D35): harita uygulamada, paket yalnızca okur. */
+  const [rowErrors, setRowErrors] = useState(new Map<number, string>())
   const table = useDataTable({
     id: 'production-orders',
     columns: orderColumns,
@@ -165,7 +167,12 @@ export function T1List({ density }: { density: Density }) {
       description: 'Send the selected orders to the line',
       icon: PlayIcon,
       inBar: true,
-      run: (rows) => console.log('bulk release', rows.length),
+      // D35 demo: her üçüncü satır sunucuda reddedilmiş gibi haritaya yazılır; refresh'te id aynı kaldığı için işaret kalır.
+      run: (rows) => {
+        const failed = new Map(rows.filter((_, i) => i % 3 === 2).map((r) => [r.id, 'Open despatch DS-1042']))
+        setRowErrors(failed)
+        console.log('bulk release', rows.length, 'failed', failed.size)
+      },
     },
     {
       id: 'reschedule',
@@ -242,6 +249,7 @@ export function T1List({ density }: { density: Density }) {
         selectionBar={params.get('bar') === 'toolbar' ? 'toolbar' : 'floating'}
         bulkActions={bulkActions}
         rowActions={rowActions}
+        rowError={(r) => rowErrors.get(r.id)}
         rowClick={rowClick}
         renderExpanded={({ row }) => <Operations row={row} />}
         autoRefresh={30}

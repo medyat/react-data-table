@@ -68,6 +68,7 @@ export function DataTable<Row extends object>({
   onSelectionChange,
   renderExpanded,
   canExpand,
+  rowError,
 }: {
   table: DataTableInstance<Row>
   /** Sunucu modu: `useQuery` sonucu, dönüştürmeden (R4). İstemci modunda verilmez. */
@@ -109,6 +110,9 @@ export function DataTable<Row extends object>({
   renderExpanded?: (props: { row: Row; close: () => void }) => ReactNode
   /** Bu satırın detayı var mı? Yoksa chevron yerinde boşluk kalır. */
   canExpand?: (row: Row) => boolean
+  /** Satır hatası (D35): metin ya da metin listesi → hata zemini, ⋯ hücresinde uyarı ikonu, satırda tooltip. Harita
+   * uygulamanın: paket hata saklamaz, temizlemez. */
+  rowError?: (row: Row) => string | string[] | null | undefined
 }) {
   const { i18n, locale } = useDataTableContext()
   const fmt = getFormat(locale)
@@ -714,6 +718,7 @@ export function DataTable<Row extends object>({
         primaryHeader={primaryDef?.header}
         onRowOpen={(row, event) => onRowOpen?.({ row, href: primaryHref(row) ?? '', event })}
         onCopy={copyId}
+        rowError={rowError}
       />
       {selectionBar === 'floating' && selectedRows.length > 0 && (
         <BulkBar variant="floating" rows={selectedRows} actions={bulkActions ?? []} onClear={table.clearSelection}>

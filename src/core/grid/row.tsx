@@ -1,6 +1,7 @@
 // Satır + hücreler. Kabuk burada: hizalama, kesme, sabit sütun sticky'si, --dt-row-bg, ikinci satır, aksiyon overlay'i (05 §4, 03);
-// seçim hücresi (40 px, sol sabit), birincil hücrede expand chevron'u, sağ sabit ⋯ hücresi ve inline aksiyonlar (05 §6–7, D28, D36).
-import { CaretRightIcon } from '@phosphor-icons/react'
+// seçim hücresi (40 px, sol sabit), birincil hücrede expand chevron'u, sağ sabit ⋯ hücresi, inline aksiyonlar ve satır hatası
+// (05 §4, §6–7, D28, D35, D36).
+import { CaretRightIcon, WarningCircleIcon } from '@phosphor-icons/react'
 import type { CSSProperties, MouseEvent, ReactNode } from 'react'
 import type { RowAction } from '../../types/list'
 import { CellActions } from '../cells/cell-actions'
@@ -42,12 +43,15 @@ function Cell<Row extends object>({
   env,
   secondaryVisible,
   expand,
+  lead,
 }: {
   col: LayoutColumn<Row>
   row: Row
   env: RenderEnv
   secondaryVisible: boolean
   expand?: Expand
+  /** ⋯ hücresi yokken satır hatası ikonu ilk görünür hücrenin başında. */
+  lead?: ReactNode
 }) {
   const def = col.def
   const value = def.accessor ? def.accessor(row) : readPath(row, col.id)
@@ -65,7 +69,7 @@ function Cell<Row extends object>({
     `is-${alignOf(def)}`,
     isNumericType(def.type) && 'is-numeric',
     def.primary && 'is-primary',
-    expand && 'has-expand',
+    (expand || lead) && 'has-expand',
     ...pinClasses(col),
   ]
   const style: CSSProperties = { ...pinStyle(col), ...cellFillStyle(def, value) }
@@ -77,9 +81,9 @@ function Cell<Row extends object>({
   )
   return (
     <div className={cls.filter(Boolean).join(' ')} style={style} role="cell" data-col={col.id}>
-      {expand ? (
+      {expand || lead ? (
         <>
-          {expand.can ? (
+          {!expand ? null : expand.can ? (
             <button
               type="button"
               className={expand.open ? 'dt-expand is-open' : 'dt-expand'}
@@ -93,6 +97,7 @@ function Cell<Row extends object>({
           ) : (
             <span className="dt-expand-space" aria-hidden="true" />
           )}
+          {lead}
           <span className="dt-cell-main">{main}</span>
         </>
       ) : (
@@ -131,12 +136,14 @@ function InlineAction<Row extends object>({ action: a, row, uid }: { action: Row
   )
 }
 
-/** Satırın seçim, expand ve menü bağlamı; ızgara verir. */
+/** Satırın seçim, expand, menü ve hata bağlamı; ızgara verir. */
 export interface RowExtras<Row extends object> {
   /** Birincil hücre metni: aria etiketleri ve Copy. */
   label: string
-  /** Satıra özgü id öneki: alt satır ve inline açıklamaları. */
+  /** Satıra özgü id öneki: hata ikonu ve inline açıklamaları. */
   uid: string
+  /** Satır hatası mesajları (D35); boş = yok. */
+  error: string[]
   select?: { selected: boolean; edge: boolean; onChange: (value: boolean, shift: boolean) => void }
   expand?: Omit<Expand, 'label'>
   menu?: {
@@ -170,9 +177,25 @@ export function Row<Row extends object>({
   const sel = extras?.select
   const menu = extras?.menu
   const expand = extras?.expand && { ...extras.expand, label: extras.label }
-  const cls = ['dt-row', sel?.selected && 'is-selected', expand?.open && 'is-expanded']
+  const error = extras?.error ?? []
+  const tip = error.join('\n')
+  const errorId = `${extras?.uid}-err`
+  const errorIcon = error.length > 0 && (
+    <span id={errorId} className="dt-row-error" role="img" aria-label={tip} data-dt-tip={tip}>
+      <WarningCircleIcon size={14} weight="fill" aria-hidden="true" />
+    </span>
+  )
+  const cls = ['dt-row', sel?.selected && 'is-selected', expand?.open && 'is-expanded', error.length && 'is-error']
   return (
-    <div className={cls.filter(Boolean).join(' ')} role="row" aria-rowindex={rowIndex} data-index={index}>
+    <div
+      className={cls.filter(Boolean).join(' ')}
+      role="row"
+      aria-rowindex={rowIndex}
+      aria-describedby={errorIcon ? errorId : undefined}
+      // Satırın tamamı tooltip anchor'ı: hatalı satırda nereye gelinirse gelinsin mesaj görünür (05 §4).
+      data-dt-tip={tip || undefined}
+      data-index={index}
+    >
       {sel && (
         // 40 px'in tamamı tıklanır; ⇧ aralığı ızgarada.
         <label
@@ -199,6 +222,7 @@ export function Row<Row extends object>({
           env={env}
           secondaryVisible={secondaryVisible}
           expand={col.def.primary ? expand : undefined}
+          lead={!menu && col.id === columns[0]?.id ? errorIcon : undefined}
         />
       ))}
       {menu && (
@@ -209,6 +233,7 @@ export function Row<Row extends object>({
           style={{ right: 0 }}
           role="cell"
         >
+          {errorIcon}
           {inlineActionsOf(menu.actions, row).map((a) => (
             <InlineAction key={a.id} action={a} row={row} uid={extras.uid} />
           ))}

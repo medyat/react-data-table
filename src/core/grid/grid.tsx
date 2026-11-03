@@ -34,7 +34,8 @@ const FALLBACK_HEAD_H = 36
 const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
 
 // Seçim ve ⋯ sütunları düzenin dışında: track'ler başa / sona eklenir, sabit sütun ofsetleri o kadar kayar (05 §4, §6).
-// ⋯ sütunu içeriğe göre: dolgu 8 + ⋯ + 8; inline aksiyon başına (D36, sayfadaki en kalabalık satır) + düğme + gap.
+// ⋯ sütunu içeriğe göre: dolgu 8 + ⋯ + 8; sayfada hatalı satır varsa (D35) + ikon + gap; inline aksiyon başına (D36, sayfadaki
+// en kalabalık satır) + düğme + gap.
 const SELECT_W = 40
 const MENU_PAD = 8
 
@@ -90,6 +91,8 @@ export interface GridProps<Row extends object> {
   primaryHref?: (row: Row) => string | undefined
   primaryLabel?: (row: Row) => string
   primaryHeader?: string
+  /** Satır hatası (05 §4, D35): metin ya da metin listesi; boş → yok. Harita uygulamanın. */
+  rowError?: (row: Row) => string | string[] | null | undefined
   /** Birincil linke düz sol tık, menüde Open (05 §7). Tarayıcı gezinmesi dinleyicide durdurulabilir. */
   onRowOpen?: (row: Row, event: MouseEvent) => void
   onCopy?: (row: Row) => void
@@ -132,6 +135,7 @@ export function Grid<Row extends object>({
   primaryHeader,
   onRowOpen,
   onCopy,
+  rowError,
 }: GridProps<Row>) {
   const ctx = useDataTableContext()
   const root = useRef<HTMLDivElement>(null)
@@ -151,8 +155,14 @@ export function Grid<Row extends object>({
   const maxInline = rowActions.some((a) => a.inline)
     ? rows.reduce((m, r) => Math.max(m, inlineActionsOf(rowActions, r).length), 0)
     : 0
+  /** `rowError` sonucu mesaj listesine iner; boş metinler düşer, boş liste = hata yok. */
+  const errorOf = (row: Row): string[] => {
+    const e = rowError?.(row)
+    return (Array.isArray(e) ? e : [e]).filter((m): m is string => !!m)
+  }
+  const anyError = !!rowError && rows.some((r) => errorOf(r).length > 0)
   const menuW = rowMenu
-    ? `calc(${2 * MENU_PAD}px + ${maxInline + 1} * var(--dt-control-h-sm) + ${maxInline} * var(--dt-space))`
+    ? `calc(${2 * MENU_PAD}px${anyError ? ' + var(--dt-icon) - 2px + var(--dt-space)' : ''} + ${maxInline + 1} * var(--dt-control-h-sm) + ${maxInline} * var(--dt-space))`
     : ''
   const isOpen = (row: Row) => !!expanded?.[rowId(row)]
 
@@ -292,6 +302,7 @@ export function Grid<Row extends object>({
     return {
       label: primaryLabel?.(row) ?? id,
       uid: `${uid}-r-${id}`,
+      error: errorOf(row),
       select: selectable
         ? { selected: !!selection?.[id], edge: !layout.start.length, onChange: (v, shift) => onSelect(i, v, shift) }
         : undefined,
