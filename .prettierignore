@@ -1,0 +1,15 @@
+# Üretilmiş dosyalar (pnpm gen:docs); biçimleri üretici belirler
+src/styles/tokens.css
+src/core/i18n/en.ts
+src/core/i18n/tr.ts
+
+# Spesifikasyon ve tasarım: tablo hizası elle; Prettier'ın md yeniden yazması gereksiz fark üretir
+docs/
+design/
+
+dist/
+node_modules/
+pnpm-lock.yaml
+playwright-report/
+test-results/
+coverage/

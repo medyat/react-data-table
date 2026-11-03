@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+test-results/
+playwright-report/
+.vite/
+.DS_Store
+*.log
+
+# Claude Design dışa aktarımları (36 MB PNG); yerelde tutulur, gerekirse editörden yeniden aktarılır (docs/handoff/README.md)
+design/

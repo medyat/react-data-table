@@ -1,0 +1,33 @@
+/* R9: paket stilleri tek katmanda; uygulama katman sırasıyla ezer (README · Stil). */
+@import './tokens.css' layer(medyat-dt);
+
+@layer medyat-dt {
+  /* Bileşen kökü. Tüm ölçü ve renkler --dt-* token'larından (02); sabit değer yok. */
+  .dt {
+    box-sizing: border-box;
+    font-family: var(--dt-font);
+    font-size: var(--dt-fs);
+    line-height: 1.4;
+    color: var(--dt-text);
+    background: var(--dt-surface);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dt *,
+  .dt *::before,
+  .dt *::after {
+    box-sizing: inherit;
+  }
+
+  .dt-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}

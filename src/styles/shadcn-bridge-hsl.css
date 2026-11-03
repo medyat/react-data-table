@@ -1,0 +1,24 @@
+/* shadcn köprüsü (Tailwind v3: değişkenler HSL üçlüsü, ör. "0 0% 100%"). tokens.css'ten SONRA yükleyin.
+   Eşleme shadcn-bridge.css ile aynıdır; her değişken hsl(var(--x)) ile sarılır. */
+@layer medyat-dt {
+  :root,
+  .dark,
+  [data-theme='light'],
+  [data-theme='dark'] {
+    --dt-canvas: hsl(var(--background));
+    --dt-surface: hsl(var(--card));
+    --dt-surface-2: color-mix(in oklab, hsl(var(--muted)) 45%, hsl(var(--card)));
+    --dt-surface-3: hsl(var(--muted));
+    --dt-line: hsl(var(--border));
+    --dt-line-2: hsl(var(--input));
+    --dt-line-3: color-mix(in oklab, hsl(var(--muted-foreground)) 45%, hsl(var(--border)));
+    --dt-text: hsl(var(--foreground));
+    --dt-text-2: color-mix(in oklab, hsl(var(--foreground)) 70%, hsl(var(--muted-foreground)));
+    --dt-text-3: hsl(var(--muted-foreground));
+    --dt-ink: hsl(var(--primary));
+    --dt-on-ink: hsl(var(--primary-foreground));
+    --dt-focus: hsl(var(--ring));
+    --dt-r-dot: hsl(var(--destructive));
+    --dt-r-fg: hsl(var(--destructive));
+  }
+}

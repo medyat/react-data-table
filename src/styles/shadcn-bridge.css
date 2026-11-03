@@ -1,0 +1,25 @@
+/* shadcn köprüsü (Tailwind v4: değişkenler tam renk, ör. oklch(...)). tokens.css'ten SONRA yükleyin.
+   Yalnızca yüzey, çizgi, metin, birincil buton, odak ve yıkıcı renkler devralınır; accent ve tonlar paketin kendi değerleridir (02).
+   shadcn'in --accent değişkeni hover grisidir, --dt-accent ona bağlanmaz. */
+@layer medyat-dt {
+  :root,
+  .dark,
+  [data-theme='light'],
+  [data-theme='dark'] {
+    --dt-canvas: var(--background);
+    --dt-surface: var(--card);
+    --dt-surface-2: color-mix(in oklab, var(--muted) 45%, var(--card));
+    --dt-surface-3: var(--muted);
+    --dt-line: var(--border);
+    --dt-line-2: var(--input);
+    --dt-line-3: color-mix(in oklab, var(--muted-foreground) 45%, var(--border));
+    --dt-text: var(--foreground);
+    --dt-text-2: color-mix(in oklab, var(--foreground) 70%, var(--muted-foreground));
+    --dt-text-3: var(--muted-foreground);
+    --dt-ink: var(--primary);
+    --dt-on-ink: var(--primary-foreground);
+    --dt-focus: var(--ring);
+    --dt-r-dot: var(--destructive);
+    --dt-r-fg: var(--destructive);
+  }
+}

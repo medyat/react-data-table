@@ -1,0 +1,66 @@
+{
+  "name": "@medyat/react-data-table",
+  "version": "0.0.0",
+  "private": true,
+  "description": "React 19 için liste tablosu: @medyat/vue-data-table sözleşmesiyle aynı çekirdek.",
+  "type": "module",
+  "license": "MIT",
+  "packageManager": "pnpm@10.34.7",
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css",
+    "./shadcn-bridge.css": "./dist/shadcn-bridge.css",
+    "./shadcn-bridge-hsl.css": "./dist/shadcn-bridge-hsl.css"
+  },
+  "scripts": {
+    "dev": "vite --config playground/vite.config.ts",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "gen:docs": "node --experimental-strip-types scripts/tokens-from-docs.ts && node --experimental-strip-types scripts/i18n-from-docs.ts",
+    "check": "pnpm typecheck && pnpm lint && prettier --check . && pnpm test && pnpm build",
+    "format": "prettier --write ."
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@microsoft/api-extractor": "7.60.0",
+    "@rolldown/plugin-babel": "0.2.4",
+    "@testing-library/react": "16.3.3",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "10.14.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.13.0",
+    "jsdom": "29.1.1",
+    "prettier": "3.9.10",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1",
+    "unplugin-dts": "1.1.2",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}

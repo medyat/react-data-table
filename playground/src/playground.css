@@ -1,0 +1,54 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: var(--dt-canvas);
+  color: var(--dt-text);
+}
+.pg-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--dt-line);
+  background: var(--dt-surface);
+}
+.pg-switch {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 13px;
+}
+.pg-main {
+  padding: 16px;
+}
+.pg-card {
+  padding: 16px;
+  border: 1px solid var(--dt-line);
+  border-radius: var(--dt-radius-card);
+}
+.pg-row-h {
+  display: flex;
+  align-items: center;
+  height: var(--dt-row-h);
+  margin: 0 0 12px;
+  border-bottom: 1px solid var(--dt-line);
+}
+.pg-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  margin: 0 0 12px;
+  list-style: none;
+}
+.pg-swatches li {
+  padding: 8px 10px;
+  border: 1px solid var(--dt-line);
+  border-radius: var(--dt-radius-md);
+  font-size: 12px;
+}
+.pg-messages {
+  margin: 0;
+  padding-left: 18px;
+}
