@@ -1,6 +1,14 @@
 // Izgara kökü (05 §2–4; 08 §1–2; brief §5.5): tek kayan alan, sticky header, sabit sütunlar + koşullu kenar gölgesi,
 // sanal satırlar. Veri çekmez; sütun düzenini use-column-layout'tan alır. Satır klavyesi yok (D40): widget'lar doğal Tab sırasında.
-import { useLayoutEffect, useRef, useState, useSyncExternalStore, type FocusEvent, type MouseEvent } from 'react'
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type FocusEvent,
+  type MouseEvent,
+  type ReactNode,
+} from 'react'
 import type { Density } from '../../types/core'
 import { RemoteLabels } from '../cells/remote-labels'
 import type { RenderEnv } from '../cells/render-cell'
@@ -8,10 +16,9 @@ import type { ColumnLayoutApi } from '../columns/use-column-layout'
 import { getFormat } from '../format'
 import { isPlainRowClick } from '../interaction/is-interactive'
 import { useDataTableContext } from '../provider'
-import { HeaderCell } from './header-cell'
+import { HeaderCell, type HeaderSort } from './header-cell'
 import { Row } from './row'
 import { SkeletonRow } from './skeleton-row'
-import { DelegatedTooltip } from './tooltip'
 import { useVirtualRows } from './use-virtual-rows'
 
 const SKELETON_ROWS = 12
@@ -33,6 +40,24 @@ export interface GridProps<Row extends object> {
   skeleton?: boolean
   /** aria-rowcount; bilinmiyorsa -1. */
   rowCount?: number
+  /** Önceki sayfaların satırları: aria-rowindex sayfa boyunca sürer. */
+  rowIndexOffset?: number
+  /** Kimlik değiştiren istek sürüyor: satırlar soluk ve `inert` (05 §10). */
+  dim?: boolean
+  /** Yenileme çubuğu. */
+  refreshing?: boolean
+  /** Gövde üstünde durum notu ("Still loading…"). */
+  notice?: ReactNode
+  /** Satır yokken gövdenin ortasında. */
+  state?: ReactNode
+  verticalLines?: boolean
+  /** Değişince gövde başa kayar (sayfa değişimi, 05 §8). */
+  scrollKey?: string | number
+  sort?: Map<string, HeaderSort>
+  /** Verilirse sıralanabilir sütunlarda header sıralar. */
+  canSort?: (id: string) => boolean
+  onSort?: (id: string, additive: boolean) => void
+  onSortSet?: (id: string, dir: 'asc' | 'desc' | null) => void
   /** Satır gövdesine düz tık (05 §7): hücredeki widget'a, metin seçimine, sürüklemeye ve değiştirici tuşa karşı tek guard. */
   onRowClick?: (row: Row, event: MouseEvent) => void
 }
@@ -45,6 +70,17 @@ export function Grid<Row extends object>({
   density: requested,
   skeleton = false,
   rowCount = -1,
+  rowIndexOffset = 0,
+  dim = false,
+  refreshing = false,
+  notice,
+  state,
+  verticalLines = false,
+  scrollKey,
+  sort,
+  canSort,
+  onSort,
+  onSortSet,
   onRowClick,
 }: GridProps<Row>) {
   const ctx = useDataTableContext()
@@ -103,6 +139,14 @@ export function Grid<Row extends object>({
     if (k !== scale) setScale(k)
   }, [density, setScale, scale])
 
+  // İlk çizimde değil, anahtar değişince başa (05 §8).
+  const lastScrollKey = useRef(scrollKey)
+  useLayoutEffect(() => {
+    if (lastScrollKey.current === scrollKey) return
+    lastScrollKey.current = scrollKey
+    if (scroll.current) scroll.current.scrollTop = 0
+  }, [scrollKey])
+
   // Sabit sütun kenar gölgesi yalnızca o yöne kaydırılmışken (05 §4 · Pinned); kap boyu değişince de yeniden bakılır.
   useLayoutEffect(() => {
     const el = scroll.current
@@ -160,10 +204,23 @@ export function Grid<Row extends object>({
     scrolled.start && 'is-scrolled-start',
     scrolled.end && 'is-scrolled-end',
     skeleton && 'is-skeleton',
+    dim && 'is-dim',
+    verticalLines && 'has-vlines',
   ]
-  const header = (col: (typeof layout.columns)[number]) => (
-    <HeaderCell key={col.id} column={col} layout={layout} onMoved={focusHeader} />
-  )
+  const header = (col: (typeof layout.columns)[number]) => {
+    const sortable = !!onSort && (canSort?.(col.id) ?? false)
+    return (
+      <HeaderCell
+        key={col.id}
+        column={col}
+        layout={layout}
+        onMoved={focusHeader}
+        sort={sort?.get(col.id)}
+        onSort={sortable ? (additive) => onSort(col.id, additive) : undefined}
+        onSortSet={sortable && onSortSet ? (dir) => onSortSet(col.id, dir) : undefined}
+      />
+    )
+  }
 
   return (
     <div
@@ -173,7 +230,7 @@ export function Grid<Row extends object>({
       aria-label={label}
       aria-rowcount={rowCount}
       aria-colcount={layout.columns.length}
-      aria-busy={skeleton || undefined}
+      aria-busy={skeleton || dim || undefined}
       data-density={density}
       onFocus={onFocus}
       onMouseDown={(e) => (down.current = { x: e.clientX, y: e.clientY })}
@@ -190,7 +247,7 @@ export function Grid<Row extends object>({
           <div className="dt-head-cell dt-cell-fill" role="presentation" aria-hidden="true" />
           {layout.end.map(header)}
         </div>
-        <div className="dt-body" role="presentation" style={{ height: virtual.total }}>
+        <div className="dt-body" role="presentation" inert={dim || undefined} style={{ height: virtual.total }}>
           {virtual.items.map((item) => (
             <div
               key={item.key}
@@ -204,7 +261,7 @@ export function Grid<Row extends object>({
                 <Row
                   row={rows[item.index]!}
                   index={item.index}
-                  rowIndex={2 + item.index}
+                  rowIndex={2 + rowIndexOffset + item.index}
                   columns={layout.columns}
                   env={env}
                 />
@@ -213,7 +270,13 @@ export function Grid<Row extends object>({
           ))}
         </div>
       </div>
-      <DelegatedTooltip root={root} />
+      {refreshing && <div className="dt-refresh-bar" aria-hidden="true" />}
+      {notice && (
+        <div className="dt-notice" role="status">
+          {notice}
+        </div>
+      )}
+      {state && !skeleton && rows.length === 0 && <div className="dt-body-state">{state}</div>}
     </div>
   )
 }

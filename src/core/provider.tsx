@@ -25,8 +25,16 @@ export function createDataTableContext(options: DataTableOptions = {}): DataTabl
 const Context = createContext<DataTableContext | null>(null)
 
 /** Vue'daki `createDataTable` plugin'inin karşılığı (R7). İç içe kullanılırsa en yakın sağlayıcı geçerlidir. */
-export function DataTableProvider({ children, ...options }: DataTableOptions & { children: ReactNode }) {
-  return <Context value={createDataTableContext(options)}>{children}</Context>
+export function DataTableProvider({
+  children,
+  locale,
+  messages,
+  viewsAdapter,
+  preferences,
+}: DataTableOptions & { children: ReactNode }) {
+  // Seçenekler tek tek okunur: derleyici bağlamı bunlar değişince yeniden kurar (`...rest` her çizimde yenidir).
+  const value = createDataTableContext({ locale, messages, viewsAdapter, preferences })
+  return <Context value={value}>{children}</Context>
 }
 
 let fallback: DataTableContext | undefined

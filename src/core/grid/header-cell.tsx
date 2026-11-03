@@ -1,6 +1,6 @@
-// Header hücresi (05 §4 · Header, T4): etiket düğmesi, birim, raptiye, ⋯ sütun menüsü, resize tutamacı.
-// Klavye (08 §3): ⇧F10 menü, ⇧←/→ ±16 px, ⌥⇧←/→ taşı. Sıralama ve filtre işareti Faz 2/3a'da eklenir.
-import { DotsThreeIcon, PushPinIcon } from '@phosphor-icons/react'
+// Header hücresi (05 §4 · Header, T4): etiket düğmesi, birim, sıralama oku, raptiye, ⋯ sütun menüsü, resize tutamacı.
+// Klavye (08 §3): ↵/Space sırala, ⇧F10 menü, ⇧←/→ ±16 px, ⌥⇧←/→ taşı. Filtre işareti Faz 3a'da eklenir.
+import { ArrowUpIcon, DotsThreeIcon, PushPinIcon } from '@phosphor-icons/react'
 import { useId, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent, type TouchEvent } from 'react'
 import { alignOf, isNumericType, typeLabelKey } from '../cells/specs'
 import type { ColumnLayoutApi, LayoutColumn } from '../columns/use-column-layout'
@@ -9,15 +9,28 @@ import { useDataTableContext } from '../provider'
 import { DtMenu, DtMenuItem, DtMenuLabel, DtMenuSeparator } from '../ui/menu'
 import { pinStyle } from './pin'
 
+export interface HeaderSort {
+  dir: 'asc' | 'desc'
+  /** Çoklu sıralamada öncelik (1 tabanlı); tek sıralamada null. */
+  index: number | null
+}
+
 export function HeaderCell<Row extends object>({
   column,
   layout,
   onMoved,
+  sort,
+  onSort,
+  onSortSet,
 }: {
   column: LayoutColumn<Row>
   layout: ColumnLayoutApi<Row>
   /** Taşınan başlığın odağı korunur: ızgara yeni yerindeki etiketi odaklar. */
   onMoved: (id: string) => void
+  sort?: HeaderSort
+  /** Verilmezse sütun sıralanamaz. */
+  onSort?: (additive: boolean) => void
+  onSortSet?: (dir: 'asc' | 'desc' | null) => void
 }) {
   const { i18n } = useDataTableContext()
   const def = column.def
@@ -47,6 +60,13 @@ export function HeaderCell<Row extends object>({
 
   const onKeyDown = (e: KeyboardEvent) => {
     const k = e.key
+    if (k === 'Enter' || k === ' ') {
+      if (onSort) {
+        e.preventDefault()
+        onSort(e.shiftKey)
+      }
+      return
+    }
     if ((k === 'F10' && e.shiftKey) || k === 'ContextMenu') {
       e.preventDefault()
       setMenuOpen(true)
@@ -60,10 +80,32 @@ export function HeaderCell<Row extends object>({
     }
   }
 
+  // ARIA tek sıralama sütunu tanır: çoklu sıralamada yalnızca birincil (04 §6).
+  const primarySort = sort && (sort.index ?? 1) === 1 ? sort.dir : undefined
+  const ariaSort = primarySort === 'asc' ? 'ascending' : primarySort === 'desc' ? 'descending' : undefined
+  const arrow = <ArrowUpIcon size={12} className={sort?.dir === 'desc' ? 'is-desc' : undefined} />
+  const index = sort?.index && <span className="dt-head-sort-index">{sort.index}</span>
+  const sortMark = (
+    <span className="dt-head-sort" aria-hidden="true">
+      {numeric ? (
+        <>
+          {index}
+          {arrow}
+        </>
+      ) : (
+        <>
+          {arrow}
+          {index}
+        </>
+      )}
+    </span>
+  )
+
   const cls = [
     'dt-head-cell',
     `is-${alignOf(def)}`,
     numeric && 'is-numeric',
+    sort && 'is-sorted',
     column.pinned === 'start' && 'is-pinned-start',
     column.pinned === 'end' && 'is-pinned-end',
     column.pinEdge && 'is-pin-edge',
@@ -76,6 +118,7 @@ export function HeaderCell<Row extends object>({
       className={cls.filter(Boolean).join(' ')}
       style={pinStyle(column)}
       role="columnheader"
+      aria-sort={ariaSort}
       data-col={column.id}
       onContextMenu={(e) => {
         e.preventDefault()
@@ -84,14 +127,18 @@ export function HeaderCell<Row extends object>({
     >
       <button
         type="button"
-        className="dt-head-label is-static"
-        aria-disabled="true"
+        className={onSort ? 'dt-head-label' : 'dt-head-label is-static'}
+        aria-disabled={onSort ? undefined : 'true'}
         data-dt-tip={tip}
         aria-describedby={def.description ? descId : undefined}
+        onClick={(e) => onSort?.(e.shiftKey)}
         onKeyDown={onKeyDown}
       >
+        {/* Sayısal sütunda ok metnin solunda: sağa yaslı başlıkta metin kenara oturur. */}
+        {sort && numeric && sortMark}
         <span className="dt-head-text">{def.header}</span>
         {unit && <span className="dt-head-unit">{unit}</span>}
+        {sort && !numeric && sortMark}
         {column.pinned && <PushPinIcon size={12} className="dt-head-pin" aria-hidden="true" />}
       </button>
       {def.description && (
@@ -114,6 +161,16 @@ export function HeaderCell<Row extends object>({
         }
       >
         <DtMenuLabel>{i18n.t(typeLabelKey(def.type))}</DtMenuLabel>
+        {onSortSet && (
+          <>
+            <DtMenuItem onSelect={() => onSortSet('asc')}>{i18n.t('header.sortAsc')}</DtMenuItem>
+            <DtMenuItem onSelect={() => onSortSet('desc')}>{i18n.t('header.sortDesc')}</DtMenuItem>
+            <DtMenuItem disabled={!sort} onSelect={() => onSortSet(null)}>
+              {i18n.t('header.clearSort')}
+            </DtMenuItem>
+            <DtMenuSeparator />
+          </>
+        )}
         <DtMenuItem onSelect={() => move(-1)}>
           {i18n.t('header.moveLeft')}
           <kbd className="dt-kbd">{MOVE_KBD.left}</kbd>

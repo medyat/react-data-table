@@ -1,5 +1,6 @@
 // DataTableProvider, useDataTableContext ve localStorage adapter'ları.
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createLocalStoragePreferences, createLocalStorageViews } from '../src/core/adapters/local-storage'
 import { DataTableProvider, useDataTableContext } from '../src/core/provider'
@@ -80,6 +81,35 @@ describe('DataTableProvider', () => {
     const [outer, inner] = screen.getAllByRole('paragraph')
     expect(outer!.textContent!.startsWith('tr|')).toBe(true)
     expect(inner!.textContent!.startsWith('ru|')).toBe(true)
+  })
+  it('üst bileşen yeniden çizilince, seçenekler aynıysa bağlam değişmez', () => {
+    const preferences = createLocalStoragePreferences({ scope: 'x' })
+    const seen = new Set<object>()
+    function Spy() {
+      seen.add(useDataTableContext())
+      return null
+    }
+    // Çocuk sabit eleman: yeniden çizilirse sebebi yalnızca bağlam değeridir.
+    const child = <Spy />
+    function Parent() {
+      // Derleyicisiz uygulama: Provider her üst çizimde yeni props alır.
+      'use no memo'
+      const [n, setN] = useState(0)
+      return (
+        <>
+          <button type="button" onClick={() => setN(n + 1)}>
+            bump
+          </button>
+          <DataTableProvider locale="tr" preferences={preferences}>
+            {child}
+          </DataTableProvider>
+        </>
+      )
+    }
+    render(<Parent />)
+    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getByRole('button'))
+    expect(seen.size).toBe(1)
   })
   it('sağlayıcı yokken varsayılan bağlam: paket metinleri, adapter yok', () => {
     render(<Probe />)

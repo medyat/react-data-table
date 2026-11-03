@@ -53,6 +53,25 @@ export interface LayoutColumn<Row extends object = object> {
   resizeHandler: (event: unknown) => void
 }
 
+/** Columns dialog'unun satırı (05 §5, D45): tüm sütunlar ekran sırasıyla. */
+export interface PanelColumn<Row extends object = object> {
+  id: string
+  def: ColumnDef<Row>
+  visible: boolean
+  pinned: PinSide
+  canHide: boolean
+  /** Her zaman sola sabit (birincil): listede kilitli, taşınmaz, gizlenmez. */
+  fixed: boolean
+}
+
+/** Dialog taslağı: sıra, görünürler ve konumsal sabitleme (ilk `start`, son `end` görünür sütun). */
+export interface ColumnsDraft {
+  order: string[]
+  visible: string[]
+  start: number
+  end: number
+}
+
 export interface ColumnLayoutOptions<Row extends object> {
   columns: Array<ColumnDef<Row>>
   /** Görünümden gelen düzen (Faz 3b); verilmezse sütun tanımları. */
@@ -202,6 +221,47 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
     table.setColumnOrder(ids)
   }
 
+  const apply = (l?: Partial<ColumnLayout>) => {
+    const st = stateOf(l)
+    table.setColumnOrder(st.columnOrder)
+    table.setColumnVisibility(st.columnVisibility)
+    table.setColumnPinning(st.columnPinning)
+    table.setColumnSizing(st.columnSizing)
+  }
+
+  /** Etkin düzen (görünüme yazılan biçim): sıra, görünürler, yalnızca değiştirilmiş genişlikler, sabitler. */
+  const state = (): ColumnLayout => {
+    const p = table.atoms.columnPinning.get()
+    return {
+      order: table
+        .getOrderColumnsFn()(table.getAllLeafColumns())
+        .map((c) => c.id),
+      visible: table.getVisibleLeafColumns().map((c) => c.id),
+      widths: Object.fromEntries(
+        Object.entries(table.atoms.columnSizing.get()).map(([id, w]) => [id, clampWidth(id, w)]),
+      ),
+      pinned: { left: [...(p.start ?? [])], right: [...(p.end ?? [])] },
+    }
+  }
+
+  const rank = (c: TColumn<Row>) => {
+    const p = c.getIsPinned()
+    return p === 'start' ? 0 : p === 'end' ? 2 : 1
+  }
+  const panel: Array<PanelColumn<Row>> = [...table.getOrderColumnsFn()(table.getAllLeafColumns())]
+    .sort((a, b) => rank(a) - rank(b))
+    .map((c) => {
+      const pinned = c.getIsPinned()
+      return {
+        id: c.id,
+        def: defById.get(c.id)!,
+        visible: c.getIsVisible(),
+        pinned: pinned === false ? null : pinned,
+        canHide: c.getCanHide(),
+        fixed: fixed.includes(c.id),
+      }
+    })
+
   /** Canlı sürükleme genişliği; sürüklenmiyorsa null. */
   const resizing = (): { id: string; size: number } | null => {
     const id = table.atoms.columnResizing.get().isResizingColumn
@@ -231,6 +291,22 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
     resizing,
     subscribeSizing,
     move,
+    panel,
+    counts: { shown: table.getVisibleLeafColumns().length, total: table.getAllLeafColumns().length },
+    state,
+    /** Dialog'un Save'i (D45): sabitleme konumsaldır, sabitlerden sonraki ilk `start` ve son `end` görünür sütun. */
+    arrange: (d: ColumnsDraft) => {
+      const free = d.order.filter((id) => d.visible.includes(id) && !fixed.includes(id))
+      const left = free.slice(0, d.start)
+      apply({
+        order: d.order,
+        visible: d.visible,
+        widths: state().widths,
+        pinned: { left, right: d.end ? free.slice(left.length).slice(-d.end) : [] },
+      })
+    },
+    /** Display › Reset: verilmezse `layout` seçeneğine, o da yoksa sütun tanımlarına döner. */
+    reset: (l: Partial<ColumnLayout> | undefined = options.layout) => apply(l),
     widthOf: (id: string): number => table.getColumn(id)?.getSize() ?? 0,
     setWidth: (id: string, px: number) => table.setColumnSizing((s) => ({ ...s, [id]: clampWidth(id, px) })),
     setVisible: (id: string, visible: boolean) => table.getColumn(id)?.toggleVisibility(visible),

@@ -45,6 +45,10 @@ export interface SortRule {
   dir: 'asc' | 'desc'
 }
 
+/**
+ * `table.request` (R4): uygulama bunu sorgu anahtarına koyar ve isteğini bununla kurar. Sütun taşımak, gizlemek ya da
+ * genişletmek isteği değiştirmez; yalnızca yeni görünen bir sütunun alanı listede yoksa `fields` büyür.
+ */
 export interface TableQuery {
   search: string
   filters: FilterCondition[]
@@ -52,34 +56,11 @@ export interface TableQuery {
   sort: SortRule[]
   /** Sayfa numarası 1'den başlar (Laravel simplePaginate ile aynı). */
   page: { number: number; size: number }
-  /** Görünür sütun id'leri. */
-  columns: string[]
-  /** Sunucudan istenen alan yolları: görünür sütunların yolları + sütunların `fields`'i + tablonun `fields` prop'u. */
+  /** Sunucudan istenen alan yolları: satır anahtarı + görünür sütunların yolları ve `fields`'i + tablonun `fields`'i, koddaki sırayla. */
   fields: string[]
 }
 
 export type QueryWithoutPage = Omit<TableQuery, 'page'>
-
-export type RequestReason = 'initial' | 'query' | 'page' | 'columns' | 'refresh'
-
-/**
- * `@request` olayının yükü. Paket veri çekmez: uygulama bu sorguyla kendi HTTP'sini atar ve
- * `rows`, `hasMore`, `loading`, `error` prop'larını günceller. Her yeni talepte öncekinin `signal`'i abort edilir.
- */
-export interface TableRequest {
-  query: TableQuery
-  reason: RequestReason
-  signal: AbortSignal
-}
-
-/** `countable` tablolarda "Count total" → `@count`; uygulama `total` prop'unu verir. */
-export interface CountRequest {
-  query: QueryWithoutPage
-  signal: AbortSignal
-}
-
-/** `true` genel hata; string mesaj; nesne: mesaj + hata kimliği ("Copy error ID"). */
-export type TableError = boolean | string | { message?: string; id?: string }
 
 export interface ColumnLayout {
   /** Görünür + gizli tüm sütunların sırası. */

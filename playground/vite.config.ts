@@ -2,10 +2,11 @@ import { fileURLToPath } from 'node:url'
 import babel from '@rolldown/plugin-babel'
 import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import { mockApi } from './server/mock-api.ts'
 
 export default defineConfig({
   root: fileURLToPath(new URL('.', import.meta.url)),
-  plugins: [react(), babel({ presets: [reactCompilerPreset()] })],
+  plugins: [react(), babel({ presets: [reactCompilerPreset()] }), mockApi()],
   resolve: {
     // Paket kaynaktan: uygulama nasıl import ediyorsa playground da öyle.
     alias: { '@medyat/react-data-table': fileURLToPath(new URL('../src/index.ts', import.meta.url)) },

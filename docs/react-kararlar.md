@@ -56,18 +56,30 @@ Vue'da paket `@request { query, reason, signal }` yayar; bekleyen istek, snapsho
 `useRequest`'indedir. React'te bu işleri sorgu kütüphanesi (TanStack Query) zaten yapar; paket onları
 yeniden yazmaz.
 
-- Hook isteği üretir: `table.request` (`TableQuery`: arama, filtreler, sıralama, sayfa, görünür
-  sütunlar, `fields`). `fields` yalnızca görünür sütunlardan ve koddaki sırayla kurulur: sütun
-  taşımak istek üretmez, gizli sütunu açmak üretir.
+- Hook isteği üretir: `table.request` (`TableQuery`: arama, filtreler, sıralama, sayfa, `fields`).
+  Uygulama onu sorgu anahtarına koyar; bu yüzden istekte yalnızca sunucuyu ilgilendiren alanlar
+  vardır. Vue'daki `columns` (görünür sütunlar, ekran sırasıyla) yoktur: anahtara girince her sütun
+  taşıma yeni bir istek olurdu. `fields` görünür sütunlardan, koddaki sırayla kurulur ve yalnızca
+  yeni görünen bir sütunun alanı listede yoksa ya da sorgu değişince yenilenir: gizlemek, taşımak ve
+  genişlik istek üretmez. Vue'daki 400 ms birleştirme yoktur: Columns dialog'u tek kayıtta uygular.
 - Paket veri çekmez (D18 korunur). Sonucu `result` olarak alır. `result`'ın tipi TanStack Query'nin
   `UseQueryResult`'ının yapısal alt kümesidir (`data`, `status`, `error`, `isFetching`,
   `isPlaceholderData`, `dataUpdatedAt`, `refetch`): TanStack Query sonucu dönüştürülmeden verilir,
   paket ise TanStack Query'ye bağımlı değildir. `data` = `{ rows, hasMore, total?, ignoredFields? }`.
-- Yükleme geçişi (05 §10) isteğin nedeninden türer. Paket önceki ve yeni isteği karşılaştırır:
-  sorgu veya sayfa değiştiyse kimlik değiştiren (soluk + `inert`, 400 ms sonra iskelet, hata →
-  Error), yalnızca `fields` genişlediyse ya da `refetch` ise kimlik koruyan (satırlar etkileşimli,
-  150 ms sonra çubuk, hata → Stale). Sunucu yetkisiz alanı `ignoredFields` ile yol olarak bildirir;
-  sıra numarası eşleme yoktur.
+- Yükleme geçişi (05 §10) isteğin kimliğinden türer (arama + filtre + sıralama + sayfa). Paket,
+  ekrandaki verinin hangi kimliğe ait olduğunu bir snapshot'ta tutar; snapshot yalnızca yeni veriyle
+  (`data` referansı ya da `dataUpdatedAt` değişince) ilerler, istek değişip sonuç henüz gelmediyse
+  ilerlemez. Kimlik snapshot'tan farklıyken süren yükleme kimlik değiştirendir (soluk + `inert`,
+  400 ms sonra iskelet, hata → Error); aynıyken (`refetch`, yalnızca `fields` genişlemesi) kimlik
+  korur (satırlar etkileşimli, 150 ms sonra çubuk, hata → Stale). Hata türü TanStack Query'nin
+  davranışından okunur: aynı anahtarın yenileme hatasında `data` kalır (Stale), yeni anahtarın
+  hatasında yoktur (Error). Footer'ın sayfası ve "Updated …" zamanı snapshot'tandır.
+- `placeholderData: keepPreviousData` önerilir; verilmezse her sorgu değişimi ilk yükleme gibi
+  iskelete döner (hata değil, yalnızca geçiş kaybolur).
+- Count total: `useDataTable({ count: (query, signal) => Promise<number> })`. Sonuç arama, filtre
+  ve sıralama değişene kadar geçerlidir; değişince bekleyen sayım iptal edilir. Sunucu yanıtta
+  `total` verirse o kullanılır.
+- Sunucu yetkisiz alanı `ignoredFields` ile yol olarak bildirir (Faz 3b); sıra numarası eşleme yoktur.
 - İstemci modu (D-mode `client`) kalır: `rows` verilirse paket TanStack row model'leriyle filtreler,
   sıralar, sayfalar; `request` üretilmez.
 
@@ -77,8 +89,12 @@ Vue'da durum paketin içindedir, adres senkronizasyonu yoktur (D25). React'te du
 kalıbıyla açılır: `state` + `onStateChange` verilirse controlled, verilmezse `initialState` ile
 uncontrolled.
 
-`TableState = { view, search, filters, sort, page, pageSize, layout }`. Paket adres okumaz, yazmaz
-(D25 paket için geçerli); ama uygulama durumu tek satırda adrese bağlayabilir. Swors, filtre/sıralama/
+`TableState = { view, search, filters, sort, page, pageSize, layout }`; alanlar fazlarla eklenir (Faz 2:
+`sort`, `page`, `pageSize`). Her alan ayrı ayrı controlled olabilir: `state`'te verilen alan dışarıdan
+okunur, diğerleri içeride kalır (TanStack Table'ın `state` kalıbı). Uncontrolled sayfa boyutu
+tercihten (`preferences`) gelir; sayfa boyutu değişimi controlled olsa da tercihe yazılır.
+
+Paket adres okumaz, yazmaz (D25 paket için geçerli); ama uygulama durumu tek satırda adrese bağlayabilir. Swors, filtre/sıralama/
 sayfa/görünümü adreste, sütun düzenini bellekte tutar.
 
 ## R6 · Görünümler
@@ -162,11 +178,23 @@ Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:
 |---|---|
 | 0 | Kurulum, token'lar, i18n, provider, playground — **tamam** |
 | 1 | Izgara, hücre tipleri, `cell` / `actions`, etkileşim guard'ı, sanal gövde — **tamam** (60 fps / resize süresi ölçümü ve Playwright e2e Vue'daki gibi sonraya) |
-| 2 | Veri akışı (R4), durumlar, sıralama, sayfalama, araç çubuğu, sütun yönetimi |
+| 2 | Veri akışı (R4), durumlar, sıralama, sayfalama, araç çubuğu, sütun yönetimi — **tamam** (aşağıdaki notlar) |
 | 3a | Filtreler ve arama |
 | 3b | Görünümler (R6) ve tercihler |
 | 4 | Seçim, bulk bar, satır etkileşimleri |
 | 7 | Telefon, erişilebilirlik turu, belgeler |
+
+Faz 2 notları:
+
+- Dışa aktarma (D46) ⋯ menüsünde yok; Excel bağımlılığıyla birlikte ayrı bir adımda gelir.
+- İçe aktarma yok (R1). Telefon araç çubuğu Faz 7'de.
+- Vue'daki kaydırma konumu hapı taşınmadı.
+- Sütun gösterme isteği debounce edilmez: Columns dialog'u değişiklikleri Save'de tek seferde uygular.
+- Vue'dan bilinçli sapmalar: çoklu sıralamada `aria-sort` yalnızca birincil sütunda (Vue'nun kendi
+  kriteri, Vue kodu tüm sıralı sütunlara koyuyor); footer'daki "Updated …" 30 sn'de bir yaşlanır
+  (Vue'da "just now"da kalıyor).
+- Base UI Dialog ok tuşlarının yayılmasını durdurur; Columns dialog'u klavyeyle sürükleme sürerken
+  `preventBaseUIHandler` ile bunu atlar, yoksa dnd-kit tuşları duymaz.
 
 Swors'un ürün ekranı 3b'den sonra pakete geçer. O zamana kadar Swors'taki `DataTable`'a özellik
 eklenmez.

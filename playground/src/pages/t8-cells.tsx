@@ -167,7 +167,7 @@ function Group({
   density,
   loading,
 }: (typeof groups)[number] & { density: Density; loading?: boolean }) {
-  const table = useDataTable({ id: `t8-${title}`, columns, rows, density })
+  const table = useDataTable({ id: `t8-${title}`, columns, rows: loading ? undefined : rows, density })
   return (
     <section className="pg-group">
       <h2>{title}</h2>

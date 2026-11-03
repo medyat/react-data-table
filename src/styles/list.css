@@ -1,0 +1,613 @@
+/* DataTable liste modu (05, handoff 03): toolbar, şeritler, durum bloğu, footer, Display/Columns/Sort paneli. */
+
+/* Toolbar: 52 px, dolgu 10 × 12, boşluk 8 (02 · Bileşen ölçüleri). */
+.dt-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--dt-space);
+  flex: none;
+  min-height: calc(var(--dt-control-h) + 2 * var(--dt-space-lg));
+  padding: var(--dt-space-lg);
+  border-bottom: 1px solid var(--dt-line);
+}
+.dt-toolbar-spacer {
+  flex: 1;
+}
+/* D43: masaüstünde arama · Filter grubu tam ortada; iki yan eşit pay alır, sağ yan sağa yaslı. */
+.dt-toolbar.is-zoned:not(.is-phone) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+.dt-toolbar.is-zoned:not(.is-phone) > .dt-toolbar-spacer {
+  display: none;
+}
+.dt-toolbar-side {
+  display: flex;
+  align-items: center;
+  gap: var(--dt-space);
+  min-width: 0;
+}
+.dt-toolbar-side.is-end {
+  justify-content: flex-end;
+}
+.dt-toolbar.is-phone .dt-toolbar-side {
+  display: contents;
+}
+.dt-toolbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--dt-line);
+}
+.dt-search {
+  width: calc(240 * var(--dt-ui-fs) / 13);
+}
+.dt-toolbar.is-phone .dt-search {
+  flex: 1;
+  width: auto;
+}
+
+/* Amber şerit (stale): 36 px, --dt-a-* (handoff 02 §7). */
+.dt-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--dt-space);
+  flex: none;
+  height: var(--dt-control-h-lg);
+  padding: 0 12px;
+  border-bottom: 1px solid var(--dt-a-line);
+  background: var(--dt-a-bg);
+  color: var(--dt-a-fg);
+  font-size: var(--dt-ui-fs-sm);
+}
+.dt-strip > svg {
+  color: var(--dt-a-dot);
+}
+.dt-strip-action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.dt-strip-action:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Durum mesajı bloğu (handoff 02 §9): gövdede ortalı, en fazla 440 px, alt dolgu 64. */
+.dt-body-state {
+  position: absolute;
+  inset: var(--dt-head-h) 0 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 2;
+}
+.dt-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  max-width: calc(440 * var(--dt-ui-fs) / 13);
+  padding-bottom: 64px;
+  text-align: center;
+}
+.dt-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 8px;
+  border-radius: var(--dt-radius-pop);
+  background: var(--dt-surface-3);
+  color: var(--dt-text-2);
+}
+.dt-state.is-error .dt-state-icon {
+  background: var(--dt-r-bg);
+  color: var(--dt-r-fg);
+}
+.dt-state-title {
+  font-size: var(--dt-ui-fs-lg);
+  font-weight: 600;
+}
+.dt-state-line {
+  margin: 0;
+  color: var(--dt-text-2);
+  font-size: var(--dt-ui-fs);
+}
+.dt-state-actions {
+  display: flex;
+  gap: var(--dt-space);
+  margin-top: 12px;
+}
+.dt-state-id {
+  display: flex;
+  align-items: center;
+  gap: var(--dt-space-sm);
+  margin-top: 8px;
+}
+.dt-state-code {
+  color: var(--dt-text-3);
+  font-family: var(--dt-font-mono);
+  font-size: var(--dt-mono-fs);
+}
+
+/* Footer (handoff 03 §11): en az 48 px, dolgu 8 × 12, surface-2, 12.5 text-2. */
+.dt-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: none;
+  min-height: calc(var(--dt-control-h-sm) + 2 * var(--dt-space-lg));
+  padding: var(--dt-space-lg);
+  border-top: 1px solid var(--dt-line);
+  background: var(--dt-surface-2);
+  color: var(--dt-text-2);
+  font-size: var(--dt-ui-fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+.dt-footer-left,
+.dt-footer-right {
+  display: flex;
+  align-items: center;
+  gap: var(--dt-space);
+  min-width: 0;
+  white-space: nowrap;
+}
+/* Dar kart (< 640, kartın kendi genişliği): etiketler ve tazelik metni gizlenir; telefon düzeni Faz 7. */
+.dt-list {
+  container-type: inline-size;
+}
+@container (max-width: 639px) {
+  .dt-footer-size-label,
+  .dt-footer-updated,
+  .dt-footer-prev > span,
+  .dt-footer-next > span {
+    display: none;
+  }
+  .dt-footer-prev,
+  .dt-footer-next {
+    width: var(--dt-control-h-sm);
+    padding: 0;
+    justify-content: center;
+  }
+}
+.dt-footer-rows {
+  color: var(--dt-text);
+}
+.dt-footer-muted {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--dt-text-3);
+}
+.dt-footer-count {
+  color: var(--dt-text);
+}
+.dt-footer-vsep {
+  width: 1px;
+  height: 16px;
+  background: var(--dt-line-2);
+}
+.dt-footer-updated {
+  color: var(--dt-text-3);
+}
+.dt-footer-updated.is-stale {
+  color: var(--dt-a-fg);
+}
+.dt-footer-live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dt-space-sm);
+  color: var(--dt-g-fg);
+}
+.dt-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--dt-radius-pill);
+  background: var(--dt-g-dot);
+  box-shadow: 0 0 0 3px var(--dt-live-halo);
+}
+.dt-footer-size {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dt-space);
+}
+.dt-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.dt-select select {
+  height: var(--dt-control-h-sm);
+  padding: 0 24px 0 10px;
+  border: 1px solid var(--dt-line-2);
+  border-radius: var(--dt-radius-item);
+  background: var(--dt-surface);
+  color: var(--dt-text);
+  font: inherit;
+  font-size: var(--dt-ui-fs-sm);
+  box-shadow: var(--dt-shadow-sm);
+  appearance: none;
+  cursor: pointer;
+}
+.dt-select select:disabled {
+  background: var(--dt-surface-2);
+  border-color: var(--dt-line);
+  color: var(--dt-text-3);
+  box-shadow: none;
+  cursor: default;
+}
+.dt-select > svg {
+  position: absolute;
+  right: 8px;
+  color: var(--dt-text-3);
+  pointer-events: none;
+}
+.dt-select select:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--dt-surface),
+    0 0 0 4px var(--dt-focus);
+}
+
+/* Display popover (308). */
+.dt-display {
+  width: calc(308 * var(--dt-ui-fs) / 13);
+}
+.dt-display-density {
+  width: calc(100% - 8px);
+  margin: 0 4px 4px;
+}
+.dt-pop-head {
+  display: flex;
+  align-items: center;
+  gap: var(--dt-space);
+  height: var(--dt-control-h-lg);
+  padding: 0 4px;
+  font-size: var(--dt-ui-fs);
+}
+.dt-pop-head strong {
+  font-weight: 600;
+}
+.dt-pop-end {
+  margin-left: auto;
+}
+.dt-col-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: var(--dt-control-h);
+  padding: 0 4px 0 8px;
+  border-radius: var(--dt-radius-item);
+}
+.dt-col-name {
+  flex: 1;
+  min-width: 0;
+}
+.dt-col-name > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* D33: açıklama satırı (05 §5). */
+.dt-col-desc {
+  font-size: var(--dt-ui-fs-xs);
+  line-height: 16px;
+  color: var(--dt-text-3);
+}
+.dt-col-row:has(.dt-col-desc) {
+  height: auto;
+  padding-block: 5px;
+}
+.dt-col-row.is-hidden .dt-col-name {
+  color: var(--dt-text-2);
+}
+.dt-col-row.is-hidden .dt-icon-btn-sm {
+  color: var(--dt-text-3);
+}
+.dt-col-lock {
+  color: var(--dt-text-3);
+  margin-right: 6px;
+}
+
+/* Columns dialog'u (05 §5, D45): solda sabitleme, sağda bul + liste; liste kayar, başlık ve alt satır sabit. */
+.dt-cols-dialog {
+  display: flex;
+  flex-direction: column;
+  width: calc(760 * var(--dt-ui-fs) / 13);
+  height: min(calc(640 * var(--dt-ui-fs) / 13), calc(100dvh - 32px));
+  padding: 24px;
+}
+.dt-cols-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.75fr);
+  gap: 32px;
+  flex: 1;
+  min-height: 0;
+}
+.dt-cols-dialog.is-phone .dt-cols-body {
+  grid-template-columns: minmax(0, 1fr);
+}
+.dt-cols-pins {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.dt-cols-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.dt-cols-title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--dt-space);
+  margin: 0;
+  font-size: var(--dt-ui-fs-lg);
+  font-weight: 600;
+}
+.dt-cols-title .dt-pop-value {
+  margin-left: auto;
+  font-size: var(--dt-ui-fs-sm);
+  font-weight: 400;
+}
+.dt-cols-desc {
+  margin: 4px 0 12px;
+  color: var(--dt-text-2);
+  font-size: var(--dt-ui-fs-sm);
+  line-height: 1.45;
+}
+.dt-radio-group {
+  display: flex;
+  flex-direction: column;
+}
+.dt-radio-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dt-space);
+  height: var(--dt-control-h);
+  cursor: pointer;
+}
+.dt-radio {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1.5px solid var(--dt-line-3);
+  border-radius: var(--dt-radius-pill);
+  background: var(--dt-surface);
+  box-sizing: border-box;
+  cursor: pointer;
+}
+.dt-radio[data-state='checked'] {
+  border-color: var(--dt-accent);
+  background: var(--dt-accent);
+}
+.dt-radio-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--dt-radius-pill);
+  background: var(--dt-switch-knob);
+}
+.dt-cols-find {
+  flex: none;
+  margin-bottom: 8px;
+}
+.dt-cols-list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+.dt-cols-list .dt-col-row {
+  height: var(--dt-control-h-lg);
+  border-bottom: 1px solid var(--dt-line);
+  border-radius: 0;
+}
+.dt-cols-list .dt-col-row:has(.dt-col-desc) {
+  height: auto;
+}
+.dt-col-pin {
+  margin-left: 4px;
+  color: var(--dt-text-3);
+  vertical-align: -1px;
+}
+.dt-col-switch {
+  margin-left: 6px;
+}
+/* Kilitli satırda tutamaç yok; ad diğer satırlarla aynı hizada başlasın. */
+.dt-col-row.is-fixed .dt-col-name {
+  padding-left: var(--dt-control-h-2xs);
+}
+.dt-col-handle {
+  margin-left: -4px;
+  color: var(--dt-text-3);
+  cursor: grab;
+  touch-action: none;
+}
+.dt-col-handle:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+.dt-cols-list .dt-col-row.is-dragging {
+  background: var(--dt-surface);
+  box-shadow: var(--dt-shadow-pop);
+}
+.dt-cols-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--dt-space);
+  margin-top: 20px;
+}
+.dt-sort-row {
+  height: var(--dt-control-h-lg);
+  gap: var(--dt-space);
+}
+.dt-sort-row .dt-head-sort-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--dt-radius-xs);
+  background: var(--dt-surface-3);
+  font-size: var(--dt-ui-fs-3xs);
+  font-weight: 600;
+}
+
+.dt-spin {
+  animation: dt-spin 1s linear infinite;
+}
+@keyframes dt-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dt-spin {
+    animation: none;
+  }
+}
+
+/* Bulk bar (05 §6, handoff 03 §7): koyu yüzer çubuk, alt kenardan 64 px, ortada, düzeni kaydırmaz; 160 ms yukarı kayar.
+   Telefon düzeni Faz 7. */
+.dt-bulk {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.dt-bulk.is-floating {
+  position: absolute;
+  left: 50%;
+  bottom: 64px;
+  padding: 6px;
+  border-radius: var(--dt-radius-card);
+  background: var(--dt-bulk-bg);
+  color: var(--dt-bulk-fg);
+  box-shadow: var(--dt-shadow-float);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  z-index: 5;
+  animation: dt-bulk-in 160ms ease-out;
+}
+@keyframes dt-bulk-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dt-bulk.is-floating {
+    animation: none;
+  }
+}
+.dt-bulk-count {
+  padding: 0 8px;
+  font-size: var(--dt-ui-fs);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.dt-bulk-sep {
+  width: 1px;
+  height: 20px;
+  margin: 0 2px;
+  background: var(--dt-bulk-line);
+}
+.dt-bulk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dt-space-sm);
+  height: var(--dt-control-h);
+  padding: 0 12px 0 10px;
+  border: 0;
+  border-radius: var(--dt-radius-inner);
+  background: transparent;
+  color: var(--dt-bulk-fg);
+  font: inherit;
+  font-size: var(--dt-ui-fs);
+  font-weight: 500;
+  cursor: pointer;
+}
+.dt-bulk-btn > svg {
+  color: var(--dt-bulk-fg-2);
+}
+.dt-bulk-btn:hover,
+.dt-bulk-btn[data-state='open'] {
+  background: var(--dt-bulk-hover);
+}
+.dt-bulk-btn:disabled {
+  color: var(--dt-bulk-fg-2);
+  cursor: default;
+}
+.dt-bulk-btn.is-destructive {
+  color: var(--dt-bulk-danger);
+}
+.dt-bulk-btn.dt-bulk-more,
+.dt-bulk-btn.dt-bulk-icon {
+  width: var(--dt-control-h);
+  padding: 0;
+  justify-content: center;
+}
+.dt-bulk-btn.dt-bulk-icon > svg {
+  color: var(--dt-bulk-fg-2);
+}
+.dt-bulk-menu {
+  min-width: calc(248 * var(--dt-ui-fs) / 13);
+}
+/* Toolbar varyantı (T5-04): seçim varken toolbar'ın yerine; yükseklik aynı, altındakiler kımıldamaz. */
+.dt-bulk.is-toolbar {
+  flex: none;
+  gap: var(--dt-space);
+  min-height: 52px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--dt-line);
+  background: var(--dt-row-selected);
+}
+.dt-bulk.is-toolbar .dt-bulk-count {
+  padding: 0 4px;
+  font-weight: 600;
+}
+.dt-bulk.is-toolbar .dt-bulk-sep {
+  margin: 0 4px;
+  background: var(--dt-line-2);
+}
+
+/* Toast (handoff 02 §6): 40 px, kartın altında ortada; bulk bar görünürken onun üstünde. Yalnızca "Copied" (Faz 4). */
+.dt-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 64px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dt-space);
+  height: 40px;
+  padding: 0 14px 0 12px;
+  border-radius: var(--dt-radius-card);
+  background: var(--dt-bulk-bg);
+  color: var(--dt-bulk-fg);
+  box-shadow: var(--dt-shadow-float);
+  font-size: var(--dt-ui-fs);
+  font-weight: 600;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  z-index: 6;
+}
+.dt-toast.is-raised {
+  bottom: 116px;
+}
+.dt-toast > svg {
+  color: var(--dt-g-dot);
+}
