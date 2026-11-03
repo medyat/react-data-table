@@ -74,11 +74,12 @@ describe('roller ve yapı', () => {
     const { q, qa } = await mount()
     expect(q('[role="table"]').getAttribute('aria-label')).toBe('Orders')
     expect(q('.dt-head').getAttribute('role')).toBe('row')
-    expect(qa('.dt-head [role="columnheader"]')).toHaveLength(columns.length)
+    // Birincil sütun varsa ⋯ sütunu da çizilir (Open / Copy).
+    expect(qa('.dt-head [role="columnheader"]')).toHaveLength(columns.length + 1)
     const row = q('.dt-row[data-index="0"]')
     expect(row.getAttribute('role')).toBe('row')
     expect(row.getAttribute('aria-rowindex')).toBe('2')
-    expect(row.querySelectorAll('[role="cell"]')).toHaveLength(columns.length)
+    expect(row.querySelectorAll('[role="cell"]')).toHaveLength(columns.length + 1)
   })
   it('birincil hücre gerçek link, sayısal sağa, sabit sütun sticky ofset değişkeni kökte', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true, now: new Date('2026-10-21T10:00:00') })

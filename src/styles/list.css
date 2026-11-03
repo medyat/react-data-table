@@ -545,7 +545,8 @@
   color: var(--dt-bulk-fg-2);
 }
 .dt-bulk-btn:hover,
-.dt-bulk-btn[data-state='open'] {
+.dt-bulk-btn[data-state='open'],
+.dt-bulk-btn[data-popup-open] {
   background: var(--dt-bulk-hover);
 }
 .dt-bulk-btn:disabled {

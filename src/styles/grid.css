@@ -609,7 +609,8 @@
 .dt-row-inline:focus-visible {
   color: var(--dt-text-2);
 }
-.dt-row-more[data-state='open'] {
+.dt-row-more[data-state='open'],
+.dt-row-more[data-popup-open] {
   background: var(--dt-line-2);
   color: var(--dt-text);
 }

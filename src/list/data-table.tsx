@@ -1,8 +1,9 @@
 // Liste bileşeni (05): ızgara, footer, durum ekranları, yükleme geçişleri (R4). Paket veri çekmez (D18): sunucu modunda
 // `useQuery` sonucunu `result` olarak alır; istemci modunda satırlar `useDataTable({ rows })`'dan gelir.
-import { CircleNotchIcon, FunnelIcon, PlusIcon, WarningIcon } from '@phosphor-icons/react'
+import { CheckIcon, CircleNotchIcon, FunnelIcon, PlusIcon, WarningIcon } from '@phosphor-icons/react'
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { optionLabel } from '../core/cells/format'
+import { readPath } from '../core/columns/read-path'
 import { RemoteLabels } from '../core/cells/remote-labels'
 import { ColumnPicker } from '../core/filters/column-picker'
 import { FilterBar } from '../core/filters/filter-bar'
@@ -22,9 +23,10 @@ import { nameError } from '../core/views/model'
 import { ViewDialog, type ViewSummary } from '../core/views/view-dialog'
 import { ViewMenu } from '../core/views/view-menu'
 import type { ColumnDef } from '../types/columns'
-import type { DataTableResult } from '../types/list'
+import type { BulkAction, DataTableResult, RowAction, RowClickMode } from '../types/list'
 import type { FilterCondition, QueryWithoutPage } from '../types/query'
 import type { View, ViewState } from '../types/views'
+import { BulkBar } from './bulk-bar'
 import { Footer, type Freshness } from './footer'
 import { useChips } from './use-chips'
 import { isFilterable, isSearchable, isSortable } from './use-list-table'
@@ -32,6 +34,8 @@ import type { DataTableInstance } from './use-data-table'
 import { useLoadState } from './use-load-state'
 
 /** `error` yapısal okunur: TanStack Query'nin `Error`'u, uygulamanın `{ message, id }`'si ya da düz metin. */
+const NONE: Record<string, true> = {}
+
 function errorInfo(error: unknown): { message?: string; id?: string } {
   if (typeof error === 'string') return { message: error }
   if (typeof error !== 'object' || !error) return {}
@@ -54,6 +58,16 @@ export function DataTable<Row extends object>({
   onPrint,
   shortcuts = true,
   onRowClick,
+  rowClick = 'none',
+  onRowOpen,
+  rowActions,
+  selectable = false,
+  selectionBar = 'floating',
+  bulkActions,
+  selectionActions,
+  onSelectionChange,
+  renderExpanded,
+  canExpand,
 }: {
   table: DataTableInstance<Row>
   /** Sunucu modu: `useQuery` sonucu, dönüştürmeden (R4). İstemci modunda verilmez. */
@@ -74,8 +88,27 @@ export function DataTable<Row extends object>({
   onPrint?: (payload: { query: QueryWithoutPage; visibleColumns: string[] }) => void
   /** Tek harfli kısayollar (/ arama, F filtre, R yenile, V görünümler) ve ⌘S. Alt←/→ her zaman çalışır. */
   shortcuts?: boolean
-  /** Satır gövdesine düz tık; hücredeki düğme, link ve metin seçimi tetiklemez (05 §7). */
+  /** Satır gövdesine düz tık; hücredeki düğme, link ve metin seçimi tetiklemez (05 §7). `rowClick`'ten bağımsız. */
   onRowClick?: (row: Row, event: MouseEvent) => void
+  /** Satır gövdesine tıklama (D6): 'open' birincil linki açar, 'expand' detayı açıp kapatır. Varsayılan 'none'. */
+  rowClick?: RowClickMode
+  /** Birincil linke düz sol tık, menüde Open, `rowClick="open"`. Paket gezinmeyi durdurmaz: `event.preventDefault()` dinleyicide. */
+  onRowOpen?: (payload: { row: Row; href: string; event: MouseEvent }) => void
+  /** Satır menüsü (⋯): Open / Copy yerleşik + bunlar. */
+  rowActions?: Array<RowAction<Row>>
+  /** Seçim sütunu; seçim sayfa kapsamlıdır (D19), durum `table.selection`'da. */
+  selectable?: boolean
+  /** Seçim çubuğu: yüzer (varsayılan) ya da araç çubuğunun yerine. */
+  selectionBar?: 'floating' | 'toolbar'
+  bulkActions?: Array<BulkAction<Row>>
+  /** `bulkActions` yerine seçim çubuğunun içeriği. */
+  selectionActions?: (props: { rows: Row[]; clear: () => void }) => ReactNode
+  /** Seçim her değiştiğinde; sayfadaki seçili satırlar (D19). */
+  onSelectionChange?: (rows: Row[]) => void
+  /** Satır detayı (05 §7): birincil hücrede chevron; veriyi detay bileşeni çeker. */
+  renderExpanded?: (props: { row: Row; close: () => void }) => ReactNode
+  /** Bu satırın detayı var mı? Yoksa chevron yerinde boşluk kalır. */
+  canExpand?: (row: Row) => boolean
 }) {
   const { i18n, locale } = useDataTableContext()
   const fmt = getFormat(locale)
@@ -162,6 +195,91 @@ export function DataTable<Row extends object>({
     vw.select(id)
   }
 
+  // Seçim ve expand (05 §6–7): seçim tabloda (sorgu değişince temizlenir), açık detaylar burada aynı kuralla.
+  const rowKeys = rows.map(table.rowId).join('\u0000')
+  const selectedRows = selectable ? rows.filter((r) => table.selection[table.rowId(r)]) : []
+  const selectedKey = selectedRows.map(table.rowId).join('\u0000')
+  const selectRows = (ids: string[], value: boolean) => {
+    const next = { ...table.selection }
+    for (const id of ids) {
+      if (value) next[id] = true
+      else delete next[id]
+    }
+    table.setSelection(next)
+  }
+  const expandKey = JSON.stringify([q.search, q.filters, q.sort, q.page])
+  const [open, setOpen] = useState({ key: expandKey, ids: NONE })
+  if (open.key !== expandKey) setOpen({ key: expandKey, ids: NONE })
+  const expanded = open.key === expandKey ? open.ids : NONE
+  const toggleExpand = (id: string, value: boolean) => {
+    const next = { ...expanded }
+    if (value) next[id] = true
+    else delete next[id]
+    setOpen({ key: expandKey, ids: next })
+    // Açılan detay satır sayısıyla okunur (08 §5): detay çizildikten sonra DOM'dan.
+    const row = rows.find((r) => table.rowId(r) === id)
+    if (value && row)
+      requestAnimationFrame(() => {
+        const sub = [...(root.current?.querySelectorAll<HTMLElement>('.dt-subrow') ?? [])].find((el) =>
+          el.id.endsWith(`-sub-${id}`),
+        )
+        const count = sub ? sub.querySelectorAll('[role="row"], tr').length : 0
+        setSeen((s) => ({ ...s, text: i18n.t('sr.expanded', { label: primaryLabel(row), count }) }))
+      })
+  }
+  // Yeni veride olmayan anahtarlar düşer (05 §12): refresh'te kalan satırların seçimi ve açıklığı korunur. Seçim tablonun
+  // durumu olduğundan effect'te, açıklık burada render sırasında.
+  const ids = new Set(rows.map(table.rowId))
+  const keep = (o: Record<string, true>) =>
+    Object.fromEntries(Object.entries(o).filter(([id]) => ids.has(id))) as Record<string, true>
+  if (Object.keys(expanded).some((id) => !ids.has(id))) setOpen({ key: expandKey, ids: keep(expanded) })
+  useEffect(() => {
+    if (Object.keys(table.selection).some((id) => !ids.has(id))) table.setSelection(keep(table.selection))
+    // Yalnızca satırlar değişince.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowKeys])
+  const lastSelected = useRef('')
+  useEffect(() => {
+    if (lastSelected.current === selectedKey) return
+    lastSelected.current = selectedKey
+    onSelectionChange?.(selectedRows)
+    // Yalnızca seçim değişince.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedKey])
+
+  // Birincil hücre (D6): link, aria etiketleri ve Copy için metin; ⋯ sütunu birincil sütun ya da rowActions varsa.
+  const primaryDef = table.columns.find((c) => c.primary)
+  const primaryHref = (row: Row) => primaryDef?.href?.(row)
+  const primaryLabel = (row: Row): string => {
+    const v = primaryDef
+      ? primaryDef.accessor
+        ? primaryDef.accessor(row)
+        : readPath(row, primaryDef.id as string)
+      : table.rowId(row)
+    return v === null || v === undefined ? '' : String(v)
+  }
+  const rowMenu = !!rowActions?.length || !!primaryDef
+  const handleRowClick = (row: Row, event: MouseEvent) => {
+    onRowClick?.(row, event)
+    if (rowClick === 'open')
+      (event.target as Element).closest('.dt-row')?.querySelector<HTMLElement>('.dt-cell.is-primary a.dt-link')?.click()
+    else if (rowClick === 'expand' && renderExpanded && (canExpand?.(row) ?? true)) {
+      const id = table.rowId(row)
+      toggleExpand(id, !expanded[id])
+    }
+  }
+  // Toast: yalnızca "Copied" (handoff 02 §6); bulk aksiyonlar için toast uygulamanındır (D20).
+  const [copied, setCopied] = useState(0)
+  useEffect(() => {
+    if (!copied) return
+    const t = setTimeout(() => setCopied(0), 2000)
+    return () => clearTimeout(t)
+  }, [copied])
+  const copyId = (row: Row) => {
+    void navigator.clipboard?.writeText(primaryLabel(row))
+    setCopied((n) => n + 1)
+  }
+
   // Count total (05 §8): sonuç arama/filtre/sıralama değişene kadar geçerli; değişince bekleyen sayım iptal edilir.
   const countKey = JSON.stringify([q.search, q.filters, q.sort])
   const [counted, setCounted] = useState<{ key: string; total: number; at: Date } | null>(null)
@@ -222,6 +340,7 @@ export function DataTable<Row extends object>({
     sort: JSON.stringify(q.sort),
     loaded: `${load.updatedAt?.getTime() ?? 0}|${rows.length}`,
     total: countedNow ? countedNow.at.getTime() : 0,
+    selected: selectedRows.length,
   }
   const [seen, setSeen] = useState({ ...said, text: '' })
   let polite = seen.text
@@ -230,9 +349,12 @@ export function DataTable<Row extends object>({
     seen.filters !== said.filters ||
     seen.sort !== said.sort ||
     seen.loaded !== said.loaded ||
-    seen.total !== said.total
+    seen.total !== said.total ||
+    seen.selected !== said.selected
   ) {
     if (seen.view !== said.view && vw.active) polite = i18n.t('sr.view', { name: vw.active.name })
+    else if (seen.selected !== said.selected && said.selected > 0)
+      polite = i18n.t('selection.selected', { count: said.selected })
     else if (seen.filters !== said.filters) polite = filterNews(JSON.parse(seen.filters) as FilterCondition[]) ?? polite
     else if (seen.total !== said.total && countedNow)
       polite = i18n.t('sr.total', { count: fmt.int(countedNow.total), entity })
@@ -255,6 +377,18 @@ export function DataTable<Row extends object>({
   // Kısayollar (08 §3): kapsam sayfa. Alt←/→ sayfa (her zaman), R yenile (odak metin alanında değilken).
   const onKey = useEffectEvent((e: KeyboardEvent) => {
     if (e.defaultPrevented) return
+    const target = e.target instanceof Element ? e.target : null
+    // Seçim checkbox'ları Tab durağı (D40): odakları kısayolları ve Esc'i kapatmaz.
+    const typing =
+      !!target && isTextInput(target) && !(target instanceof HTMLInputElement && target.type === 'checkbox')
+    // Esc sırayla: açık popover / menü / dialog (odak içindedir) → seçim (05 §6); metin alanında aramanın Esc'i.
+    if (e.key === 'Escape') {
+      const inLayer = !!target?.closest(
+        '[role="menu"], [role="dialog"], [role="alertdialog"], [role="listbox"], .dt-pop',
+      )
+      if (!inLayer && selectedRows.length && !typing) table.clearSelection()
+      return
+    }
     if (e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
       if (busy) return
       const left = e.key === 'ArrowLeft'
@@ -271,8 +405,7 @@ export function DataTable<Row extends object>({
       else openSaveAs()
       return
     }
-    const target = e.target instanceof Element ? e.target : null
-    if (!shortcuts || e.ctrlKey || e.metaKey || e.altKey || (target && isTextInput(target))) return
+    if (!shortcuts || e.ctrlKey || e.metaKey || e.altKey || typing) return
     if (e.key === '/' && hasSearch) {
       e.preventDefault()
       toolbarRef.current?.focusSearch()
@@ -388,106 +521,112 @@ export function DataTable<Row extends object>({
   return (
     // Kökün yazı boyutu (--dt-fs) kökteki yoğunluktan çözülür; yalnızca ızgarada olsaydı hep standard kalırdı.
     <div ref={root} className="dt dt-list" data-density={table.density}>
-      {toolbar !== false && (
-        <Toolbar
-          ref={toolbarRef}
-          size={size}
-          view={
-            hasViews && (
-              <ViewMenu
-                sections={vw.sections}
-                active={vw.active}
-                edited={vw.edited}
-                hasDraft={vw.hasDraft}
-                defaultId={prefs.prefs.defaultViewId}
-                canSave={vw.canSave}
-                canWrite={vw.writable(vw.active)}
-                open={viewMenuOpen}
-                onOpenChange={setViewMenuOpen}
-                onSelect={selectView}
-                onSaveChanges={() => void vw.saveChanges()}
-                onSaveAs={() => openSaveAs()}
-                onDiscard={() => {
-                  chips.setEditing(null)
-                  vw.discard()
-                }}
-                onRename={(view) =>
-                  setViewDialog({
-                    key: (viewDialog?.key ?? 0) + 1,
-                    mode: 'rename',
-                    name: view.name,
-                    state: current(),
-                    summary: null,
-                    view,
-                    fromCurrent: false,
-                  })
-                }
-                onDuplicate={openSaveAs}
-                onSetDefault={(id) => prefs.set({ defaultViewId: id })}
-                onDelete={setConfirmDelete}
-              />
-            )
-          }
-          search={hasSearch ? q.search : null}
-          searchPlaceholder={searchPlaceholder ?? i18n.t('toolbar.search', { entity })}
-          onSearch={table.setSearch}
-          filter={
-            hasFilter && (
-              <ColumnPicker
-                columns={filterable}
-                chips={chips.chips}
-                open={pickerOpen}
-                onOpenChange={setPickerOpen}
-                onPick={chips.pick}
-                trigger={
-                  <button
-                    type="button"
-                    className={[
-                      'dt-btn has-icon dt-filter-trigger',
-                      q.filters.length > 0 && 'is-active',
-                      size !== 'full' && !q.filters.length && 'dt-btn-icon',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                    aria-label={size !== 'full' ? i18n.t('toolbar.filter') : undefined}
-                  >
-                    <FunnelIcon size={16} aria-hidden="true" />
-                    {size === 'full' && <span>{i18n.t('toolbar.filter')}</span>}
-                    {q.filters.length > 0 && <span className="dt-counter">{q.filters.length}</span>}
-                  </button>
-                }
-              />
-            )
-          }
-          display={
-            toolbar === 'auto' && (
-              <DisplayPopover
-                density={table.density}
-                onDensity={(density) => prefs.set({ density })}
-                verticalLines={prefs.prefs.verticalLines}
-                onVerticalLines={(verticalLines) => prefs.set({ verticalLines })}
-                columns={table.layout.panel}
-                counts={table.layout.counts}
-                onColumnsSave={table.layout.arrange}
-                persistent={prefs.persistent}
-                onReset={table.resetDisplay}
-                iconOnly={size !== 'full'}
-              />
-            )
-          }
-          more={
-            moreMenu && (
-              <MoreMenu
-                onRefresh={refetch && (() => refetch())}
-                onPrint={print}
-                autoRefresh={!!autoRefresh && !!refetch}
-                autoRefreshOn={live}
-                onAutoRefresh={setLive}
-              />
-            )
-          }
-          end={toolbarEnd}
-        />
+      {selectionBar === 'toolbar' && selectedRows.length > 0 && toolbar !== false ? (
+        <BulkBar variant="toolbar" rows={selectedRows} actions={bulkActions ?? []} onClear={table.clearSelection}>
+          {selectionActions?.({ rows: selectedRows, clear: table.clearSelection })}
+        </BulkBar>
+      ) : (
+        toolbar !== false && (
+          <Toolbar
+            ref={toolbarRef}
+            size={size}
+            view={
+              hasViews && (
+                <ViewMenu
+                  sections={vw.sections}
+                  active={vw.active}
+                  edited={vw.edited}
+                  hasDraft={vw.hasDraft}
+                  defaultId={prefs.prefs.defaultViewId}
+                  canSave={vw.canSave}
+                  canWrite={vw.writable(vw.active)}
+                  open={viewMenuOpen}
+                  onOpenChange={setViewMenuOpen}
+                  onSelect={selectView}
+                  onSaveChanges={() => void vw.saveChanges()}
+                  onSaveAs={() => openSaveAs()}
+                  onDiscard={() => {
+                    chips.setEditing(null)
+                    vw.discard()
+                  }}
+                  onRename={(view) =>
+                    setViewDialog({
+                      key: (viewDialog?.key ?? 0) + 1,
+                      mode: 'rename',
+                      name: view.name,
+                      state: current(),
+                      summary: null,
+                      view,
+                      fromCurrent: false,
+                    })
+                  }
+                  onDuplicate={openSaveAs}
+                  onSetDefault={(id) => prefs.set({ defaultViewId: id })}
+                  onDelete={setConfirmDelete}
+                />
+              )
+            }
+            search={hasSearch ? q.search : null}
+            searchPlaceholder={searchPlaceholder ?? i18n.t('toolbar.search', { entity })}
+            onSearch={table.setSearch}
+            filter={
+              hasFilter && (
+                <ColumnPicker
+                  columns={filterable}
+                  chips={chips.chips}
+                  open={pickerOpen}
+                  onOpenChange={setPickerOpen}
+                  onPick={chips.pick}
+                  trigger={
+                    <button
+                      type="button"
+                      className={[
+                        'dt-btn has-icon dt-filter-trigger',
+                        q.filters.length > 0 && 'is-active',
+                        size !== 'full' && !q.filters.length && 'dt-btn-icon',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                      aria-label={size !== 'full' ? i18n.t('toolbar.filter') : undefined}
+                    >
+                      <FunnelIcon size={16} aria-hidden="true" />
+                      {size === 'full' && <span>{i18n.t('toolbar.filter')}</span>}
+                      {q.filters.length > 0 && <span className="dt-counter">{q.filters.length}</span>}
+                    </button>
+                  }
+                />
+              )
+            }
+            display={
+              toolbar === 'auto' && (
+                <DisplayPopover
+                  density={table.density}
+                  onDensity={(density) => prefs.set({ density })}
+                  verticalLines={prefs.prefs.verticalLines}
+                  onVerticalLines={(verticalLines) => prefs.set({ verticalLines })}
+                  columns={table.layout.panel}
+                  counts={table.layout.counts}
+                  onColumnsSave={table.layout.arrange}
+                  persistent={prefs.persistent}
+                  onReset={table.resetDisplay}
+                  iconOnly={size !== 'full'}
+                />
+              )
+            }
+            more={
+              moreMenu && (
+                <MoreMenu
+                  onRefresh={refetch && (() => refetch())}
+                  onPrint={print}
+                  autoRefresh={!!autoRefresh && !!refetch}
+                  autoRefreshOn={live}
+                  onAutoRefresh={setLive}
+                />
+              )
+            }
+            end={toolbarEnd}
+          />
+        )
       )}
       {load.errorKind === 'stale' && load.updatedAt && (
         <div className="dt-strip" role="status">
@@ -560,8 +699,36 @@ export function DataTable<Row extends object>({
           )
         }
         state={state}
-        onRowClick={onRowClick}
+        onRowClick={handleRowClick}
+        selection={selectable ? table.selection : undefined}
+        onSelectRows={selectable ? selectRows : undefined}
+        expanded={expanded}
+        canExpand={canExpand}
+        onToggleExpand={toggleExpand}
+        renderExpanded={renderExpanded && ((row, close) => renderExpanded({ row, close }))}
+        resetKey={expandKey}
+        rowMenu={rowMenu}
+        rowActions={rowActions}
+        primaryHref={primaryHref}
+        primaryLabel={primaryLabel}
+        primaryHeader={primaryDef?.header}
+        onRowOpen={(row, event) => onRowOpen?.({ row, href: primaryHref(row) ?? '', event })}
+        onCopy={copyId}
       />
+      {selectionBar === 'floating' && selectedRows.length > 0 && (
+        <BulkBar variant="floating" rows={selectedRows} actions={bulkActions ?? []} onClear={table.clearSelection}>
+          {selectionActions?.({ rows: selectedRows, clear: table.clearSelection })}
+        </BulkBar>
+      )}
+      {copied > 0 && (
+        <div
+          className={selectionBar === 'floating' && selectedRows.length ? 'dt-toast is-raised' : 'dt-toast'}
+          role="status"
+        >
+          <CheckIcon size={16} aria-hidden="true" />
+          {i18n.t('cell.copied')}
+        </div>
+      )}
       <Footer
         rowCount={rows.length}
         page={page}

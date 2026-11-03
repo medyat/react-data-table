@@ -12,6 +12,7 @@ export function DtMenu({
   finalFocus,
   align = 'end',
   side,
+  offset,
 }: {
   /** Tetikleyici öğe (düğme); Base UI ona aria ve olay işleyicilerini ekler. */
   trigger: ReactElement
@@ -22,8 +23,10 @@ export function DtMenu({
   /** false: kapanınca odak tetikleyiciye dönmez (ör. menü bir editör açtıysa); fonksiyon kapanışta karar verir. */
   finalFocus?: boolean | (() => boolean)
   align?: 'start' | 'end'
-  /** Görünüm satırının ⋯ menüsü sağa açılır. */
-  side?: 'right'
+  /** Görünüm satırının ⋯ menüsü sağa, yüzer bulk bar'ın ⋯ menüsü yukarı açılır. */
+  side?: 'right' | 'top'
+  /** Varsayılan: sağa 8, start 6, end 4. */
+  offset?: number
 }) {
   return (
     <Menu.Root open={open} onOpenChange={onOpenChange ? (o) => onOpenChange(o) : undefined}>
@@ -33,7 +36,7 @@ export function DtMenu({
           className="dt-positioner"
           side={side}
           align={align}
-          sideOffset={side ? 8 : align === 'start' ? 6 : 4}
+          sideOffset={offset ?? (side === 'right' ? 8 : align === 'start' ? 6 : 4)}
         >
           <Menu.Popup className={className ? `dt-menu ${className}` : 'dt-menu'} finalFocus={finalFocus}>
             {children}
@@ -50,14 +53,17 @@ export function DtMenuItem({
   disabled,
   destructive,
   selected,
+  twoLine,
 }: {
   children: ReactNode
   onSelect: () => void
   disabled?: boolean
   destructive?: boolean
   selected?: boolean
+  /** Etiket altında açıklama / gerekçe satırı (D36). */
+  twoLine?: boolean
 }) {
-  const cls = ['dt-menu-item', destructive && 'is-destructive', selected && 'is-selected']
+  const cls = ['dt-menu-item', destructive && 'is-destructive', selected && 'is-selected', twoLine && 'is-two-line']
   return (
     <Menu.Item className={cls.filter(Boolean).join(' ')} disabled={disabled} onClick={onSelect}>
       {children}

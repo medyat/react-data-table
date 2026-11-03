@@ -195,7 +195,7 @@ Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:
 | 2 | Veri akışı (R4), durumlar, sıralama, sayfalama, araç çubuğu, sütun yönetimi — **tamam** (aşağıdaki notlar) |
 | 3a | Filtreler ve arama — **tamam** (aşağıdaki notlar) |
 | 3b | Görünümler (R6) ve tercihler — **tamam** |
-| 4 | Seçim, bulk bar, satır etkileşimleri |
+| 4 | Seçim, bulk bar, satır etkileşimleri — **tamam** (aşağıdaki notlar; satır hatası D35 yok) |
 | 7 | Telefon, erişilebilirlik turu, belgeler |
 
 Faz 2 notları:
@@ -239,6 +239,25 @@ Faz 3a notları:
   (`ui.css`, R9 sapması).
 - Vue'dan bilinçli sapmalar: metin editörü yazarken duraklayınca sondaki boşluğu silmez (Vue'da "Atlas K"
   yazılamıyor, tarayıcıda doğrulandı); arama kutusu adresten geç dönen kendi değeriyle taslağı ezmez.
+
+Faz 4 notları:
+
+- Seçim tablonun durumundadır (`table.selection`, `setSelection`, `clearSelection`): bulk aksiyonu ya da ekranın başka
+  yeri seçimi `ref` olmadan temizler (Vue'da `defineExpose({ clearSelection })`). Seçili satırların kendisi
+  `<DataTable onSelectionChange>`'te; satırlar yalnızca bileşende bilinir (sunucu modu). `TableState`'e girmez: adrese
+  bağlanacak durum değil.
+- Seçim ve açık detaylar düz `Record<anahtar, true>`; TanStack `rowSelectionFeature` / `rowExpandingFeature`
+  kullanılmadı: kural (sorgu değişince temizle, refresh'te yeni veride olmayan anahtarı düşür) sayfa kapsamlı ve
+  satır modelinden bağımsız. Sıfırlama, isteğin kimliği değişince render sırasında yapılır; aynı sayfaya dönmek
+  eski seçimi geri getirmez.
+- Vue'daki `expand` prop'u + `#expanded` slot'u yerine `renderExpanded({ row, close })` ve `canExpand(row)`;
+  `#selection-actions` yerine `selectionActions({ rows, clear })`. `onRowOpen({ row, href, event })` Vue'daki
+  `row-open` ile aynı: paket gezinmeyi durdurmaz, dinleyici `event.preventDefault()` çağırır.
+- Menüdeki Open / Open in new tab Base UI `Menu.LinkItem`'dır (`closeOnClick`). Açık ⋯ ve bulk ⋯ düğmesi
+  `data-popup-open` ile işaretlenir (R9 notu, `grid.css` / `list.css`).
+- Açılan detayın duyurusu (`sr.expanded`) detay çizildikten sonraki karede DOM'dan sayılır (Vue: `nextTick`).
+- Satır hatası (D35, `rowError`) taşınmadı; ⋯ sütun genişliği hata ikonu payı olmadan hesaplanır.
+- Menüdeki Open bağlantılarının altı çizili; Vue'da da aynı (ortak eksik, `ui.css`).
 
 Swors'un ürün ekranı 3b'den sonra pakete geçer. O zamana kadar Swors'taki `DataTable`'a özellik
 eklenmez.

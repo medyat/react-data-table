@@ -16,6 +16,8 @@ export interface VirtualRowsOptions {
   keyOf: (index: number) => string
   /** Odaktaki widget'ın satırı (−1 yok): kaydırınca DOM'dan çıkmaz, odak kaybolmaz (08 §2). */
   keepIndex: number
+  /** Değişince ölçüm önbelleği sıfırlanır (sorgu / sayfa: açık detaylar kapandı, 05 §7). */
+  resetKey?: string
 }
 
 export function useVirtualRows(o: VirtualRowsOptions) {
@@ -41,9 +43,13 @@ export function useVirtualRows(o: VirtualRowsOptions) {
     },
   })
   // Yoğunluk değişince ölçüm önbelleği sıfırlanır: estimateSize değişimi tek başına yenilemez.
-  useLayoutEffect(() => v.measure(), [v, o.itemHeight])
+  useLayoutEffect(() => v.measure(), [v, o.itemHeight, o.resetKey])
   return {
     items: v.getVirtualItems().map((i) => ({ key: String(i.key), index: i.index, start: i.start })),
     total: v.getTotalSize(),
+    /** Açık detaylı öğenin ref'i: yüksekliği ölçülür, anahtarla önbellekte kalır. */
+    measureElement: v.measureElement,
+    /** Detay kapanınca öğe satır yüksekliğine döner. */
+    resizeItem: (index: number, size: number) => v.resizeItem(index, size),
   }
 }

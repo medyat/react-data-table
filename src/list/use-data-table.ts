@@ -14,6 +14,7 @@ import { useListTable } from './use-list-table'
 import { useViews } from './use-views'
 
 const PAGE_SIZES = [50, 100, 250, 500]
+const NONE: Record<string, true> = {}
 
 /** İstenecek alanlar (R4): satır anahtarı, görünür sütunların yolu ve `fields`'i, tablonun `fields`'i; koddaki sırayla. */
 function fieldsOf<Row extends object>(
@@ -122,6 +123,11 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
     fields,
   }
 
+  // Seçim sayfa kapsamlı (D19): sayfa, sayfa boyutu, filtre, arama ve sıralama değişince temizlenir; refresh'te kalır.
+  const [selected, setSelected] = useState({ identity, ids: NONE })
+  if (selected.identity !== identity) setSelected({ identity, ids: NONE })
+  const selection = selected.identity === identity ? selected.ids : NONE
+
   const client = useListTable({
     columns: options.columns,
     rows: options.rows,
@@ -156,6 +162,10 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
       prefs.reset()
       layout.reset(views.active?.state.columns)
     },
+    /** Seçili satır anahtarları (05 §6). Satırların kendisi `DataTable`'ın `onSelectionChange`'inde. */
+    selection,
+    setSelection: (ids: Record<string, true>) => setSelected({ identity, ids }),
+    clearSelection: () => setSelected({ identity, ids: NONE }),
     pageSizes: options.pageSizes ?? PAGE_SIZES,
     count: options.count,
     rowId,

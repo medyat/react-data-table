@@ -211,3 +211,49 @@ body {
 .is-red {
   color: var(--dt-r-dot);
 }
+/* Alt satır içeriği uygulamanın (handoff 03 §8 örneği): mini tablo 8 px yarıçap, 34 px satırlar, özet satırı. */
+.pg-ops {
+  max-width: 920px;
+}
+.pg-ops-table {
+  width: 100%;
+  border: 1px solid var(--dt-line);
+  border-radius: var(--dt-radius-inner);
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  background: var(--dt-surface);
+  font-size: 13px;
+}
+.pg-ops-table th,
+.pg-ops-table td {
+  height: 34px;
+  padding: 0 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--dt-line);
+}
+.pg-ops-table th {
+  background: var(--dt-surface-2);
+  color: var(--dt-text-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+.pg-ops-table tr:last-child td {
+  border-bottom: 0;
+}
+.pg-mono {
+  font-family: var(--dt-font-mono);
+  font-size: var(--dt-mono-fs);
+}
+.pg-ops-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  color: var(--dt-text-2);
+  font-size: 12.5px;
+}
+.pg-ops-foot a {
+  color: var(--dt-text);
+  font-weight: 500;
+  text-decoration: none;
+}
