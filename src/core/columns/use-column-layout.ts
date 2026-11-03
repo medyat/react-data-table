@@ -294,6 +294,17 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
     panel,
     counts: { shown: table.getVisibleLeafColumns().length, total: table.getAllLeafColumns().length },
     state,
+    /** Görünümün düzeni uygulanmadan `state()` biçiminde (04 §7 "edited" karşılaştırması). */
+    resolve: (l: Partial<ColumnLayout> | undefined): ColumnLayout => {
+      const st = stateOf(l)
+      const order = [...st.columnOrder, ...defs.map((d) => d.id as string).filter((id) => !st.columnOrder.includes(id))]
+      return {
+        order,
+        visible: order.filter((id) => st.columnVisibility[id]),
+        widths: st.columnSizing,
+        pinned: { left: st.columnPinning.start, right: st.columnPinning.end },
+      }
+    },
     /** Dialog'un Save'i (D45): sabitleme konumsaldır, sabitlerden sonraki ilk `start` ve son `end` görünür sütun. */
     arrange: (d: ColumnsDraft) => {
       const free = d.order.filter((id) => d.visible.includes(id) && !fixed.includes(id))

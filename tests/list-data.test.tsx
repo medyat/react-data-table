@@ -303,6 +303,7 @@ describe('durum (R5) ve tercihler', () => {
     fireEvent.click(label('score'))
     await flush()
     expect(onStateChange).toHaveBeenLastCalledWith({
+      view: null,
       search: '',
       filters: [],
       sort: [{ column: 'score', dir: 'asc' }],

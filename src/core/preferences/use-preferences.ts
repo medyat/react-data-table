@@ -16,16 +16,19 @@ function merge(base: Preferences, p: Partial<Preferences> | undefined): Preferen
 }
 
 export function usePreferences(tableId: TableId, adapter: PreferencesAdapter | null, defaults: Preferences) {
-  const [prefs, setPrefs] = useState<Preferences>(() => {
-    const got = adapter?.get(tableId)
-    return got instanceof Promise ? defaults : merge(defaults, got)
-  })
+  const [first] = useState(() => adapter?.get(tableId))
+  const [prefs, setPrefs] = useState<Preferences>(() => (first instanceof Promise ? defaults : merge(defaults, first)))
+  // Promise dönen adapter'da tercih gelene (ya da hata verene) kadar false: kullanıcı varsayılanı ancak o zaman bilinir.
+  const [ready, setReady] = useState(!(first instanceof Promise))
 
   useEffect(() => {
     const got = adapter?.get(tableId)
     if (!(got instanceof Promise)) return
     let live = true
-    got.then((p) => live && setPrefs((prev) => merge(prev, p))).catch(() => {})
+    got
+      .then((p) => live && setPrefs((prev) => merge(prev, p)))
+      .catch(() => {})
+      .finally(() => live && setReady(true))
     return () => {
       live = false
     }
@@ -43,5 +46,6 @@ export function usePreferences(tableId: TableId, adapter: PreferencesAdapter | n
     reset: () => set({ density: defaults.density, verticalLines: defaults.verticalLines, pageSize: defaults.pageSize }),
     /** Arayüz "Saved for you only" notunu yalnızca kalıcı depoda gösterir. */
     persistent: adapter !== null,
+    ready,
   }
 }

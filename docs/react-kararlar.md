@@ -90,7 +90,7 @@ kalıbıyla açılır: `state` + `onStateChange` verilirse controlled, verilmezs
 uncontrolled.
 
 `TableState = { view, search, filters, sort, page, pageSize, layout }`; alanlar fazlarla eklenir (Faz 2:
-`sort`, `page`, `pageSize`; Faz 3a: `search`, `filters`). `filters` yalnızca tam koşulları taşır: değeri
+`sort`, `page`, `pageSize`; Faz 3a: `search`, `filters`; Faz 3b: `view`). `filters` yalnızca tam koşulları taşır: değeri
 seçilmemiş çip ekranda kalır, duruma ve adrese girmez. Her alan ayrı ayrı controlled olabilir: `state`'te verilen alan dışarıdan
 okunur, diğerleri içeride kalır (TanStack Table'ın `state` kalıbı). Uncontrolled sayfa boyutu
 tercihten (`preferences`) gelir; sayfa boyutu değişimi controlled olsa da tercihe yazılır.
@@ -105,6 +105,18 @@ paketin içindedir (04, D4, D5, D27, D30). Kalıcılık `ViewsAdapter` ile: `lis
 remove`, hepsi `Promise`. Hazır `createLocalStorageViews({ scope })` gelir; backend gelince uygulama
 kendi adaptörünü yazar. Eşitlik karşılaştırması sıradan bağımsızdır (filtre ve `in` değerleri),
 sıralama anahtarlarında sıralıdır.
+
+- Aktif görünüm `state.view`'dadır (R5): adrese bağlanabilir. "Edited" saklanmaz; her çizimde ekrandaki durum
+  görünümün kayıtlı durumuyla (`layout.resolve` ile tamamlanmış) karşılaştırılır. Adresten gelen görünüm + filtre
+  uygulanmaz, olduğu gibi okunur; farklıysa "Edited" görünür.
+- `state.view` verilmezse açılış görünümü pakette seçilir (kullanıcı varsayılanı → system default → ilk system);
+  filtresi, sıralaması ve sütunları başlangıç durumu olur ve `onStateChange` ile bir kez bildirilir. Kişisel varsayılan
+  ya da Promise dönen tercih, liste ve tercih ilk geldiğinde bir kez uygulanır; sonra "Set as default" görünümü değiştirmez.
+- Görünüm kimliği `request`'e girmez: sorgu anahtarını yalnızca filtre / sıralama / sayfa değiştirir.
+- Görünüm menüsü Base UI Popover + kendi listbox'ı: odak aramada, ↑↓ vurgu (`aria-activedescendant`), Enter seçer, Tab
+  ⋯ düğmelerine ve New view'a gider. Combobox liste içindeki düğmeleri Tab sırasından çıkardığı için kullanılmadı.
+- Sütun genişliği değişimi hook'u yeniden çizmez (05 · Resize); "edited" için `useSyncExternalStore` sürükleme bitince
+  bir kez çizer.
 
 ## R7 · Provider
 
@@ -182,7 +194,7 @@ Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:
 | 1 | Izgara, hücre tipleri, `cell` / `actions`, etkileşim guard'ı, sanal gövde — **tamam** (60 fps / resize süresi ölçümü ve Playwright e2e Vue'daki gibi sonraya) |
 | 2 | Veri akışı (R4), durumlar, sıralama, sayfalama, araç çubuğu, sütun yönetimi — **tamam** (aşağıdaki notlar) |
 | 3a | Filtreler ve arama — **tamam** (aşağıdaki notlar) |
-| 3b | Görünümler (R6) ve tercihler |
+| 3b | Görünümler (R6) ve tercihler — **tamam** |
 | 4 | Seçim, bulk bar, satır etkileşimleri |
 | 7 | Telefon, erişilebilirlik turu, belgeler |
 

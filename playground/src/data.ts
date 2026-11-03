@@ -1,5 +1,5 @@
 import { ArrowSquareOutIcon, CopyIcon } from '@phosphor-icons/react'
-import type { ColumnDef, OptionDef, UserOption } from '@medyat/react-data-table'
+import type { ColumnDef, OptionDef, UserOption, View } from '@medyat/react-data-table'
 import type { Order } from '../server/mock-api.ts'
 
 export type { Order }
@@ -82,4 +82,27 @@ export const orderColumns: Array<ColumnDef<Order>> = [
     filterNoun: { one: 'plant', other: 'plants' },
   },
   { id: 'createdAt', header: 'Created', type: 'datetime', relative: true, hidden: true },
+]
+
+/** Vue playground'uyla aynı system görünümleri; kişisel görünümler app'teki localStorage adapter'ında. */
+export const orderViews: View[] = [
+  { id: 'all', name: 'All orders', kind: 'system', state: {}, default: true },
+  {
+    id: 'late',
+    name: 'Late orders',
+    kind: 'system',
+    state: {
+      filters: [
+        { column: 'dueAt', op: 'within', value: { preset: 'overdue' } },
+        { column: 'status', op: 'not_in', value: ['done'] },
+      ],
+      sort: [{ column: 'dueAt', dir: 'asc' }],
+    },
+  },
+  {
+    id: 'on-hold',
+    name: 'On hold',
+    kind: 'system',
+    state: { filters: [{ column: 'status', op: 'in', value: ['on_hold'] }], sort: [{ column: 'dueAt', dir: 'asc' }] },
+  },
 ]

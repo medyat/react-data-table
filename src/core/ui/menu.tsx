@@ -11,6 +11,7 @@ export function DtMenu({
   className,
   finalFocus,
   align = 'end',
+  side,
 }: {
   /** Tetikleyici öğe (düğme); Base UI ona aria ve olay işleyicilerini ekler. */
   trigger: ReactElement
@@ -21,12 +22,19 @@ export function DtMenu({
   /** false: kapanınca odak tetikleyiciye dönmez (ör. menü bir editör açtıysa); fonksiyon kapanışta karar verir. */
   finalFocus?: boolean | (() => boolean)
   align?: 'start' | 'end'
+  /** Görünüm satırının ⋯ menüsü sağa açılır. */
+  side?: 'right'
 }) {
   return (
     <Menu.Root open={open} onOpenChange={onOpenChange ? (o) => onOpenChange(o) : undefined}>
       <Menu.Trigger render={trigger} />
       <Menu.Portal>
-        <Menu.Positioner className="dt-positioner" align={align} sideOffset={align === 'start' ? 6 : 4}>
+        <Menu.Positioner
+          className="dt-positioner"
+          side={side}
+          align={align}
+          sideOffset={side ? 8 : align === 'start' ? 6 : 4}
+        >
           <Menu.Popup className={className ? `dt-menu ${className}` : 'dt-menu'} finalFocus={finalFocus}>
             {children}
           </Menu.Popup>

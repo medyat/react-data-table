@@ -1,6 +1,5 @@
 // Liste bileşeni (05): ızgara, footer, durum ekranları, yükleme geçişleri (R4). Paket veri çekmez (D18): sunucu modunda
 // `useQuery` sonucunu `result` olarak alır; istemci modunda satırlar `useDataTable({ rows })`'dan gelir.
-// Görünümler 3b'de.
 import { CircleNotchIcon, FunnelIcon, PlusIcon, WarningIcon } from '@phosphor-icons/react'
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { optionLabel } from '../core/cells/format'
@@ -18,9 +17,14 @@ import { StateMessage } from '../core/states/state-message'
 import { DisplayPopover } from '../core/toolbar/display-popover'
 import { MoreMenu } from '../core/toolbar/more-menu'
 import { Toolbar, type ToolbarHandle, type ToolbarSize } from '../core/toolbar/toolbar'
+import { ConfirmDialog } from '../core/ui/confirm-dialog'
+import { nameError } from '../core/views/model'
+import { ViewDialog, type ViewSummary } from '../core/views/view-dialog'
+import { ViewMenu } from '../core/views/view-menu'
 import type { ColumnDef } from '../types/columns'
 import type { DataTableResult } from '../types/list'
 import type { FilterCondition, QueryWithoutPage } from '../types/query'
+import type { View, ViewState } from '../types/views'
 import { Footer, type Freshness } from './footer'
 import { useChips } from './use-chips'
 import { isFilterable, isSearchable, isSortable } from './use-list-table'
@@ -68,7 +72,7 @@ export function DataTable<Row extends object>({
   autoRefresh?: number
   /** Verilirse ⋯ › Print. Sorgu sayfasızdır. */
   onPrint?: (payload: { query: QueryWithoutPage; visibleColumns: string[] }) => void
-  /** Tek harfli kısayollar (/ arama, F filtre, R yenile). Alt←/→ her zaman çalışır. */
+  /** Tek harfli kısayollar (/ arama, F filtre, R yenile, V görünümler) ve ⌘S. Alt←/→ her zaman çalışır. */
   shortcuts?: boolean
   /** Satır gövdesine düz tık; hücredeki düğme, link ve metin seçimi tetiklemez (05 §7). */
   onRowClick?: (row: Row, event: MouseEvent) => void
@@ -110,6 +114,53 @@ export function DataTable<Row extends object>({
   const hasFilter = toolbar === 'auto' && filterable.length > 0
   const hasSearch = toolbar !== false && table.columns.some((c) => isSearchable(c as ColumnDef))
   const toolbarRef = useRef<ToolbarHandle>(null)
+
+  // Görünümler (04 §7): menü, Save as new view / Rename dialog'u, silme onayı. Görünüm uygulanınca açık çip taslağı kalkar.
+  const vw = table.views
+  const hasViews = toolbar === 'auto' && vw.hasViews
+  const [viewMenuOpen, setViewMenuOpen] = useState(false)
+  const [viewDialog, setViewDialog] = useState<{
+    key: number
+    mode: 'create' | 'rename'
+    name: string
+    state: ViewState
+    summary: ViewSummary | null
+    view?: View
+    /** Mevcut düzenleme yeni görünüme taşınır (Save as new / New view); Duplicate'te aktif görünümün taslağı kalır. */
+    fromCurrent: boolean
+  } | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<View | null>(null)
+  const current = (): ViewState => ({ filters: q.filters, sort: q.sort, columns: table.layout.state() })
+  const viewSummary = (s: ViewState): ViewSummary => {
+    const lead = s.sort[0]
+    const more = s.sort.length > 1 ? ` +${s.sort.length - 1}` : ''
+    const pinned = [...s.columns.pinned.left, ...s.columns.pinned.right].map(headerOf).join(', ')
+    return {
+      filters: s.filters.map((f) => headerOf(f.column)).join(' · ') || i18n.t('common.empty'),
+      sort: lead ? `${headerOf(lead.column)} ${lead.dir === 'asc' ? '↑' : '↓'}${more}` : i18n.t('common.empty'),
+      columns: [
+        i18n.t('views.columnsSummary', { shown: s.columns.visible.length, total: table.columns.length }),
+        ...(pinned ? [i18n.t('views.pinnedSummary', { name: pinned })] : []),
+      ].join(' · '),
+    }
+  }
+  /** Save as new view / Save as my view / New view: mevcut durum, ad boş. Duplicate: kaynağın kayıtlı durumu, "{ad} copy". */
+  const openSaveAs = (view?: View) => {
+    const state = view ? table.resolveView(view) : current()
+    setViewDialog({
+      key: (viewDialog?.key ?? 0) + 1,
+      mode: 'create',
+      name: view ? i18n.t('views.copyName', { name: view.name }) : '',
+      state,
+      summary: viewSummary(state),
+      view,
+      fromCurrent: !view,
+    })
+  }
+  const selectView = (id: string) => {
+    chips.setEditing(null)
+    vw.select(id)
+  }
 
   // Count total (05 §8): sonuç arama/filtre/sıralama değişene kadar geçerli; değişince bekleyen sayım iptal edilir.
   const countKey = JSON.stringify([q.search, q.filters, q.sort])
@@ -166,6 +217,7 @@ export function DataTable<Row extends object>({
   // Ekran okuyucu (08 §5): tek polite bölge; son değişen olay okunur. İlk çizimde duyuru yok.
   const first = q.sort[0]
   const said = {
+    view: table.state.view ?? '',
     filters: JSON.stringify(q.filters),
     sort: JSON.stringify(q.sort),
     loaded: `${load.updatedAt?.getTime() ?? 0}|${rows.length}`,
@@ -174,12 +226,14 @@ export function DataTable<Row extends object>({
   const [seen, setSeen] = useState({ ...said, text: '' })
   let polite = seen.text
   if (
+    seen.view !== said.view ||
     seen.filters !== said.filters ||
     seen.sort !== said.sort ||
     seen.loaded !== said.loaded ||
     seen.total !== said.total
   ) {
-    if (seen.filters !== said.filters) polite = filterNews(JSON.parse(seen.filters) as FilterCondition[]) ?? polite
+    if (seen.view !== said.view && vw.active) polite = i18n.t('sr.view', { name: vw.active.name })
+    else if (seen.filters !== said.filters) polite = filterNews(JSON.parse(seen.filters) as FilterCondition[]) ?? polite
     else if (seen.total !== said.total && countedNow)
       polite = i18n.t('sr.total', { count: fmt.int(countedNow.total), entity })
     else if (seen.sort !== said.sort && first)
@@ -210,6 +264,13 @@ export function DataTable<Row extends object>({
       }
       return
     }
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && (e.key === 's' || e.key === 'S')) {
+      if (!shortcuts || !vw.edited || !vw.canSave || viewDialog) return
+      e.preventDefault()
+      if (vw.writable(vw.active)) void vw.saveChanges()
+      else openSaveAs()
+      return
+    }
     const target = e.target instanceof Element ? e.target : null
     if (!shortcuts || e.ctrlKey || e.metaKey || e.altKey || (target && isTextInput(target))) return
     if (e.key === '/' && hasSearch) {
@@ -221,6 +282,9 @@ export function DataTable<Row extends object>({
     } else if ((e.key === 'r' || e.key === 'R') && refetch) {
       e.preventDefault()
       refetch()
+    } else if ((e.key === 'v' || e.key === 'V') && hasViews) {
+      e.preventDefault()
+      setViewMenuOpen(true)
     }
   })
   useEffect(() => {
@@ -328,6 +392,42 @@ export function DataTable<Row extends object>({
         <Toolbar
           ref={toolbarRef}
           size={size}
+          view={
+            hasViews && (
+              <ViewMenu
+                sections={vw.sections}
+                active={vw.active}
+                edited={vw.edited}
+                hasDraft={vw.hasDraft}
+                defaultId={prefs.prefs.defaultViewId}
+                canSave={vw.canSave}
+                canWrite={vw.writable(vw.active)}
+                open={viewMenuOpen}
+                onOpenChange={setViewMenuOpen}
+                onSelect={selectView}
+                onSaveChanges={() => void vw.saveChanges()}
+                onSaveAs={() => openSaveAs()}
+                onDiscard={() => {
+                  chips.setEditing(null)
+                  vw.discard()
+                }}
+                onRename={(view) =>
+                  setViewDialog({
+                    key: (viewDialog?.key ?? 0) + 1,
+                    mode: 'rename',
+                    name: view.name,
+                    state: current(),
+                    summary: null,
+                    view,
+                    fromCurrent: false,
+                  })
+                }
+                onDuplicate={openSaveAs}
+                onSetDefault={(id) => prefs.set({ defaultViewId: id })}
+                onDelete={setConfirmDelete}
+              />
+            )
+          }
           search={hasSearch ? q.search : null}
           searchPlaceholder={searchPlaceholder ?? i18n.t('toolbar.search', { entity })}
           onSearch={table.setSearch}
@@ -370,11 +470,7 @@ export function DataTable<Row extends object>({
                 counts={table.layout.counts}
                 onColumnsSave={table.layout.arrange}
                 persistent={prefs.persistent}
-                onReset={() => {
-                  // Tercihler ve sütun düzeni; sıralama korunur.
-                  prefs.reset()
-                  table.layout.reset()
-                }}
+                onReset={table.resetDisplay}
                 iconOnly={size !== 'full'}
               />
             )
@@ -492,6 +588,35 @@ export function DataTable<Row extends object>({
         {load.errorKind === 'error' ? `${i18n.t('state.errorTitle', { entity })} ${i18n.t('state.tryAgain')}` : ''}
       </span>
       <DelegatedTooltip root={root} />
+      {viewDialog && (
+        <ViewDialog
+          key={viewDialog.key}
+          open
+          onOpenChange={(o) => !o && setViewDialog(null)}
+          mode={viewDialog.mode}
+          name={viewDialog.name}
+          summary={viewDialog.summary}
+          validate={(name) =>
+            nameError(name, vw.all, locale, viewDialog.mode === 'rename' ? viewDialog.view?.id : undefined)
+          }
+          onSave={({ name, makeDefault }) => {
+            if (viewDialog.mode === 'rename' && viewDialog.view) void vw.rename(viewDialog.view.id, name)
+            else {
+              chips.setEditing(null)
+              void vw.create({ name, state: viewDialog.state, makeDefault, fromCurrent: viewDialog.fromCurrent })
+            }
+          }}
+        />
+      )}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onOpenChange={(o) => !o && setConfirmDelete(null)}
+        title={i18n.t('views.delete.title', { name: confirmDelete?.name ?? '' })}
+        body={i18n.t('views.delete.body')}
+        confirmLabel={i18n.t('views.delete')}
+        danger
+        onConfirm={() => confirmDelete && void vw.remove(confirmDelete.id)}
+      />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 // Toolbar (05 §3, §11; T1, T13): yalnızca yapılandırılmış yuvalar; daralma kartın genişliğiyle (`size`, DataTable ölçer).
 // Sıra: görünüm · [arama · Filter] (tam ortada) · [Display · ⋯] │ birincil (köşeli parantez: birleşik düğme grubu, D43).
-// 640–1023 px'de arama ikona döner, tıklanınca açılır. Görünüm yuvası 3b'de dolar; telefon düzeni Faz 7.
+// 640–1023 px'de arama ikona döner, tıklanınca açılır. Telefon düzeni Faz 7.
 import { MagnifyingGlassIcon } from '@phosphor-icons/react'
 import { useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react'
 import { SearchBox } from './search-box'
@@ -13,6 +13,7 @@ export interface ToolbarHandle {
 
 export function Toolbar({
   size,
+  view,
   search,
   searchPlaceholder,
   onSearch,
@@ -23,6 +24,8 @@ export function Toolbar({
   ref,
 }: {
   size: ToolbarSize
+  /** Görünüm menüsü (04 §7), en solda. */
+  view?: ReactNode
   /** null: arama yuvası yok. */
   search: string | null
   searchPlaceholder: string
@@ -47,7 +50,7 @@ export function Toolbar({
 
   return (
     <div className={`dt-toolbar is-${size} is-zoned`} role="toolbar">
-      <div className="dt-toolbar-side is-start" />
+      <div className="dt-toolbar-side is-start">{view}</div>
       <div className="dt-btn-group">
         {search !== null &&
           (collapsed ? (

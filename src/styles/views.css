@@ -1,0 +1,152 @@
+/* Görünümler (04 §7, handoff 03 §2 ve §4): toolbar seçicisi, görünüm menüsü (316), satır ⋯ menüsü (200), dialog özeti. */
+
+/* Seçici (D43): ghost; solda ikon kutusu (her yönde 4 px içeride), ad 600; düzenlenmişse accent nokta + “Edited”; CaretDown.
+   Arkasında toolbar ayırıcısı. */
+.dt-btn.has-icon.dt-view-trigger {
+  height: var(--dt-control-h);
+  padding: 0 8px 0 calc((var(--dt-control-h) - var(--dt-control-h-xs)) / 2 - 1px); /* 1 px: ghost'un saydam kenarlığı */
+  gap: var(--dt-space-sm);
+  color: var(--dt-text);
+  font-size: var(--dt-ui-fs);
+}
+.dt-view-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--dt-control-h-xs);
+  height: var(--dt-control-h-xs);
+  margin-right: 2px;
+  border-radius: var(--dt-radius-item);
+  background: var(--dt-surface-3);
+  color: var(--dt-text-2);
+}
+.dt-view-name {
+  font-weight: 600;
+}
+.dt-view-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--dt-radius-pill);
+  background: var(--dt-accent);
+}
+.dt-view-edited {
+  color: var(--dt-text-2);
+  font-size: var(--dt-ui-fs-xs);
+  font-weight: 500;
+}
+.dt-view-trigger > svg {
+  color: var(--dt-text-3);
+}
+
+/* Menü: üstte kaydetme bölümü (iki satırlı öğe 44 px), Find a view…, bölümler, altta New view. */
+.dt-views {
+  width: calc(316 * var(--dt-ui-fs) / 13);
+}
+.dt-view-action {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  min-height: 44px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.dt-view-action.is-single {
+  min-height: var(--dt-control-h);
+  justify-content: center;
+}
+.dt-view-action-main {
+  display: flex;
+  align-items: center;
+  gap: var(--dt-space);
+}
+.dt-view-action-main .dt-kbd {
+  margin-left: auto;
+  background: transparent;
+  color: var(--dt-text-3);
+}
+.dt-view-action-sub {
+  color: var(--dt-text-3);
+  font-size: var(--dt-ui-fs-xs);
+}
+.dt-views-list {
+  max-height: 360px;
+  overflow: auto;
+  outline: none;
+}
+.dt-view-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.dt-view-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--dt-space-sm);
+  min-width: 0;
+  height: var(--dt-control-h);
+  padding: 0 32px 0 8px;
+  border-radius: var(--dt-radius-item);
+  cursor: default;
+  outline: none;
+}
+.dt-view-item[data-highlighted],
+.dt-view-row:hover .dt-view-item {
+  background: var(--dt-surface-3);
+}
+.dt-view-row-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dt-view-row.is-active .dt-view-row-name {
+  font-weight: 600;
+}
+.dt-view-default {
+  color: var(--dt-text-3);
+  font-size: var(--dt-ui-fs-xs);
+}
+.dt-view-more {
+  position: absolute;
+  right: 4px;
+  opacity: 0;
+}
+.dt-view-row:hover .dt-view-more,
+.dt-view-more:focus-visible,
+.dt-view-more[data-state='open'],
+/* R9: Base UI açık menü tetikleyicisini `data-popup-open` ile işaretler (reka: data-state="open"). */
+.dt-view-more[data-popup-open] {
+  opacity: 1;
+}
+.dt-view-row-menu {
+  min-width: calc(200 * var(--dt-ui-fs) / 13);
+}
+.dt-view-note {
+  padding: 6px 8px;
+  color: var(--dt-text-3);
+  font-size: var(--dt-ui-fs-xs);
+  line-height: 1.4;
+}
+.dt-view-new {
+  color: var(--dt-text-2);
+  cursor: pointer;
+}
+
+/* Save as new view: özet kutusu (surface-2, yarıçap 8, dolgu 12, 72 px etiket sütunu, 12.5). */
+.dt-view-summary {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 8px 12px;
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: var(--dt-radius-inner);
+  background: var(--dt-surface-2);
+  font-size: var(--dt-ui-fs-sm);
+}
+.dt-view-summary > span:nth-child(odd) {
+  color: var(--dt-text-2);
+}

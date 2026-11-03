@@ -3,7 +3,7 @@
 // Araç çubuğu ve sütun yönetimi Faz 2'nin ikinci diliminde; filtre ve arama Faz 3a.
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { DataTable, useDataTable, type Density, type QueryWithoutPage, type TableQuery } from '@medyat/react-data-table'
-import { orderColumns, type Order } from '../data'
+import { orderColumns, orderViews, type Order } from '../data'
 
 const params = new URLSearchParams(location.search)
 const SCENARIOS = [
@@ -59,6 +59,7 @@ export function T1List({ density }: { density: Density }) {
   const table = useDataTable({
     id: 'production-orders',
     columns: orderColumns,
+    views: orderViews,
     entityName: { one: 'order', other: 'orders' },
     density,
     pageSize: Number(params.get('size') ?? 100),
