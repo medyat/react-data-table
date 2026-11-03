@@ -113,8 +113,9 @@ sıralama anahtarlarında sıralıdır.
   filtresi, sıralaması ve sütunları başlangıç durumu olur ve `onStateChange` ile bir kez bildirilir. Kişisel varsayılan
   ya da Promise dönen tercih, liste ve tercih ilk geldiğinde bir kez uygulanır; sonra "Set as default" görünümü değiştirmez.
 - Görünüm kimliği `request`'e girmez: sorgu anahtarını yalnızca filtre / sıralama / sayfa değiştirir.
-- Görünüm menüsü Base UI Popover + kendi listbox'ı: odak aramada, ↑↓ vurgu (`aria-activedescendant`), Enter seçer, Tab
-  ⋯ düğmelerine ve New view'a gider. Combobox liste içindeki düğmeleri Tab sırasından çıkardığı için kullanılmadı.
+- Görünüm menüsü Base UI Popover + kendi combobox'ı, liste grid popup (Faz 7c'de listbox'tan çevrildi): odak aramada, ↑↓
+  vurgu (`aria-activedescendant`), Enter seçer, Tab ⋯ düğmelerine ve New view'a gider. Base UI Combobox liste içindeki
+  düğmeleri Tab sırasından çıkardığı için kullanılmadı.
 - Sütun genişliği değişimi hook'u yeniden çizmez (05 · Resize); "edited" için `useSyncExternalStore` sürükleme bitince
   bir kez çizer.
 
@@ -198,7 +199,7 @@ Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:
 | 3a | Filtreler ve arama — **tamam** (aşağıdaki notlar) |
 | 3b | Görünümler (R6) ve tercihler — **tamam** |
 | 4 | Seçim, bulk bar, satır etkileşimleri, satır hatası (D35) — **tamam** (aşağıdaki notlar) |
-| 7 | Telefon — **tamam**; erişilebilirlik turu sürüyor (aşağıdaki notlar); belgeler |
+| 7 | Telefon, erişilebilirlik turu, README — **tamam** (aşağıdaki notlar) |
 
 Faz 2 notları:
 
