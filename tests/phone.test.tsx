@@ -123,6 +123,20 @@ describe('telefon düzeni', () => {
     expect(within(sheet()).getByRole('heading', { name: 'Qty' })).toBeTruthy()
   })
 
+  it('Filters editöründe Clear sonrası odak değer alanına geçer', async () => {
+    await mount(<Table />)
+    table.setFilters([{ column: 'name', op: 'contains', value: 'Pump' }])
+    await flush()
+    fireEvent.click(document.querySelector('.dt-chip-body')!)
+    await screen.findByRole('dialog')
+    await flush()
+    const clear = within(sheet()).getByRole('button', { name: 'Clear' })
+    clear.focus()
+    fireEvent.click(clear)
+    await flush()
+    expect(document.activeElement).toBe(within(sheet()).getByRole('textbox'))
+  })
+
   it('Geri: değeri seçilmemiş çip taslaktan düşer', async () => {
     await mount(<Table />)
     fireEvent.click(screen.getByRole('button', { name: 'Filter' }))

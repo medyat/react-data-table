@@ -232,8 +232,7 @@ Faz 3a notları:
 - Takvim başlığı düğmedir: tıklanınca gün → ay → yıl (12'li) ızgarası açılır, seçim bir alt görünüme döner, Esc
   popover'ı kapatmadan bir üst görünüme çıkar. Izgara gizlenen gün takviminin üstüne oturur, popover boyu oynamaz.
   Başlık ve oklar editörün; react-day-picker'ın gösterdiği ay kontrollüdür (`month`).
-- Clear'dan sonra düğme devre dışı kalır ve odak `body`'ye düşer; Vue'da da aynı (ortak eksik, Faz 7
-  erişilebilirlik turunda).
+- Clear'dan sonra düğme devre dışı kalır; Vue'da odak `body`'ye düşer. React'te Faz 7c'de düzeltildi (aşağıda).
 - Column picker Base UI Combobox'tır; açılışta ilk öğe vurgulanmaz (Vue'da vurgulu). Yazınca ilk eşleşme
   vurgulanır, yani "yaz + Enter" aynı; yalnızca hiç yazmadan Enter önce ↓ ister. `autoHighlight="always"`
   Combobox'ın genel API'sinde yok.
@@ -283,6 +282,8 @@ Faz 7c notları (erişilebilirlik):
   Dar kartta (640–1023) Filter etiketli kalır; React'te ikona dönüyordu, Vue'da ikon yalnızca telefonda.
 - Ad görünen metni içermeli (WCAG 2.5.3): bitişik `span`'lar arasına boşluk konur (çip, görünüm tetikleyicisi, Filter).
   Flex içinde görünmez, piksel farkı yok.
+- Clear (çip popover'ı ve telefon Filters editörü) değeri silmeden önce odağı editörün ilk alanına taşır: düğme devre
+  dışı kalınca odak `body`'ye düşmez, sıradaki adım yeni değer (Vue'da düşer).
 - Telefon çipi operatörü gösterir ("Status is Draft"; Vue'da "Status Draft"): "is" ile "is not" ayırt edilir, ad
   görünen metinle uyuşur.
 - dnd-kit canlı bölgesini `DndContext`'in yerinde çizer: Columns listesinin (`ul`) dışında, dialog'un içinde.

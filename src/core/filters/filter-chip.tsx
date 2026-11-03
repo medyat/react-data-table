@@ -178,7 +178,11 @@ export function FilterChip({
                     type="button"
                     className="dt-pop-action"
                     disabled={chip.value === undefined}
-                    onClick={() => update({ value: undefined })}
+                    onClick={() => {
+                      // Devre dışı kalacak düğmeden odak body'ye düşmesin: sıradaki adım yeni değer.
+                      body.current?.querySelector<HTMLElement>('input, textarea, button')?.focus()
+                      update({ value: undefined })
+                    }}
                   >
                     {i18n.t('common.clear')}
                   </button>

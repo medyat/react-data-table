@@ -14,7 +14,7 @@ import {
   PlusIcon,
   XIcon,
 } from '@phosphor-icons/react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { ColumnDef } from '../../types/columns'
 import type { FilterOp, SortRule } from '../../types/query'
 import type { RemoteLabels } from '../cells/remote-labels'
@@ -78,6 +78,7 @@ export function FiltersSheet({
   const [editing, setEditing] = useState<string | null>(start.editing)
   const [level, setLevel] = useState<Level>(start.editing ? 'editor' : 'main')
   const [q, setQ] = useState('')
+  const editor = useRef<HTMLDivElement>(null)
 
   const filterable = columns.filter((c) => c.filterable ?? TYPE_SPECS[c.type].filterable)
   const sortable = columns.filter((c) => c.sortable ?? TYPE_SPECS[c.type].sortable)
@@ -145,7 +146,11 @@ export function FiltersSheet({
               type="button"
               className="dt-bsheet-action"
               disabled={chip?.value === undefined}
-              onClick={() => chip && replace({ ...chip, value: undefined })}
+              onClick={() => {
+                // Devre dışı kalacak düğmeden odak body'ye düşmesin: değer alanına (operatör seçicisi hariç).
+                editor.current?.querySelector<HTMLElement>('input, textarea, button')?.focus()
+                if (chip) replace({ ...chip, value: undefined })
+              }}
             >
               {i18n.t('common.clear')}
             </button>
@@ -275,7 +280,7 @@ export function FiltersSheet({
       )}
 
       {level === 'editor' && chip && chipDef && (
-        <div className="dt-bsheet-editor">
+        <div ref={editor} className="dt-bsheet-editor">
           <label className="dt-select dt-bsheet-select">
             <select
               value={chip.op}
