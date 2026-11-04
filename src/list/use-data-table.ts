@@ -47,10 +47,17 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
   // Görünüm verilmediyse (ne `state` ne `initialState`) açılış görünümü pakette seçilir (04 §7): kullanıcı varsayılanı →
   // system default → ilk system. Filtresi, sıralaması ve sütunları başlangıç durumu olur; kişisel varsayılan liste gelince.
   const [opening] = useState(() => {
-    const given = options.state?.view !== undefined || options.initialState?.view !== undefined
-    return { auto: !given, view: given ? null : defaultView(system, prefs.prefs.defaultViewId) }
+    const id = options.state?.view !== undefined ? options.state.view : options.initialState?.view
+    const given = id !== undefined
+    return {
+      auto: !given,
+      view: given ? null : defaultView(system, prefs.prefs.defaultViewId),
+      // Dışarıdan gelen görünümün filtresi ve sıralaması olduğu gibi okunur ama sütunları adreste yoktur: system görünümünde
+      // hemen, kişiselde liste gelince (useViews) görünümden alınır.
+      columns: (given ? system.find((v) => v.id === id) : null)?.state.columns,
+    }
   })
-  const layout = useColumnLayout({ columns: options.columns, layout: opening.view?.state.columns })
+  const layout = useColumnLayout({ columns: options.columns, layout: opening.view?.state.columns ?? opening.columns })
 
   // R5: `state`'teki alan dışarıdan, diğerleri içeriden. Uncontrolled sayfa boyutu tercihi izler.
   const [inner, setInner] = useState<Partial<TableState>>(() => {
@@ -103,6 +110,7 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
       layout.reset(s.columns)
       update({ view, filters: s.filters, sort: s.sort, page: 1 })
     },
+    restoreColumns: (columns) => layout.reset(columns),
   })
 
   // Sütun taşımak ya da gizlemek isteği değiştirmez (R4): alanlar yalnızca yeni görünen sütunla, ya da sorgu değişince

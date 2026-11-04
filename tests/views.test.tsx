@@ -304,6 +304,16 @@ describe('düzenlenmiş durum ve kaydetme', () => {
     await openMenu()
     expect(row('Late orders')!.textContent).toContain('Default')
   })
+  it('hiç görünüm yokken adapter varsa tetik "Views" yazar ve New view sunar; adapter de yoksa tetik yok', async () => {
+    await mount({ adapter: memoryAdapter(), options: { views: [] } })
+    expect(trigger().textContent).toBe('Views')
+    await openMenu()
+    expect(menuButton('New view')).toBeTruthy()
+    cleanup()
+
+    await mount({ options: { views: [] } })
+    expect(trigger()).toBeNull()
+  })
   it('adapter yoksa yalnızca Discard ve Set as default; New view yok', async () => {
     await mount({})
     await sortBy('product')
@@ -350,5 +360,22 @@ describe('Display › Reset ve controlled görünüm (R5)', () => {
     await mount({ options: { state: { filters: [] }, onStateChange: (s) => changes.push(s) } })
     expect(changes).toHaveLength(1)
     expect(changes[0]).toMatchObject({ view: 'all', filters: [] })
+  })
+  it('controlled: adresten gelen görünümün sütunları uygulanır (adreste sütun yok); kişisel olan liste gelince', async () => {
+    const late = sys[1]!.state
+    await mount({ options: { state: { view: 'late', filters: late.filters, sort: late.sort } } })
+    expect(heads()).toEqual(['number', 'status', 'value'])
+    expect(trigger().textContent).not.toContain('Edited')
+    cleanup()
+
+    const mine: View = {
+      id: 'p1',
+      name: 'Mine',
+      kind: 'personal',
+      state: { filters: [], sort: [], columns: { visible: ['number', 'value'] } },
+    }
+    await mount({ adapter: memoryAdapter([mine]), options: { state: { view: 'p1', filters: [], sort: [] } } })
+    expect(heads()).toEqual(['number', 'value'])
+    expect(trigger().textContent).not.toContain('Edited')
   })
 })

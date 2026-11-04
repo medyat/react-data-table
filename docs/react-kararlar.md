@@ -109,6 +109,8 @@ sıralama anahtarlarında sıralıdır.
 - Aktif görünüm `state.view`'dadır (R5): adrese bağlanabilir. "Edited" saklanmaz; her çizimde ekrandaki durum
   görünümün kayıtlı durumuyla (`layout.resolve` ile tamamlanmış) karşılaştırılır. Adresten gelen görünüm + filtre
   uygulanmaz, olduğu gibi okunur; farklıysa "Edited" görünür.
+  Sütun düzeni adreste olmadığı için görünümden alınır: system görünümünde açılışta, kişisel görünümde liste
+  gelince bir kez (kullanıcı o arada bir görünüm seçmediyse).
 - `state.view` verilmezse açılış görünümü pakette seçilir (kullanıcı varsayılanı → system default → ilk system);
   filtresi, sıralaması ve sütunları başlangıç durumu olur ve `onStateChange` ile bir kez bildirilir. Kişisel varsayılan
   ya da Promise dönen tercih, liste ve tercih ilk geldiğinde bir kez uygulanır; sonra "Set as default" görünümü değiştirmez.

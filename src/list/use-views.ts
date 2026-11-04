@@ -28,6 +28,8 @@ export interface ViewsOptions {
   resolve: (patch: ViewPatch) => ViewState
   /** Tek adımda uygular (tek istek): görünüm kimliği, filtre, sıralama, sütunlar, sayfa 1. */
   apply: (id: string | null, state: ViewState) => void
+  /** Yalnızca sütun düzeni: dışarıdan verilen kişisel görünüm liste gelince. */
+  restoreColumns: (columns: ViewPatch['columns']) => void
 }
 
 export function useViews(o: ViewsOptions) {
@@ -72,6 +74,12 @@ export function useViews(o: ViewsOptions) {
   useEffect(() => {
     if (!ready || settled.current) return
     settled.current = true
+    if (!o.auto) {
+      // Görünüm dışarıdan (adres) verildi: filtre ve sıralama oradan okunur, sütunlar yalnızca görünümde (R5).
+      const given = saved.find((v) => v.id === o.activeId)
+      if (given && !touched.current) o.restoreColumns(given.state.columns)
+      return
+    }
     const preferred = defaultView(all, o.defaultViewId)
     if (!preferred || !o.auto || touched.current || edited || preferred.id === o.activeId) return
     activate(preferred)
@@ -89,7 +97,8 @@ export function useViews(o: ViewsOptions) {
     sections: { system: o.system, personal: byName(saved, collator) },
     active,
     edited,
-    hasViews: all.length > 0,
+    // Adapter varsa ilk görünüm menüden yaratılır; tetik yalnızca ne görünüm ne adapter varken gizlenir (04 §7).
+    hasViews: all.length > 0 || !!o.adapter,
     canSave: !!o.adapter,
     hasDraft: (id: string) => id in drafts,
     writable,
