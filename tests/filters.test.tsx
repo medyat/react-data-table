@@ -274,6 +274,12 @@ describe('değer ve operatör', () => {
     await flush()
     expect(document.activeElement).toBe(within(pop()!).getByRole('textbox'))
   })
+  it('aralık editörü açılınca odak ilk alanda (Min)', async () => {
+    await mount(<Table server />)
+    await pickColumn('Qty')
+    expect(document.activeElement).toBe(pop()!.querySelector('.dt-chip-pop-body input'))
+  })
+
   it("× sonrası odak sonraki çipe, son çipte Add filter'a", async () => {
     await mount(<Table server />)
     await pickColumn('Urgent')

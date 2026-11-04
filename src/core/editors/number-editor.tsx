@@ -65,10 +65,10 @@ export function NumberEditor({
     onDone()
   }
   const suffix = column.type === 'percentage' ? '%' : ''
-  const field = (text: string, onText: (t: string) => void) => (
+  const field = (text: string, onText: (t: string) => void, first = false) => (
     <span className={suffix ? 'dt-input has-suffix' : 'dt-input'}>
       <input
-        autoFocus
+        autoFocus={first}
         value={text}
         type="text"
         inputMode="decimal"
@@ -98,7 +98,7 @@ export function NumberEditor({
       <div className="dt-editor-fields">
         <label className="dt-editor-field">
           {range && <span className="dt-editor-label">{i18n.t('number.min')}</span>}
-          {field(a, (t) => set([t, b]))}
+          {field(a, (t) => set([t, b]), true)}
         </label>
         {range && (
           <>
