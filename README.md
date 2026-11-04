@@ -175,7 +175,7 @@ paketi ezsin:
 ```
 
 Tema `.dark` sınıfı ya da `data-theme="dark"` ile değişir. Yoğunluk kullanıcının Display › Density seçiminden gelir;
-`useDataTable({ density })` onu sabitler.
+`useDataTable({ density })` onu sabitler ve seçiciyi gizler.
 
 ## Geliştirme
 

@@ -210,6 +210,8 @@ Faz 2 notları:
 - İçe aktarma yok (R1). Telefon araç çubuğu Faz 7'de.
 - Vue'daki kaydırma konumu hapı taşınmadı.
 - Sütun gösterme isteği debounce edilmez: Columns dialog'u değişiklikleri Save'de tek seferde uygular.
+- Uygulama `useDataTable({ density })` ile yoğunluğu sabitlerse Display'deki ve telefon ⋯ sayfasındaki Density seçicisi
+  gizlenir (`table.densityFixed`). Vue seçiciyi gösterir ama seçim etkisiz kalır.
 - Vue'dan bilinçli sapmalar: çoklu sıralamada `aria-sort` yalnızca birincil sütunda (Vue'nun kendi
   kriteri, Vue kodu tüm sıralı sütunlara koyuyor); footer'daki "Updated …" 30 sn'de bir yaşlanır
   (Vue'da "just now"da kalıyor).

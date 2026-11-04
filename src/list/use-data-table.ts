@@ -153,6 +153,8 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
     rows: client.rows,
     total: client.total,
     density: options.density ?? prefs.prefs.density,
+    /** Uygulama `density` verdiyse kullanıcının seçimi etkisiz; Display'de seçici gösterilmez. */
+    densityFixed: options.density !== undefined,
     prefs,
     views,
     /** Görünümün kayıtlı (kısmi) durumu → tam durum (Duplicate dialog'unun özeti). */

@@ -5,7 +5,7 @@ import { afterEach, beforeAll, describe, expect, it, onTestFinished, vi } from '
 import { DataTableProvider } from '../src/core/provider'
 import { DataTable } from '../src/list/data-table'
 import { useDataTable } from '../src/list/use-data-table'
-import type { ColumnDef, DataTableResult, PreferencesAdapter } from '../src/types'
+import type { ColumnDef, DataTableResult, Density, PreferencesAdapter } from '../src/types'
 import { flush, mockCardWidth, mockLayout } from './helpers/dom'
 
 interface Item {
@@ -37,9 +37,9 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-function Table(props: Partial<Parameters<typeof DataTable<Item>>[0]> & { server?: boolean }) {
-  const { server, ...rest } = props
-  const table = useDataTable({ id: 'items', columns, rows: server ? undefined : rows })
+function Table(props: Partial<Parameters<typeof DataTable<Item>>[0]> & { server?: boolean; density?: Density }) {
+  const { server, density, ...rest } = props
+  const table = useDataTable({ id: 'items', columns, rows: server ? undefined : rows, density })
   return <DataTable table={table} {...rest} />
 }
 
@@ -96,6 +96,14 @@ describe('yuvalar ve daralma', () => {
 })
 
 describe('Display', () => {
+  it('uygulama yoğunluğu sabitlediyse Density seçicisi yok (seçim etkisiz kalırdı)', async () => {
+    await mount(<Table density="compact" />)
+    await openDisplay()
+    expect(screen.queryByRole('button', { name: 'Compact' })).toBeNull()
+    expect(screen.queryByText('Density')).toBeNull()
+    expect(screen.getByRole('switch', { name: 'Vertical grid lines' })).toBeTruthy()
+    expect(document.querySelector('.dt')!.getAttribute('data-density')).toBe('compact')
+  })
   it('yoğunluk ve dikey çizgiler tercihe yazılır; Reset ikisini ve sütun düzenini geri alır', async () => {
     const set = vi.fn()
     const preferences: PreferencesAdapter = { get: () => ({}), set }

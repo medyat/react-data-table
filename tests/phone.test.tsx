@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DataTable } from '../src/list/data-table'
 import { useDataTable, type DataTableInstance } from '../src/list/use-data-table'
-import type { BulkAction, ColumnDef, TableState } from '../src/types'
+import type { BulkAction, ColumnDef, Density, TableState } from '../src/types'
 import { flush, mockCardWidth, mockLayout } from './helpers/dom'
 
 interface Item {
@@ -28,9 +28,14 @@ const rows: Item[] = Array.from({ length: 30 }, (_, i) => ({
 }))
 
 let table!: DataTableInstance<Item>
-function Table(props: Partial<Parameters<typeof DataTable<Item>>[0]> & { onStateChange?: (s: TableState) => void }) {
-  const { onStateChange, ...rest } = props
-  const t = useDataTable({ id: 'items', columns, rows, pageSize: 10, onStateChange })
+function Table(
+  props: Partial<Parameters<typeof DataTable<Item>>[0]> & {
+    onStateChange?: (s: TableState) => void
+    density?: Density
+  },
+) {
+  const { onStateChange, density, ...rest } = props
+  const t = useDataTable({ id: 'items', columns, rows, pageSize: 10, onStateChange, density })
   useEffect(() => {
     table = t
   })
@@ -196,6 +201,14 @@ describe('⋯ sayfası', () => {
     await flush()
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(onExport.mock.calls[0]![0]).toMatchObject({ format: 'csv', rows: rows.slice(0, 10) })
+  })
+
+  it('sabit yoğunlukta Density › satırı yok', async () => {
+    await mount(<Table density="compact" />)
+    fireEvent.click(screen.getByRole('button', { name: 'More actions' }))
+    await flush()
+    expect(within(sheet()).queryByRole('button', { name: /^Density/ })).toBeNull()
+    expect(within(sheet()).getByRole('button', { name: /^Columns/ })).toBeTruthy()
   })
 
   it('Columns dialog telefonda sabitleme bölümü göstermez', async () => {

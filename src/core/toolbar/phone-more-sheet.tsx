@@ -47,7 +47,8 @@ export function PhoneMoreSheet<Row extends object>({
   onAutoRefresh,
 }: {
   density: Density
-  onDensity: (d: Density) => void
+  /** Verilmezse (yoğunluk uygulamada sabit) Density › yok. */
+  onDensity?: (d: Density) => void
   columns: Array<PanelColumn<Row>>
   counts: { shown: number; total: number }
   onColumnsSave: (draft: ColumnsDraft) => void
@@ -119,11 +120,13 @@ export function PhoneMoreSheet<Row extends object>({
         {level === 'main' && (
           <>
             <div className="dt-bsheet-label">{i18n.t('toolbar.display')}</div>
-            <button type="button" className="dt-bsheet-row" onClick={() => setLevel('density')}>
-              {i18n.t('display.density')}
-              <span className="dt-bsheet-value">{i18n.t(`display.${density}`)}</span>
-              <CaretRightIcon size={16} aria-hidden="true" />
-            </button>
+            {onDensity && (
+              <button type="button" className="dt-bsheet-row" onClick={() => setLevel('density')}>
+                {i18n.t('display.density')}
+                <span className="dt-bsheet-value">{i18n.t(`display.${density}`)}</span>
+                <CaretRightIcon size={16} aria-hidden="true" />
+              </button>
+            )}
             <button
               type="button"
               className="dt-bsheet-row"
@@ -182,7 +185,7 @@ export function PhoneMoreSheet<Row extends object>({
               type="button"
               className="dt-bsheet-row"
               onClick={() => {
-                onDensity(d)
+                onDensity?.(d)
                 setLevel('main')
               }}
             >

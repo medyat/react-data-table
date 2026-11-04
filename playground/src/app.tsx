@@ -17,7 +17,7 @@ const LOCALES = ['en', 'tr', 'ru']
 
 /** DESIGN-BRIEF görev paketleri; her biri bir rota. Sayfa ilgili fazda eklenir. */
 const PAGES: Array<{ id: string; title: string; render: (s: Settings) => ReactNode }> = [
-  { id: 't1', title: 'T1 · List', render: (s) => <T1List density={s.density} /> },
+  { id: 't1', title: 'T1 · List', render: () => <T1List /> },
   { id: 't7', title: 'T7 · Cell actions', render: (s) => <T7Actions density={s.density} /> },
   { id: 't8', title: 'T8 · Cell types', render: (s) => <T8Cells density={s.density} /> },
 ]

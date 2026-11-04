@@ -693,7 +693,7 @@ export function DataTable<Row extends object>({
               !phone && (
                 <DisplayPopover
                   density={table.density}
-                  onDensity={(density) => prefs.set({ density })}
+                  onDensity={table.densityFixed ? undefined : (density) => prefs.set({ density })}
                   verticalLines={prefs.prefs.verticalLines}
                   onVerticalLines={(verticalLines) => prefs.set({ verticalLines })}
                   columns={table.layout.panel}
@@ -710,7 +710,7 @@ export function DataTable<Row extends object>({
                 ? toolbar === 'auto' && (
                     <PhoneMoreSheet
                       density={table.density}
-                      onDensity={(density) => prefs.set({ density })}
+                      onDensity={table.densityFixed ? undefined : (density) => prefs.set({ density })}
                       columns={table.layout.panel}
                       counts={table.layout.counts}
                       onColumnsSave={table.layout.arrange}

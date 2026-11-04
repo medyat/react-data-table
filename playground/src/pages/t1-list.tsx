@@ -8,7 +8,6 @@ import {
   DataTable,
   useDataTable,
   type BulkAction,
-  type Density,
   type QueryWithoutPage,
   type RowAction,
   type RowClickMode,
@@ -140,7 +139,8 @@ function Operations({ row }: { row: Order }) {
   )
 }
 
-export function T1List({ density }: { density: Density }) {
+// Yoğunluk sabitlenmez (Vue T1 gibi): Display › Density kullanıcının seçimi, üst çubuktaki seçici bu sayfayı etkilemez.
+export function T1List() {
   const [rowClick, setRowClick] = useState<RowClickMode>('none')
   /** Toplu aksiyonun kısmi hatası (D35): harita uygulamada, paket yalnızca okur. */
   const [rowErrors, setRowErrors] = useState(new Map<number, string>())
@@ -149,7 +149,6 @@ export function T1List({ density }: { density: Density }) {
     columns: orderColumns,
     views: orderViews,
     entityName: { one: 'order', other: 'orders' },
-    density,
     pageSize: Number(params.get('size') ?? 100),
     count: countOrders,
   })

@@ -28,7 +28,8 @@ export function DisplayPopover<Row extends object>({
   iconOnly,
 }: {
   density: Density
-  onDensity: (d: Density) => void
+  /** Verilmezse (yoğunluk uygulamada sabit) seçici yok. */
+  onDensity?: (d: Density) => void
   verticalLines: boolean
   onVerticalLines: (on: boolean) => void
   columns: Array<PanelColumn<Row>>
@@ -65,18 +66,22 @@ export function DisplayPopover<Row extends object>({
         <Popover.Portal>
           <Popover.Positioner className="dt-positioner" align="end" sideOffset={4}>
             <Popover.Popup className="dt-pop dt-display">
-              <div className="dt-pop-label">{i18n.t('display.density')}</div>
-              <ToggleGroup
-                className="dt-seg dt-seg-sm dt-display-density"
-                value={[density]}
-                onValueChange={(v) => v[0] && onDensity(v[0] as Density)}
-              >
-                {DENSITIES.map((d) => (
-                  <Toggle key={d} className="dt-seg-item" value={d} data-state={d === density ? 'on' : 'off'}>
-                    {i18n.t(`display.${d}`)}
-                  </Toggle>
-                ))}
-              </ToggleGroup>
+              {onDensity && (
+                <>
+                  <div className="dt-pop-label">{i18n.t('display.density')}</div>
+                  <ToggleGroup
+                    className="dt-seg dt-seg-sm dt-display-density"
+                    value={[density]}
+                    onValueChange={(v) => v[0] && onDensity(v[0] as Density)}
+                  >
+                    {DENSITIES.map((d) => (
+                      <Toggle key={d} className="dt-seg-item" value={d} data-state={d === density ? 'on' : 'off'}>
+                        {i18n.t(`display.${d}`)}
+                      </Toggle>
+                    ))}
+                  </ToggleGroup>
+                </>
+              )}
               <label className="dt-pop-item">
                 {i18n.t('display.verticalLines')}
                 <DtSwitch className="dt-pop-end" checked={verticalLines} onChange={onVerticalLines} />
