@@ -242,8 +242,9 @@ Faz 3a notları:
 - Column picker Base UI Combobox'tır; açılışta ilk öğe vurgulanmaz (Vue'da vurgulu). Yazınca ilk eşleşme
   vurgulanır, yani "yaz + Enter" aynı; yalnızca hiç yazmadan Enter önce ↓ ister. `autoHighlight="always"`
   Combobox'ın genel API'sinde yok.
-- Combobox tetikleyicinin arkasına gizli yardımcılar koyar; `.dt-btn-group` köşe kuralı bunları sayamaz
-  (`ui.css`, R9 sapması).
+- Base UI tetikleyicinin arkasına (Combobox) ve açık popover'da önüne de gizli yardımcılar koyar (odak bekçisi
+  `aria-hidden`, portal bağı `aria-owns`); `.dt-btn-group`'un kaydırma ve köşe kuralları bunları kardeş saymaz
+  (`ui.css`, R9 sapması). Yoksa Display açılınca düğme sol köşesini kaybediyordu (`e2e/layout.spec.ts`).
 - Vue'dan bilinçli sapmalar: metin editörü yazarken duraklayınca sondaki boşluğu silmez (Vue'da "Atlas K"
   yazılamıyor, tarayıcıda doğrulandı); arama kutusu adresten geç dönen kendi değeriyle taslağı ezmez.
 
@@ -278,6 +279,10 @@ Faz 7 notları (telefon):
 
 Faz 7c notları (erişilebilirlik):
 
+- Filtre çipinin gövdesi ya da × odaktayken halka çipin tamamını sarar (düzenleme halkasıyla aynı); odaktaki ×
+  hover zeminiyle ayrılır. Vue halkayı yalnızca odaktaki parçaya çizer: editör kapanınca odak gövdeye döndüğü için
+  yarım halka çipin kenarıyla üst üste biniyor, × tarafında kesiliyordu. Yüksek kontrastta çip `Highlight`
+  outline alır, odaktaki × ayrıca kendi outline'ını (normalde saydam).
 - `pnpm test:e2e` (Playwright, port 5179): `e2e/a11y.spec.ts` axe ile WCAG 2.1 A/AA'da kritik/ciddi ihlal arar; masaüstü
   (açık/koyu), telefon alt sayfaları, hareket azaltma ve yüksek kontrast. Vue'nun sheet ekranları React'te yok.
 - Görünüm menüsü Vue'dan ayrılır: reka Listbox yerine ARIA combobox + grid popup. listbox yalnızca option alabildiği için

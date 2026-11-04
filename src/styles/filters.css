@@ -56,7 +56,10 @@
   white-space: nowrap;
   transition: box-shadow 120ms ease;
 }
-.dt-chip.is-editing {
+/* Gövde ya da × odakta (editör kapanınca odak gövdeye döner): halka parçayı değil çipin tamamını sarar,
+   düzenleme halkasıyla aynı; yarım halka çipin kenarıyla üst üste biniyordu (React sapması, react-kararlar). */
+.dt-chip.is-editing,
+.dt-chip:has(:focus-visible) {
   border-color: var(--dt-accent);
   box-shadow: 0 0 0 3px var(--dt-focus-soft);
 }
@@ -126,14 +129,15 @@
   background: var(--dt-surface-3);
   color: var(--dt-text);
 }
-.dt .dt-chip-body:focus-visible,
-.dt .dt-chip-remove:focus-visible {
+.dt .dt-chip-body:focus-visible {
   outline: none;
-  box-shadow:
-    0 0 0 2px var(--dt-surface),
-    0 0 0 4px var(--dt-focus);
-  position: relative;
-  z-index: 1;
+}
+/* Odaktaki parça: × hover zeminiyle ayrılır. Saydam outline yüksek kontrastta sistem rengiyle görünür. */
+.dt .dt-chip-remove:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  background: var(--dt-surface-3);
+  color: var(--dt-text);
 }
 
 /* Column picker (272). */

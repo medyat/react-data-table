@@ -79,16 +79,16 @@
   align-items: center;
   min-width: 0;
 }
-.dt-btn-group > * + * {
+/* R9 sapması: Base UI tetikleyicinin önüne ve arkasına gizli yardımcılar koyar (form alanı, odak bekçileri, portal
+   bağı); kaydırmayı ve köşeleri yalnızca gerçek bir kardeş belirler, yoksa popover açılınca düğme köşesini kaybeder. */
+.dt-btn-group > :not([aria-hidden='true'], [aria-owns]) ~ :not([aria-hidden='true'], [aria-owns]) {
   margin-left: -1px;
 }
-.dt-btn-group > :not(:first-child),
-.dt-btn-group > :not(:first-child) input {
+.dt-btn-group > :not([aria-hidden='true'], [aria-owns]) ~ :not([aria-hidden='true'], [aria-owns]),
+.dt-btn-group > :not([aria-hidden='true'], [aria-owns]) ~ :not([aria-hidden='true'], [aria-owns]) input {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }
-/* R9 sapması: Base UI tetikleyicinin arkasına gizli yardımcılar koyar (form alanı, odak bekçileri, portal bağı); sağ
-   köşeyi yalnızca arkadaki gerçek bir kardeş düzleştirir. */
 .dt-btn-group > :has(~ :not([aria-hidden='true'], [aria-owns])),
 .dt-btn-group > :has(~ :not([aria-hidden='true'], [aria-owns])) input {
   border-top-right-radius: 0;
@@ -528,6 +528,7 @@
   .dt-sheet-grid .dt-cell[data-col].is-editing,
   .dt-head-label:focus-visible,
   .dt-btn:focus-visible,
+  .dt-chip:has(:focus-visible),
   .dt-menu-item[data-highlighted],
   .dt-pop-item:focus-visible {
     outline: 2px solid Highlight;
