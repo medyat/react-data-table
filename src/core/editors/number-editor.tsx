@@ -5,7 +5,7 @@ import { ToggleGroup } from '@base-ui/react/toggle-group'
 import { useState, type KeyboardEvent } from 'react'
 import type { ColumnDef } from '../../types/columns'
 import type { FilterOp } from '../../types/query'
-import { parseNumber } from '../format/parse'
+import { cleanNumber, parseNumber, plainNumber } from '../format/parse'
 import { useDelay } from '../interaction/use-delay'
 import { useDataTableContext } from '../provider'
 
@@ -33,8 +33,7 @@ export function NumberEditor({
 }) {
   const { i18n, locale } = useDataTableContext()
   const range = op === 'between'
-  const nf = new Intl.NumberFormat(locale, { maximumFractionDigits: 6 })
-  const show = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? nf.format(n) : '')
+  const show = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? plainNumber(locale, n) : '')
   const fromValue = (v: unknown): [string, string] =>
     range ? [show(Array.isArray(v) ? v[0] : undefined), show(Array.isArray(v) ? v[1] : undefined)] : [show(v), '']
   const [[a, b], setDraft] = useState(() => fromValue(value))
@@ -64,6 +63,7 @@ export function NumberEditor({
     commit(a, b)
     onDone()
   }
+  const clean = (text: string) => cleanNumber(locale, text, column.type === 'int')
   const suffix = column.type === 'percentage' ? '%' : ''
   const field = (text: string, onText: (t: string) => void, first = false) => (
     <span className={suffix ? 'dt-input has-suffix' : 'dt-input'}>
@@ -73,7 +73,7 @@ export function NumberEditor({
         type="text"
         inputMode="decimal"
         autoComplete="off"
-        onChange={(e) => onText(e.target.value)}
+        onChange={(e) => onText(clean(e.target.value))}
         onKeyDown={onKeyDown}
       />
       {suffix && <span className="dt-input-end dt-input-suffix">{suffix}</span>}

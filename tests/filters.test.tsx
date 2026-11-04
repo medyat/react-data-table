@@ -280,6 +280,31 @@ describe('değer ve operatör', () => {
     expect(document.activeElement).toBe(pop()!.querySelector('.dt-chip-pop-body input'))
   })
 
+  it('sayı alanı yalnızca rakam, ayırıcı ve eksi kabul eder', async () => {
+    await mount(<Table server />)
+    await pickColumn('Qty')
+    const min = pop()!.querySelector<HTMLInputElement>('.dt-chip-pop-body input')!
+    fireEvent.change(min, { target: { value: '-1*s2' } })
+    expect(min.value).toBe('-12')
+  })
+
+  it('tam sayı alanı ayırıcı almaz; gruplu sayı okunup ayırıcısız yazılır', async () => {
+    const minOf = () => pop()!.querySelector<HTMLInputElement>('.dt-chip-pop-body input')!
+    await mount(<Table server />)
+    await pickColumn('Qty')
+    fireEvent.change(minOf(), { target: { value: '12,400.5' } })
+    expect(minOf().value).toBe('12400')
+    cleanup()
+    await mount(
+      <DataTableProvider locale="tr">
+        <Table server />
+      </DataTableProvider>,
+    )
+    await pickColumn('Qty')
+    fireEvent.change(minOf(), { target: { value: '1.284,50' } })
+    expect(minOf().value).toBe('1284')
+  })
+
   it("× sonrası odak sonraki çipe, son çipte Add filter'a", async () => {
     await mount(<Table server />)
     await pickColumn('Urgent')

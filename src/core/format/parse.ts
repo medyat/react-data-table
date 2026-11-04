@@ -24,3 +24,25 @@ export function parseNumber(locale: string, text: string): number | null {
   const n = Number(s)
   return Number.isFinite(n) ? n : null
 }
+
+/**
+ * Sayı alanına yazılanı düzeltir; alanda ne görünüyorsa o uygulanır. Ondalıkta nokta da virgül de ondalıktır ve
+ * yerel ayırıcıya çevrilir ("10.3" → tr "10,3"), ikinci ayırıcı yazılmaz. Tam sayıda ayırıcı yazılmaz. Gruplu
+ * sayı (yapıştırma: "1.284,50") ve tam sayıdaki ayırıcı okunup ayırıcısız yazılır.
+ */
+export function cleanNumber(locale: string, text: string, integer: boolean): string {
+  const t = text.replace(/−/g, '-').replace(/[^\d.,-]/g, '')
+  const sign = t.startsWith('-') ? '-' : ''
+  const body = t.replace(/-/g, '')
+  if ((body.includes('.') && body.includes(',')) || (integer && /[.,]/.test(body))) {
+    const n = parseNumber(locale, sign + body)
+    if (n === null) return sign
+    return plainNumber(locale, integer ? Math.trunc(n) : n)
+  }
+  const [whole, ...fraction] = body.split(/[.,]/)
+  return sign + whole + (fraction.length > 0 ? sepsOf(locale).decimal + fraction.join('') : '')
+}
+
+/** Sayı alanında gösterim: gruplamasız, yerel ondalık ayırıcıyla ("1284,5"); `cleanNumber` aynısını üretir. */
+export const plainNumber = (locale: string, n: number) =>
+  new Intl.NumberFormat(locale, { useGrouping: false, maximumFractionDigits: 6 }).format(n).replace('−', '-')

@@ -2,6 +2,7 @@
 // Faz 1 kabul kriteri: sayılar tabular/sağa (CSS), negatiflerde U+2212, formatter'lar önbellekli (10k hücre < 10 ms); 09 · Biçimlendirme örnekleri.
 import { describe, expect, it } from 'vitest'
 import { MINUS, createFormat, getFormat, toDate } from '../src/core/format'
+import { cleanNumber, parseNumber } from '../src/core/format/parse'
 
 const en = createFormat('en')
 const tr = createFormat('tr')
@@ -67,5 +68,37 @@ describe('önbellek', () => {
       best = Math.min(best, performance.now() - t0)
     }
     expect(best).toBeLessThan(10)
+  })
+})
+
+describe('cleanNumber: sayı alanında görünen, uygulanan değerdir', () => {
+  it.each([
+    // [yerel, yazılan, tam sayı, alanda kalan]
+    ['tr', '10.3', false, '10,3'],
+    ['tr', '10,3', false, '10,3'],
+    ['tr', '10,2,3', false, '10,23'],
+    ['tr', '0,', false, '0,'],
+    ['tr', '-1*s', false, '-1'],
+    ['tr', '1-2', false, '12'],
+    ['tr', '−5', false, '-5'],
+    ['tr', '1.284,50', false, '1284,5'],
+    ['en', '10,3', false, '10.3'],
+    ['en', '12,400.5', false, '12400.5'],
+    ['tr', '10.', true, '10'],
+    ['tr', '10,', true, '10'],
+    ['tr', '1.284', true, '1284'],
+    ['tr', '1.284,50', true, '1284'],
+    ['en', '12,400.5', true, '12400'],
+    ['tr', '-', true, '-'],
+  ] as const)('%s %j (tam sayı: %s) → %j', (locale, text, integer, expected) => {
+    expect(cleanNumber(locale, text, integer)).toBe(expected)
+  })
+
+  it.each([
+    ['tr', '10.3', 10.3],
+    ['en', '10,3', 10.3],
+    ['tr', '1.284,50', 1284.5],
+  ] as const)('alanda kalan metin kastedilen sayı olarak okunur: %s %j → %d', (locale, text, n) => {
+    expect(parseNumber(locale, cleanNumber(locale, text, false))).toBe(n)
   })
 })
