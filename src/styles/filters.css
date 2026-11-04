@@ -197,7 +197,8 @@
   align-items: center;
   gap: var(--dt-space-sm);
   height: var(--dt-control-h);
-  padding: 0 4px 0 8px;
+  /* Sol kenar gövde ve alt satırla aynı hizada: dolgu + item-x. */
+  padding: 0 4px 0 var(--dt-item-x);
   color: var(--dt-text-2);
   font-size: var(--dt-ui-fs-sm);
 }
@@ -329,6 +330,35 @@
 .dt-editor-number {
   padding: 4px 0;
 }
+/*
+ * Çip popover'ında form alanları başlık ve alt satırla aynı hizada: yan 16px (dolgu + item-x), üst ve
+ * alt 10px (başlık düğmesinin 4px'i ve alt satırın 4px boşluğuyla). Liste satırları kenardan kenara kalır;
+ * metinleri zaten item-x'te başlar.
+ */
+.dt-chip-pop .dt-input {
+  height: var(--dt-control-h-sm);
+}
+.dt-chip-pop .dt-editor-number {
+  padding: 6px var(--dt-item-x);
+}
+.dt-chip-pop .dt-editor-text {
+  display: flex;
+  width: auto;
+  /* Alt satırın 4px margin'iyle birleşir (collapse); 10px'i kendisi verir. */
+  margin: 6px var(--dt-item-x) 10px;
+}
+.dt-chip-pop .dt-options-search {
+  display: flex;
+  width: auto;
+  margin: 6px var(--dt-item-x);
+}
+.dt-chip-pop .dt-editor-stars {
+  /* Yıldız düğmesinin 2px dolgusu düşülür: ilk yıldız 16px'te. */
+  padding: 6px calc(var(--dt-item-x) - 2px);
+}
+.dt-chip-pop .dt-editor-and {
+  padding-bottom: 6px;
+}
 .dt-seg.dt-seg-xs {
   height: var(--dt-control-h-xs);
   width: 100%;
@@ -412,7 +442,8 @@
 }
 .dt-calendar {
   flex: 1;
-  padding: 8px 12px 12px;
+  /* Sağ ve alt, popover dolgusu ve alt satırla diğer editörlerle aynı: 16px ve 10px. */
+  padding: 8px var(--dt-item-x) 6px 12px;
 }
 .dt-cal-head {
   display: flex;
