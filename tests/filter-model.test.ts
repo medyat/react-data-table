@@ -35,7 +35,7 @@ describe('operatörler ve varsayılanlar', () => {
   it('varsayılan operatör tipe göre (04 §2)', () => {
     expect(defaultOperator(col('currency'))).toBe('between')
     expect(defaultOperator(col('string'))).toBe('contains')
-    expect(defaultOperator(col('id'))).toBe('in')
+    expect(defaultOperator(col('id'))).toBe('contains')
     expect(defaultOperator(col('select'))).toBe('in')
     expect(defaultOperator(col('date'))).toBe('within')
     expect(defaultOperator(col('boolean'))).toBe('eq')

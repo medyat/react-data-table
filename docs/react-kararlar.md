@@ -196,6 +196,13 @@ yoğunluk / dil anahtarı, Vue paketindeki sahte Laravel API'sinin uyarlaması.
 Swors geliştirme sırasında paketi yerel bağımlılık ve Vite alias'ıyla kaynaktan okur; npm'e sözleşme
 oturunca çıkar.
 
+## R14 · Filtre varsayılanları
+
+- `id` türünde varsayılan operatör `contains`'tir (Vue 04 §2'de `in`). Kodlar çoğu zaman bir
+  parçasıyla aranır (`STK00` ile başlayanlar, içinde `400` geçenler); `in` ile tek değer tam eşleşme
+  ister. Liste yapıştırmak için "şunlardan biri" operatörü seçilir. Sütun kendi varsayılanını
+  `filter.defaultOperator` ile verir.
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

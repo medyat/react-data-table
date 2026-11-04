@@ -46,7 +46,8 @@ const DEFAULT_OP: Partial<Record<ColumnType, FilterOp>> = {
   percentage: 'between',
   currency: 'between',
   star: 'gte',
-  id: 'in',
+  // Vue'da `in`; kod çoğu zaman bir parçasıyla aranır (R14).
+  id: 'contains',
   boolean: 'eq',
   date: 'within',
   datetime: 'within',
