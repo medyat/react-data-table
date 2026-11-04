@@ -111,6 +111,13 @@ sıralama anahtarlarında sıralıdır.
   uygulanmaz, olduğu gibi okunur; farklıysa "Edited" görünür.
   Sütun düzeni adreste olmadığı için görünümden alınır: system görünümünde açılışta, kişisel görünümde liste
   gelince bir kez (kullanıcı o arada bir görünüm seçmediyse).
+- Vue'dan sapma: varsayılan görünümün satır menüsünde "Set as default" yerine "Remove default" çıkar ve tercihi
+  `null` yapar; açılış system default'a döner. Vue'da varsayılan yalnızca başka bir görünüm seçilerek değişir; system
+  görünümü olmayan ekranda kişisel varsayılandan dönülemiyordu. Öğe yıkıcı (kırmızı) çizilir. Metin `scripts/docs.ts`
+  `REACT_ONLY_MESSAGES`'tadır. Sistem görünümü notu buna göre "yeniden adlandırılamaz ve silinemez" der (`REACT_MESSAGES`)
+  ve menüyü genişletmez: menü öğeleri kadar geniştir, not o genişlikte kırılır.
+- "Edited" Türkçede "Kaydedilmedi", Rusçada "Не сохранено"dir (`REACT_MESSAGES`): "Değişti" kullanıcılarca sistemin
+  kendiliğinden güncellemesi diye okundu. Karşılaştırma nesne anahtarlarının sırasına bakmaz (jsonb sırayı korumaz).
 - `state.view` verilmezse açılış görünümü pakette seçilir (kullanıcı varsayılanı → system default → ilk system);
   filtresi, sıralaması ve sütunları başlangıç durumu olur ve `onStateChange` ile bir kez bildirilir. Kişisel varsayılan
   ya da Promise dönen tercih, liste ve tercih ilk geldiğinde bir kez uygulanır; sonra "Set as default" görünümü değiştirmez.

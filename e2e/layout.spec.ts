@@ -20,3 +20,21 @@ test('Display açılınca düğme grubunun köşeleri ve konumu değişmez', asy
   await expect(page.locator('.dt-display')).toBeVisible()
   expect(await geometry()).toEqual(closed)
 })
+
+// Sistem görünümü notu menünün genişliğini belirlememeli: öğelerin genişliğinde kırılır.
+test('görünüm satır menüsü notla genişlemez', async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem('pg:settings', JSON.stringify({ theme: 'light', density: 'standard', locale: 'en' })),
+  )
+  await page.goto('/#/t1')
+  await page.locator('.dt-view-trigger').click()
+  await page.locator('.dt-view-row').first().locator('.dt-view-more').click()
+  const note = page.locator('.dt-view-note')
+  await expect(note).toBeVisible()
+  const { menu, lines } = await note.evaluate((e) => ({
+    menu: e.closest<HTMLElement>('.dt-view-row-menu')!.getBoundingClientRect().width,
+    lines: Math.round(e.getBoundingClientRect().height / parseFloat(getComputedStyle(e).lineHeight)),
+  }))
+  expect(menu).toBeLessThan(240)
+  expect(lines).toBeGreaterThan(1)
+})

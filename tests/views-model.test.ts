@@ -46,6 +46,20 @@ describe('sameState', () => {
     expect(sameState(a, { ...b, columns: { ...b.columns, order: ['b', 'a', 'c'] } })).toBe(false)
     expect(sameState(a, { ...b, columns: { ...b.columns, pinned: { left: [], right: ['a'] } } })).toBe(false)
   })
+  it('nesne anahtarlarının sırası fark sayılmaz (jsonb saklayan sunucu sırayı korumaz)', () => {
+    const screen = state({
+      filters: [
+        { column: 'code', op: 'in', value: ['d'] },
+        { column: 'due', op: 'within', value: { from: '2026-01-01', to: '2026-01-31' } },
+      ],
+      sort: [{ column: 'code', dir: 'asc' }],
+    })
+    const stored = JSON.parse(
+      '{"sort":[{"dir":"asc","column":"code"}],"filters":[{"op":"in","value":["d"],"column":"code"},' +
+        '{"value":{"to":"2026-01-31","from":"2026-01-01"},"op":"within","column":"due"}]}',
+    ) as Pick<ViewState, 'filters' | 'sort'>
+    expect(sameState(screen, { ...screen, ...stored })).toBe(true)
+  })
 })
 
 describe('nameError ve sıralama', () => {

@@ -1,4 +1,4 @@
-// Üretilmiş dosya: scripts/i18n-from-docs.ts ← data-table/docs/data-table/09-i18n.md (+ docs.ts REACT_MESSAGES). Elle düzenlemeyin; dokümanı değiştirip `pnpm gen:docs` çalıştırın.
+// Üretilmiş dosya: scripts/i18n-from-docs.ts ← data-table/docs/data-table/09-i18n.md (+ docs.ts REACT_MESSAGES, REACT_ONLY_MESSAGES). Elle düzenlemeyin; dokümanı değiştirip `pnpm gen:docs` çalıştırın.
 export const en: Record<string, string> = {
   "common.cancel": "Cancel",
   "common.apply": "Apply",
@@ -138,7 +138,7 @@ export const en: Record<string, string> = {
   "views.delete": "Delete",
   "views.delete.title": "Delete “{name}”?",
   "views.delete.body": "This can't be undone.",
-  "views.systemNote": "System views offer only Duplicate and Set as default.",
+  "views.systemNote": "System views can't be renamed or deleted.",
   "views.saveChanges": "Save changes",
   "views.updates": "Updates “{name}”",
   "views.saveAsNew": "Save as new view…",
@@ -269,4 +269,5 @@ export const en: Record<string, string> = {
   "sr.savingPercent": "Saving, {percent} percent",
   "sr.loadingPercent": "Loading, {percent} percent",
   "sr.pasted": "Pasted {rows} rows by {cols} columns.",
+  "views.removeDefault": "Remove default",
 }

@@ -132,6 +132,10 @@
   min-width: calc(200 * var(--dt-ui-fs) / 13);
 }
 .dt-view-note {
+  /* Menünün genişliğini öğeler belirler; not o genişlikte kırılır (Vue'da tek satırda menüyü yayıyordu). */
+  box-sizing: border-box;
+  width: 0;
+  min-width: 100%;
   padding: 6px 8px;
   color: var(--dt-text-3);
   font-size: var(--dt-ui-fs-xs);

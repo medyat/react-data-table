@@ -57,7 +57,8 @@ export function ViewMenu({
   onDiscard: () => void
   onRename: (view: View) => void
   onDuplicate: (view: View) => void
-  onSetDefault: (id: string) => void
+  /** `null`: varsayılan kaldırılır, açılış system default'a döner (R6). */
+  onSetDefault: (id: string | null) => void
   onDelete: (view: View) => void
   /** Telefon: popover yerine alt sayfa (T13-06). */
   sheet?: boolean
@@ -261,7 +262,13 @@ export function ViewMenu({
                     {canSave && (
                       <DtMenuItem onSelect={() => after(() => onDuplicate(v))}>{i18n.t('views.duplicate')}</DtMenuItem>
                     )}
-                    <DtMenuItem onSelect={() => onSetDefault(v.id)}>{i18n.t('views.setDefault')}</DtMenuItem>
+                    {v.id === defaultId ? (
+                      <DtMenuItem destructive onSelect={() => onSetDefault(null)}>
+                        {i18n.t('views.removeDefault')}
+                      </DtMenuItem>
+                    ) : (
+                      <DtMenuItem onSelect={() => onSetDefault(v.id)}>{i18n.t('views.setDefault')}</DtMenuItem>
+                    )}
                     {canEdit(v) && (
                       <>
                         <DtMenuSeparator />

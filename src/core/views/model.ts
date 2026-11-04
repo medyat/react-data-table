@@ -12,18 +12,29 @@ export function defaultView(views: View[], preferredId: string | null | undefine
   )
 }
 
+// Anahtarları her seviyede sıralı metin: jsonb saklayan sunucu nesne anahtarlarının sırasını korumaz, aynı koşul
+// farklı sırayla döner.
+const canonical = (value: unknown): string =>
+  Array.isArray(value)
+    ? `[${value.map(canonical).join(',')}]`
+    : value !== null && typeof value === 'object'
+      ? `{${Object.keys(value)
+          .sort()
+          .map((k) => `${JSON.stringify(k)}:${canonical((value as Record<string, unknown>)[k])}`)
+          .join(',')}}`
+      : JSON.stringify(value)
 const normFilter = (f: FilterCondition) => {
   const v = 'value' in f ? f.value : undefined
   return { ...f, value: Array.isArray(v) ? [...(v as unknown[])].sort() : v }
 }
 const filtersKey = (fs: FilterCondition[]) =>
-  JSON.stringify(fs.map(normFilter).sort((a, b) => a.column.localeCompare(b.column)))
+  canonical(fs.map(normFilter).sort((a, b) => a.column.localeCompare(b.column)))
 const sorted = (ids: string[]) => [...ids].sort().join('\u0000')
 
 /** Normalize karşılaştırma: `in` değerleri sırasız, görünürler küme, genişlikte ±2 px tolerans. */
 export function sameState(a: ViewState, b: ViewState): boolean {
   if (filtersKey(a.filters) !== filtersKey(b.filters)) return false
-  if (JSON.stringify(a.sort) !== JSON.stringify(b.sort)) return false
+  if (canonical(a.sort) !== canonical(b.sort)) return false
   const ca = a.columns
   const cb = b.columns
   if (ca.order.join('\u0000') !== cb.order.join('\u0000') || sorted(ca.visible) !== sorted(cb.visible)) return false

@@ -130,6 +130,20 @@ const KEPT_KEYS = ['sheet.export']
 const REACT_MESSAGES: Record<string, [string, string]> = {
   // WCAG 2.5.3: eksik çipin adı görünen metinle ("Status is Select…") başlar.
   'filter.chooseValueAria': ['{column} {op} {value}. Choose a value', '{column} {op} {value}. Bir değer seçin'],
+  // "Değişti" sistemin kendiliğinden güncellediği diye okundu; kastedilen kaydedilmemiş değişiklik.
+  'views.edited': ['Edited', 'Kaydedilmedi'],
+  'views.editedName': ['“{name}” edited', '“{name}” kaydedilmedi'],
+  // Varsayılan system görünümünde "Set as default" yerine "Remove default" çıkar (R6); yasaklananı söylemek iki durumda da doğru.
+  'views.systemNote': [
+    "System views can't be renamed or deleted.",
+    'Sistem görünümleri yeniden adlandırılamaz ve silinemez.',
+  ],
+}
+
+/** Vue dokümanında olmayan, yalnızca React'te bulunan anahtarlar; dokümanda varsa REACT_MESSAGES'a girer. */
+const REACT_ONLY_MESSAGES: Record<string, [string, string]> = {
+  // R6: sistem görünümü olmayan ekranda varsayılandan dönmenin tek yolu.
+  'views.removeDefault': ['Remove default', 'Varsayılanı kaldır'],
 }
 
 /** 09-i18n.md'deki anahtar tabloları: `| \`key\` | EN | TR |`. */
@@ -150,6 +164,11 @@ export function docMessages(): DocMessages {
   }
   for (const [key, [e, t]] of Object.entries(REACT_MESSAGES)) {
     if (!(key in en)) throw new Error(`REACT_MESSAGES: dokümanda olmayan anahtar: ${key}`)
+    en[key] = e
+    tr[key] = t
+  }
+  for (const [key, [e, t]] of Object.entries(REACT_ONLY_MESSAGES)) {
+    if (key in en) throw new Error(`REACT_ONLY_MESSAGES: anahtar dokümanda var, REACT_MESSAGES'a taşıyın: ${key}`)
     en[key] = e
     tr[key] = t
   }

@@ -1,4 +1,4 @@
-// Üretilmiş dosya: scripts/i18n-from-docs.ts ← data-table/docs/data-table/09-i18n.md (+ docs.ts REACT_MESSAGES). Elle düzenlemeyin; dokümanı değiştirip `pnpm gen:docs` çalıştırın.
+// Üretilmiş dosya: scripts/i18n-from-docs.ts ← data-table/docs/data-table/09-i18n.md (+ docs.ts REACT_MESSAGES, REACT_ONLY_MESSAGES). Elle düzenlemeyin; dokümanı değiştirip `pnpm gen:docs` çalıştırın.
 export const tr: Record<string, string> = {
   "common.cancel": "Vazgeç",
   "common.apply": "Uygula",
@@ -130,7 +130,7 @@ export const tr: Record<string, string> = {
   "views.mine": "Görünümlerim",
   "views.onlyYou": "Yalnızca siz",
   "views.default": "Varsayılan",
-  "views.edited": "Değişti",
+  "views.edited": "Kaydedilmedi",
   "views.new": "Yeni görünüm",
   "views.rename": "Yeniden adlandır",
   "views.duplicate": "Kopyala",
@@ -138,14 +138,14 @@ export const tr: Record<string, string> = {
   "views.delete": "Sil",
   "views.delete.title": "“{name}” silinsin mi?",
   "views.delete.body": "Bu işlem geri alınamaz.",
-  "views.systemNote": "Sistem görünümlerinde yalnızca Kopyala ve Varsayılan yap var.",
+  "views.systemNote": "Sistem görünümleri yeniden adlandırılamaz ve silinemez.",
   "views.saveChanges": "Değişiklikleri kaydet",
   "views.updates": "“{name}” güncellenir",
   "views.saveAsNew": "Yeni görünüm olarak kaydet…",
   "views.keepsUnchanged": "“{name}” olduğu gibi kalır",
   "views.discard": "Değişiklikleri at",
   "views.saveAsMine": "Görünümüm olarak kaydet…",
-  "views.editedName": "“{name}” değişti",
+  "views.editedName": "“{name}” kaydedilmedi",
   "views.dialogTitle": "Yeni görünüm olarak kaydet",
   "views.dialogBody": "Görünümlerim altında yer alır. Yalnızca siz görürsünüz.",
   "views.name": "Ad",
@@ -269,4 +269,5 @@ export const tr: Record<string, string> = {
   "sr.savingPercent": "Kaydediliyor, yüzde {percent}",
   "sr.loadingPercent": "Yükleniyor, yüzde {percent}",
   "sr.pasted": "{rows} satır × {cols} sütun yapıştırıldı.",
+  "views.removeDefault": "Varsayılanı kaldır",
 }
