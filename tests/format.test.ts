@@ -94,6 +94,42 @@ describe('cleanNumber: sayı alanında görünen, uygulanan değerdir', () => {
     expect(cleanNumber(locale, text, integer)).toBe(expected)
   })
 
+  /** Tuş tuş yazma: her tuştan sonra alan temizlenir, sonraki tuş temizlenmiş metne eklenir. */
+  const typed = (locale: string, keys: string, integer: boolean) =>
+    [...keys].reduce((text, key) => cleanNumber(locale, text + key, integer), '')
+
+  it.each([
+    // [yerel, tuşlar, tam sayı, alanda kalan]
+    ['tr', '0.3.', false, '0,3'],
+    ['tr', '0.3.5', false, '0,35'],
+    ['tr', '0,3,', false, '0,3'],
+    ['tr', '0,3.', false, '0,3'],
+    ['tr', '1.234.', false, '1,234'],
+    ['tr', '1.234,5', false, '1,2345'],
+    ['en', '0.3,', false, '0.3'],
+    ['en', '1,234.5', false, '1.2345'],
+    ['tr', '-0.5', false, '-0,5'],
+    ['tr', '--1', false, '-1'],
+    ['tr', '1.5', true, '15'],
+    ['tr', '12,', true, '12'],
+  ] as const)('yazarken %s %j (tam sayı: %s) → %j', (locale, keys, integer, expected) => {
+    expect(typed(locale, keys, integer)).toBe(expected)
+  })
+
+  it.each([
+    // Yapıştırma: bütün metin birden gelir; binlik grupları olan sayı okunur.
+    ['tr', '1.234.567', false, '1234567'],
+    ['tr', '1.234.567,8', false, '1234567,8'],
+    ['en', '1,234,567.8', false, '1234567.8'],
+    ['tr', '10.3', false, '10,3'],
+    ['tr', '1.284', true, '1284'],
+    // Tam sayıda gruplu olmayan ayırıcı ondalıktır ve atılır: 18.5 → 18, 185 değil.
+    ['tr', '18.5', true, '18'],
+    ['en', '18,5', true, '18'],
+  ] as const)('yapıştırınca %s %j (tam sayı: %s) → %j', (locale, text, integer, expected) => {
+    expect(cleanNumber(locale, text, integer)).toBe(expected)
+  })
+
   it.each([
     ['tr', '10.3', 10.3],
     ['en', '10,3', 10.3],

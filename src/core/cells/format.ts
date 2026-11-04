@@ -31,6 +31,13 @@ export function currencyCode<Row extends object>(def: Extract<ColumnDef<Row>, { 
   return typeof def.currency === 'function' ? def.currency(row) : def.currency
 }
 
+/** Sayı sütununun gösterdiği ondalık; filtre girişi de bu kadar kabul eder (0 ise tam sayı). */
+export function decimalPlaces(def: ColumnDef): number {
+  if (def.type === 'percentage') return def.decimalPlaces ?? 0
+  if (def.type === 'float' || def.type === 'currency') return def.decimalPlaces ?? 2
+  return 0
+}
+
 export function formatCell<Row extends object>(def: ColumnDef<Row>, row: Row, value: unknown, env: FormatEnv): string {
   if (isEmptyValue(value)) return def.emptyText ?? '—'
   const { fmt, i18n } = env
@@ -38,13 +45,13 @@ export function formatCell<Row extends object>(def: ColumnDef<Row>, row: Row, va
     case 'int':
       return fmt.int(Number(value))
     case 'float':
-      return fmt.decimal(Number(value), def.decimalPlaces ?? 2)
+      return fmt.decimal(Number(value), decimalPlaces(def))
     case 'percentage':
-      return fmt.percent(Number(value), def.decimalPlaces ?? 0)
+      return fmt.percent(Number(value), decimalPlaces(def))
     case 'star':
       return i18n.t('cell.rating', { value: Number(value), max: def.max ?? 5 })
     case 'currency':
-      return `${fmt.decimal(Number(value), def.decimalPlaces ?? 2)} ${currencyCode(def, row)}`
+      return `${fmt.decimal(Number(value), decimalPlaces(def))} ${currencyCode(def, row)}`
     case 'url':
       return urlHost(String(value))
     case 'boolean':

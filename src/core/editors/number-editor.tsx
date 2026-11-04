@@ -4,6 +4,7 @@ import { Toggle } from '@base-ui/react/toggle'
 import { ToggleGroup } from '@base-ui/react/toggle-group'
 import { useState, type KeyboardEvent } from 'react'
 import type { ColumnDef } from '../../types/columns'
+import { decimalPlaces } from '../cells/format'
 import type { FilterOp } from '../../types/query'
 import { cleanNumber, parseNumber, plainNumber } from '../format/parse'
 import { useDelay } from '../interaction/use-delay'
@@ -63,7 +64,7 @@ export function NumberEditor({
     commit(a, b)
     onDone()
   }
-  const clean = (text: string) => cleanNumber(locale, text, column.type === 'int')
+  const clean = (text: string) => cleanNumber(locale, text, decimalPlaces(column) === 0)
   const suffix = column.type === 'percentage' ? '%' : ''
   const field = (text: string, onText: (t: string) => void, first = false) => (
     <span className={suffix ? 'dt-input has-suffix' : 'dt-input'}>

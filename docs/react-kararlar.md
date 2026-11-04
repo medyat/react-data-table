@@ -202,6 +202,10 @@ oturunca çıkar.
   parçasıyla aranır (`STK00` ile başlayanlar, içinde `400` geçenler); `in` ile tek değer tam eşleşme
   ister. Liste yapıştırmak için "şunlardan biri" operatörü seçilir. Sütun kendi varsayılanını
   `filter.defaultOperator` ile verir.
+- Sayı filtresi sütunun gösterdiği ondalık kadar giriş alır: `decimalPlaces` 0 ise (`int`,
+  `percentage`'ın varsayılanı) yazılan ondalık atılır. Hücrede `%18` görünen sütunda `18,5` ile
+  filtrelemek görünmeyen bir değer arar; tam sayı kolonda sunucu ondalığı reddeder. Ondalık
+  isteyen yüzde `decimalPlaces: 1` verir.
 
 ## Yol haritası
 

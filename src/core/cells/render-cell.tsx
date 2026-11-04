@@ -3,7 +3,7 @@ import { ArrowUpRightIcon, ArrowsOutSimpleIcon, CheckIcon, MinusIcon, StarIcon, 
 import type { CSSProperties, ReactNode } from 'react'
 import type { ColumnDef, IconComponent, OptionDef, UserOption } from '../../types/columns'
 import type { Density, Tone } from '../../types/core'
-import { currencyCode, formatArrayItem, formatCell, isEmptyValue, optionLabel, urlHost, type FormatEnv } from './format'
+import { currencyCode, decimalPlaces, formatArrayItem, formatCell, isEmptyValue, optionLabel, urlHost, type FormatEnv } from './format'
 
 export interface RenderEnv extends FormatEnv {
   density: Density
@@ -174,7 +174,7 @@ export function renderCellContent<Row extends object>(
     case 'currency':
       return (
         <>
-          {fmt.decimal(Number(value), def.decimalPlaces ?? 2)}
+          {fmt.decimal(Number(value), decimalPlaces(def))}
           <span className="dt-ccy">{currencyCode(def, row)}</span>
         </>
       )

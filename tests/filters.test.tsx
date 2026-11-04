@@ -190,6 +190,25 @@ describe('değer ve operatör', () => {
     expect(chip('qty')!.classList).toContain('is-incomplete')
     expect(req().filters.map((f) => f.column)).toEqual(['status'])
   })
+  it('sayı girişi görünen ondalık kadar: decimalPlaces 0 (yüzdenin varsayılanı) tam sayı alır', async () => {
+    const typed = async (column: ColumnDef<Order>) => {
+      await mount(<Table server options={{ columns: columns.map((c) => (c.id === 'qty' ? column : c)) }} />)
+      await pickColumn('Qty')
+      const [min] = within(pop()!).getAllByRole('textbox')
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      fireEvent.change(min!, { target: { value: '18.5' } })
+      act(() => vi.advanceTimersByTime(250))
+      const shown = (min as HTMLInputElement).value
+      const applied = (req().filters.at(-1) as { value?: unknown } | undefined)?.value
+      vi.useRealTimers()
+      cleanup()
+      return [shown, applied]
+    }
+    expect(await typed({ id: 'qty', header: 'Qty', type: 'percentage' })).toEqual(['18', [18, null]])
+    expect(await typed({ id: 'qty', header: 'Qty', type: 'float', decimalPlaces: 0 })).toEqual(['18', [18, null]])
+    expect(await typed({ id: 'qty', header: 'Qty', type: 'percentage', decimalPlaces: 1 })).toEqual(['18.5', [18.5, null]])
+    expect(await typed({ id: 'qty', header: 'Qty', type: 'float' })).toEqual(['18.5', [18.5, null]])
+  })
   it('Clear değeri siler, çip yerinde ve açık kalır; metin 250 ms sonra ve Enter ile uygulanır, Enter kapatır', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     await mount(<Table server />)

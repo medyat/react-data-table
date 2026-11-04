@@ -1,6 +1,6 @@
 // Dışa aktarma ve pano için hücre değeri (05 §3, 07 §7, 07 §13, D46). Saf fonksiyonlar; kütüphaneye bağlı değil.
 import type { ColumnDef } from '../../types/columns'
-import { formatCell, isEmptyValue, optionLabel, type FormatEnv } from '../cells/format'
+import { decimalPlaces, formatCell, isEmptyValue, optionLabel, type FormatEnv } from '../cells/format'
 import { toDate } from '../format'
 
 /**
@@ -11,7 +11,7 @@ export function plainText<Row extends object>(def: ColumnDef<Row>, row: Row, val
   if (isEmptyValue(value)) return ''
   switch (def.type) {
     case 'currency':
-      return env.fmt.decimal(Number(value), def.decimalPlaces ?? 2)
+      return env.fmt.decimal(Number(value), decimalPlaces(def))
     case 'date':
     case 'datetime':
       return value instanceof Date ? value.toISOString() : String(value)
@@ -73,13 +73,13 @@ export function xlsxCell<Row extends object>(def: ColumnDef<Row>, row: Row, valu
     case 'star':
       return { value: Number(value), type: Number, format: '#,##0' }
     case 'float':
-      return { value: Number(value), type: Number, format: decimals(def.decimalPlaces ?? 2) }
+      return { value: Number(value), type: Number, format: decimals(decimalPlaces(def)) }
     case 'percentage':
       // Değer 20 = %20 (03); geri içe aktarılınca 20 kalsın diye bölünmez, işaret biçimde.
-      return { value: Number(value), type: Number, format: `${decimals(def.decimalPlaces ?? 0)}"%"` }
+      return { value: Number(value), type: Number, format: `${decimals(decimalPlaces(def))}"%"` }
     case 'currency': {
       const code = typeof def.currency === 'string' ? ` "${def.currency}"` : ''
-      return { value: Number(value), type: Number, format: decimals(def.decimalPlaces ?? 2) + code }
+      return { value: Number(value), type: Number, format: decimals(decimalPlaces(def)) + code }
     }
     case 'date':
     case 'datetime': {
