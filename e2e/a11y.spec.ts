@@ -1,5 +1,5 @@
 // Faz 7c kabul kriteri (Vue e2e/a11y.spec.ts ve phone.spec.ts'in karşılığı): axe-core taramasında kritik/ciddi ihlal yok
-// (WCAG 2.1 A/AA); masaüstü liste, seçim, sütun seçici, Columns dialog'u ve telefon alt sayfaları. Hareket azaltma ve yüksek
+// (WCAG 2.1 A/AA); masaüstü liste, seçim, sütun seçici, ⋯ › Export, Columns dialog'u ve telefon alt sayfaları. Hareket azaltma ve yüksek
 // kontrast medya kuralları gerçek tarayıcıda.
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
@@ -56,6 +56,28 @@ test('axe · sütun seçici, filtre çipi ve görünüm menüsü', async ({ page
   await page.locator('.dt-view-trigger').click()
   await expect(page.locator('.dt-views')).toBeVisible()
   await scan(page, 'görünüm menüsü')
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: 'More actions' }).click()
+  await page.getByRole('menuitem', { name: /^Export/ }).click()
+  await expect(page.getByRole('menuitem', { name: 'CSV' })).toBeVisible()
+  await scan(page, '⋯ › Export alt menüsü')
+})
+
+// D46: Excel kütüphanesi ilk kullanımda gerçek tarayıcıda yüklenir ve dosya iner (jsdom testleri yazıcıyı node'da sınar).
+test('Export › Excel dosyayı indirir', async ({ page }) => {
+  await open(page)
+  await page.getByRole('button', { name: 'More actions' }).click()
+  await page.getByRole('menuitem', { name: 'Export 100 rows' }).click()
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('menuitem', { name: 'Excel (.xlsx)' }).click(),
+  ])
+  expect(download.suggestedFilename()).toMatch(/\.xlsx$/)
+  const head = (await import('node:fs'))
+    .readFileSync((await download.path())!)
+    .subarray(0, 2)
+    .toString()
+  expect(head).toBe('PK')
 })
 
 test.describe('telefon', () => {

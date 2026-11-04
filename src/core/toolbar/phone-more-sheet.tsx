@@ -1,6 +1,6 @@
 // Telefon ⋯ alt sayfası (handoff 04 §6.4, T13-07): Display (Density › · Columns (dialog, D45) · Sort ›) · Print · Refresh ·
-// Auto-refresh · "Saved for you only" + Reset. Masaüstündeki Display popover'ının ve ⋯ menüsünün yerini alır. Export (D46)
-// ayrı fazda. Sort paneli yalnızca burada: masaüstünde sıralama header'dan.
+// Export › (D46) · Auto-refresh · "Saved for you only" + Reset. Masaüstündeki Display popover'ının ve ⋯ menüsünün yerini
+// alır. Sort paneli yalnızca burada: masaüstünde sıralama header'dan.
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -20,7 +20,12 @@ import { DtSwitch } from '../ui/switch'
 
 const ColumnsDialog = lazy(() => import('./columns-dialog')) as unknown as typeof import('./columns-dialog').default
 const DENSITIES: Density[] = ['comfortable', 'standard', 'compact']
-const TITLES = { main: 'toolbar.more', density: 'display.density', sort: 'display.sort' } as const
+const TITLES = {
+  main: 'toolbar.more',
+  density: 'display.density',
+  sort: 'display.sort',
+  export: 'sheet.export',
+} as const
 type Level = keyof typeof TITLES
 
 export function PhoneMoreSheet<Row extends object>({
@@ -33,6 +38,8 @@ export function PhoneMoreSheet<Row extends object>({
   onSort,
   persistent,
   onReset,
+  exportLabel,
+  onExport,
   onRefresh,
   onPrint,
   autoRefresh,
@@ -49,6 +56,8 @@ export function PhoneMoreSheet<Row extends object>({
   onSort: (sort: SortRule[]) => void
   persistent: boolean
   onReset: () => void
+  exportLabel?: string
+  onExport: (format: 'csv' | 'xlsx') => void
   onRefresh?: () => void
   onPrint?: () => void
   autoRefresh: boolean
@@ -66,7 +75,7 @@ export function PhoneMoreSheet<Row extends object>({
   const sortSummary = lead
     ? `${headerOf(lead.column)} ${lead.dir === 'asc' ? '↑' : '↓'}${sort.length > 1 ? ` +${sort.length - 1}` : ''}`
     : i18n.t('common.empty')
-  const hasActions = !!(onPrint || onRefresh || autoRefresh)
+  const hasActions = !!(exportLabel || onPrint || onRefresh || autoRefresh)
   const setOpenAll = (o: boolean) => {
     setOpen(o)
     if (!o) setLevel('main')
@@ -135,6 +144,12 @@ export function PhoneMoreSheet<Row extends object>({
               <CaretRightIcon size={16} aria-hidden="true" />
             </button>
             {hasActions && <div className="dt-bsheet-sep" />}
+            {exportLabel && (
+              <button type="button" className="dt-bsheet-row" onClick={() => setLevel('export')}>
+                {exportLabel}
+                <CaretRightIcon size={16} className="dt-bsheet-end" aria-hidden="true" />
+              </button>
+            )}
             {onPrint && (
               <button type="button" className="dt-bsheet-row" onClick={() => close(onPrint)}>
                 {i18n.t('toolbar.print')}
@@ -175,6 +190,17 @@ export function PhoneMoreSheet<Row extends object>({
               {d === density && <CheckIcon size={18} className="dt-bsheet-end dt-bsheet-check" aria-hidden="true" />}
             </button>
           ))}
+
+        {level === 'export' && (
+          <>
+            <button type="button" className="dt-bsheet-row" onClick={() => close(() => onExport('csv'))}>
+              {i18n.t('toolbar.csv')}
+            </button>
+            <button type="button" className="dt-bsheet-row" onClick={() => close(() => onExport('xlsx'))}>
+              {i18n.t('toolbar.xlsx')}
+            </button>
+          </>
+        )}
 
         {level === 'sort' && (
           <>

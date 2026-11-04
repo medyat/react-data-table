@@ -203,7 +203,10 @@ Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:
 
 Faz 2 notları:
 
-- Dışa aktarma (D46) ⋯ menüsünde yok; Excel bağımlılığıyla birlikte ayrı bir adımda gelir.
+- Dışa aktarma (D46) ⋯ › Export › CSV / Excel; telefonda ⋯ sayfasında Export › seviyesi. Yazıcı (`core/export/`) Vue'nunkiyle
+  aynı: playground T1'den inen .csv bayt bayt, .xlsx'in XML'leri birebir aynı. Vue'daki `@export` dinleme kuralının
+  karşılığı `onExport` prop'u. Telefon seviyesinin başlığı (`sheet.export`) atlanan sheet bölümünden tek anahtar olarak
+  alınır (`scripts/docs.ts` · `KEPT_KEYS`). Vue testindeki okuyucuyla gidiş-dönüş taşınmadı (içe aktarma yok, R1).
 - İçe aktarma yok (R1). Telefon araç çubuğu Faz 7'de.
 - Vue'daki kaydırma konumu hapı taşınmadı.
 - Sütun gösterme isteği debounce edilmez: Columns dialog'u değişiklikleri Save'de tek seferde uygular.
@@ -266,7 +269,7 @@ Faz 7 notları (telefon):
   `headerShort`. Popover'ların telefon karşılığı `BottomSheet` (Base UI Dialog); Vue'daki `Layer`'ın sheet hâli.
 - Filters sayfası ve ⋯ › Sort tek istekle uygular: tabloya `setQuery({ filters?, sort? })` eklendi (sayfa 1).
   Sayfa her açılışta yeni `key` ile kurulur, taslak o anki çiplerden başlar; ilk açılışta tembel yüklenir.
-- Telefon ⋯ sayfasında Export (D46) ve Import (R1) yok; Vue playground'unda bu yüzden 2 satır fazla.
+- Telefon ⋯ sayfasında Import (R1) yok; Vue playground'unda bu yüzden 1 satır fazla.
 - Metin ve sayı editörü açılınca kendi kutusuna odaklanır (Vue: `onMounted` focus); sheet'te başka odak kaynağı yok.
 - Vue'dan farkı olmayan ama React'e özgü tuzak: metin editöründe Enter aynı olayda önce değeri yazar sonra Done
   der; sayfanın taslağı updater ile güncellenir, yoksa Done eski taslağı görüp çipi boş sayar.

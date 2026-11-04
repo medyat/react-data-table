@@ -10,7 +10,7 @@ Paket veri çekmez ve kaydetmez (D18): istek nesnesini üretir, uygulama onu ken
 ## Kurulum
 
 ```bash
-pnpm add @medyat/react-data-table @base-ui/react @phosphor-icons/react
+pnpm add @medyat/react-data-table @base-ui/react @phosphor-icons/react write-excel-file
 ```
 
 ```tsx
@@ -144,7 +144,11 @@ bırakır. Seçili satırlar `onSelectionChange` ile de okunabilir.
   `toolbarEnd`) ya da `false`.
 - `autoRefresh={30}`: ⋯ menüsünde Auto-refresh anahtarı; açıkken footer "Live". `onPrint` verilirse ⋯ menüsünde Print.
 - `empty`: hiç kayıt yokken (filtre ve arama da yokken) gövdede gösterilecek içerik.
-- Excel / CSV dışa aktarma (D46) henüz yok.
+- Dışa aktarma (D46): ⋯ › **Export 100 rows** › CSV / Excel (.xlsx). Ekranda görünen sütunlar ve satırlar yazılır: seçim
+  varsa seçili satırlar, yoksa sayfadaki satırlar (sunucu modunda yüklü sayfa; "tüm eşleşenler" yok). .xlsx için
+  `write-excel-file` peer'ı gerekir (`pnpm add write-excel-file`); ilk dışa aktarmada yüklenir. `exportable={false}`
+  gizler; `onExport` verilirse paket dosya yazmaz, `{ format, query, selection, rows, visibleColumns }` ile uygulama
+  üretir.
 
 ## Telefon
 

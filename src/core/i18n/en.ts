@@ -249,6 +249,7 @@ export const en: Record<string, string> = {
   "cell.expandText": "Show full text",
   "bulk.moreAria": "More bulk actions",
   "bulk.aria": "Bulk actions",
+  "sheet.export": "Export",
   "mobile.filters": "Filters",
   "mobile.showResults": "Show results",
   "mobile.sort": "Sort",

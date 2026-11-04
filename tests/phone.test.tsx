@@ -1,4 +1,5 @@
-// Faz 7: telefon düzeni (05 §11, 04 §9, handoff 04, T13): kart < 640 px → alt sayfalar, Filters taslağı, ⋯ sayfası, sabitleme.
+// Faz 7: telefon düzeni (05 §11, 04 §9, handoff 04, T13): kart < 640 px → alt sayfalar, Filters taslağı, ⋯ sayfası
+// (Export › dahil), sabitleme.
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { useEffect } from 'react'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -182,6 +183,19 @@ describe('⋯ sayfası', () => {
     fireEvent.click(within(sheet()).getAllByRole('button', { name: 'Clear sort' })[1]!)
     await flush()
     expect(table.request.sort).toEqual([{ column: 'qty', dir: 'asc' }])
+  })
+
+  it('Export › seviyesi: başlık Export, CSV / Excel; seçince sayfa kapanır ve onExport çağrılır', async () => {
+    const onExport = vi.fn()
+    await mount(<Table onExport={onExport} />)
+    fireEvent.click(screen.getByRole('button', { name: 'More actions' }))
+    await flush()
+    fireEvent.click(within(sheet()).getByRole('button', { name: 'Export 10 rows' }))
+    expect(within(sheet()).getByRole('heading', { name: 'Export' })).toBeTruthy()
+    fireEvent.click(within(sheet()).getByRole('button', { name: 'CSV' }))
+    await flush()
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(onExport.mock.calls[0]![0]).toMatchObject({ format: 'csv', rows: rows.slice(0, 10) })
   })
 
   it('Columns dialog telefonda sabitleme bölümü göstermez', async () => {

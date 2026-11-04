@@ -249,6 +249,7 @@ export const tr: Record<string, string> = {
   "cell.expandText": "Tam metni göster",
   "bulk.moreAria": "Diğer toplu işlemler",
   "bulk.aria": "Toplu işlemler",
+  "sheet.export": "Dışa aktar",
   "mobile.filters": "Filtreler",
   "mobile.showResults": "Sonuçları göster",
   "mobile.sort": "Sıralama",

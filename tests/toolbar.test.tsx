@@ -1,5 +1,5 @@
 // Faz 2 · araç çubuğu (05 §3, §5, §9): yuvalar, daralma, Display (yoğunluk, dikey çizgiler, Reset), Columns dialog'u
-// (taslak, Save / Cancel, konumsal sabitleme, bul), ⋯ menüsü (Refresh, Print, Auto-refresh).
+// (taslak, Save / Cancel, konumsal sabitleme, bul), ⋯ menüsü (Export, Refresh, Print, Auto-refresh).
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { DataTableProvider } from '../src/core/provider'
@@ -24,8 +24,14 @@ const columns: Array<ColumnDef<Item>> = [
 ]
 const rows: Item[] = [{ id: 1, code: 'A-1', name: 'Pump', qty: 3, site: 'Gebze' }]
 
+// jsdom'da Blob URL yok; dışa aktarılan dosyalar burada toplanır (vitest her dosyaya ayrı ortam açar).
+const blobs: Blob[] = []
+URL.createObjectURL = (b: Blob) => (blobs.push(b), 'blob:x')
+URL.revokeObjectURL = () => {}
+
 beforeAll(mockLayout)
 afterEach(() => {
+  blobs.length = 0
   cleanup()
   mockCardWidth(1200)
   vi.useRealTimers()
@@ -58,12 +64,15 @@ const openColumns = async () => {
 const switchOf = (dialog: HTMLElement, header: string) => within(dialog).getByRole('switch', { name: header })
 
 describe('yuvalar ve daralma', () => {
-  it('auto: Display var; ⋯ yalnızca yenileme ya da Print varsa; toolbarEnd sonda; false: araç çubuğu yok', async () => {
-    const view = await mount(<Table toolbarEnd={<button type="button">New item</button>} />)
+  it('auto: Display var; ⋯ yalnızca Export, yenileme ya da Print varsa; toolbarEnd sonda; false: araç çubuğu yok', async () => {
+    const view = await mount(<Table exportable={false} toolbarEnd={<button type="button">New item</button>} />)
     expect(screen.getByRole('button', { name: 'Display' })).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'More actions' })).toBeNull()
     expect(document.querySelector('.dt-toolbar-end')!.textContent).toBe('New item')
-    view.rerender(<Table onPrint={() => {}} />)
+    view.rerender(<Table exportable={false} onPrint={() => {}} />)
+    expect(screen.getByRole('button', { name: 'More actions' })).toBeTruthy()
+    // Export varsayılan açık (D46).
+    view.rerender(<Table />)
     expect(screen.getByRole('button', { name: 'More actions' })).toBeTruthy()
     view.rerender(<Table toolbar={false} />)
     expect(document.querySelector('.dt-toolbar')).toBeNull()
@@ -215,6 +224,39 @@ describe('⋯ menüsü', () => {
       query: { search: '', filters: [], sort: [], fields: ['id', 'code', 'name', 'qty'] },
       visibleColumns: ['code', 'name', 'qty'],
     })
+  })
+  const openExport = async (label: string) => {
+    await openMore()
+    fireEvent.click(screen.getByRole('menuitem', { name: label }))
+    await flush()
+  }
+  it('Export: seçim varsa seçili satırlar; onExport verilince paket dosya yazmaz', async () => {
+    const onExport = vi.fn()
+    await mount(<Table selectable onExport={onExport} />)
+    fireEvent.click(document.querySelector('.dt-row[data-index="0"] .dt-select-box')!)
+    await flush()
+    await openExport('Export 1 selected row')
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Excel (.xlsx)' }))
+    await flush()
+    expect(onExport).toHaveBeenCalledWith({
+      format: 'xlsx',
+      query: { search: '', filters: [], sort: [], fields: ['id', 'code', 'name', 'qty'] },
+      selection: [rows[0]],
+      rows: [rows[0]],
+      visibleColumns: ['code', 'name', 'qty'],
+    })
+    expect(blobs).toHaveLength(0)
+  })
+  it('Export › CSV: sayfadaki satırlar, görünen sütunlar, BOM; dosya adı varlık adından', async () => {
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    onTestFinished(() => click.mockRestore())
+    await mount(<Table />)
+    await openExport('Export 1 row')
+    fireEvent.click(screen.getByRole('menuitem', { name: 'CSV' }))
+    await flush()
+    expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe('items.csv')
+    const text = new TextDecoder('utf-8', { ignoreBOM: true }).decode(await blobs[0]!.arrayBuffer())
+    expect(text).toBe('\uFEFFCode,Name,Qty\r\nA-1,Pump,3')
   })
   it('Auto-refresh: açıkken footer "Live", her aralıkta refetch', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })

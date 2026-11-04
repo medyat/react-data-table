@@ -14,6 +14,7 @@ import {
   type ReactNode,
 } from 'react'
 import { optionLabel } from '../core/cells/format'
+import { exportFile } from '../core/export/write'
 import { readPath } from '../core/columns/read-path'
 import { RemoteLabels } from '../core/cells/remote-labels'
 import { ColumnPicker } from '../core/filters/column-picker'
@@ -72,6 +73,8 @@ export function DataTable<Row extends object>({
   searchPlaceholder,
   autoRefresh,
   onPrint,
+  exportable = true,
+  onExport,
   shortcuts = true,
   onRowClick,
   rowClick = 'none',
@@ -103,6 +106,16 @@ export function DataTable<Row extends object>({
   autoRefresh?: number
   /** Verilirse ⋯ › Print. Sorgu sayfasızdır. */
   onPrint?: (payload: { query: QueryWithoutPage; visibleColumns: string[] }) => void
+  /** ⋯ › Export (D46). Varsayılan açık; `false` gizler (ör. yetki). */
+  exportable?: boolean
+  /** Verilirse paket dosya yazmaz; `rows` paketin yazacağı satırlardır (seçim varsa seçili, yoksa sayfadaki). */
+  onExport?: (payload: {
+    format: 'csv' | 'xlsx'
+    query: QueryWithoutPage
+    selection: Row[]
+    rows: Row[]
+    visibleColumns: string[]
+  }) => void
   /** Tek harfli kısayollar (/ arama, F filtre, R yenile, V görünümler) ve ⌘S. Alt←/→ her zaman çalışır. */
   shortcuts?: boolean
   /** Satır gövdesine düz tık; hücredeki düğme, link ve metin seçimi tetiklemez (05 §7). `rowClick`'ten bağımsız. */
@@ -488,14 +501,28 @@ export function DataTable<Row extends object>({
       )}
     </>
   )
-  const print =
-    onPrint &&
-    (() =>
-      onPrint({
-        query: { search: q.search, filters: q.filters, sort: q.sort, fields: q.fields },
-        visibleColumns: table.layout.columns.map((c) => c.id),
-      }))
-  const moreMenu = toolbar === 'auto' && !!(refetch || print)
+  const unpaged = { search: q.search, filters: q.filters, sort: q.sort, fields: q.fields }
+  const visibleColumns = table.layout.columns.map((c) => c.id)
+  const print = onPrint && (() => onPrint({ query: unpaged, visibleColumns }))
+  // Export (D46): ekranda görünen sütunlar ve satırlar; seçim varsa seçili satırlar, yoksa sayfadaki satırlar.
+  const exportRows = selectedRows.length ? selectedRows : rows
+  const exportLabel = exportable
+    ? selectedRows.length
+      ? i18n.t('toolbar.exportSelected', { count: selectedRows.length })
+      : i18n.t('toolbar.export', { count: rows.length })
+    : undefined
+  const runExport = (format: 'csv' | 'xlsx') => {
+    if (onExport) return onExport({ format, query: unpaged, selection: selectedRows, rows: exportRows, visibleColumns })
+    void exportFile({
+      format,
+      columns: table.layout.columns.map((c) => c.def),
+      rows: exportRows,
+      read: (row, def) => (def.accessor ? def.accessor(row) : readPath(row, def.id as string)),
+      env: { fmt, i18n, today: new Date(), labels },
+      name: entity.other,
+    })
+  }
+  const moreMenu = toolbar === 'auto' && !!(refetch || print || exportLabel)
   const prefs = table.prefs
 
   const state =
@@ -691,6 +718,8 @@ export function DataTable<Row extends object>({
                       onSort={(sort) => table.setQuery({ sort })}
                       persistent={prefs.persistent}
                       onReset={table.resetDisplay}
+                      exportLabel={exportLabel}
+                      onExport={runExport}
                       onRefresh={refetch && (() => refetch())}
                       onPrint={print}
                       autoRefresh={!!autoRefresh && !!refetch}
@@ -700,6 +729,8 @@ export function DataTable<Row extends object>({
                   )
                 : moreMenu && (
                     <MoreMenu
+                      exportLabel={exportLabel}
+                      onExport={runExport}
                       onRefresh={refetch && (() => refetch())}
                       onPrint={print}
                       autoRefresh={!!autoRefresh && !!refetch}

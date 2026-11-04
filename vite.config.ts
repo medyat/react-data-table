@@ -38,6 +38,7 @@ export default defineConfig({
         /^@tanstack\//,
         /^@dnd-kit\//,
         /^react-day-picker/,
+        /^write-excel-file/,
       ],
     },
     sourcemap: true,

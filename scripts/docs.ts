@@ -122,8 +122,9 @@ export interface DocMessages {
   tr: Record<string, string>
 }
 
-// R1: sheet ve içe aktarma bu pakette yok; metinleri de taşınmaz.
+// R1: sheet ve içe aktarma bu pakette yok; metinleri de taşınmaz. Telefon ⋯ › Export başlığı sheet bölümünden alınır.
 const SKIPPED_SECTIONS = ['Toplu düzenleme (sheet)', 'İçe aktarma']
+const KEPT_KEYS = ['sheet.export']
 
 // React'in bilinçli sapmaları (Vue'ya taşınmaz; docs/react-kararlar.md · Faz 7c): anahtar → [EN, TR], dokümandakini ezer.
 const REACT_MESSAGES: Record<string, [string, string]> = {
@@ -136,11 +137,12 @@ export function docMessages(): DocMessages {
   const en: Record<string, string> = {}
   const tr: Record<string, string> = {}
   for (const t of tables(readDoc('09-i18n.md'))) {
-    if (SKIPPED_SECTIONS.includes(t.heading)) continue
+    const skipped = SKIPPED_SECTIONS.includes(t.heading)
     for (const r of t.rows) {
       const m = /^`([a-z][A-Za-z0-9_.]*)`$/.exec(r[0] ?? '')
       if (!m || r.length !== 3) continue
       const key = m[1]!
+      if (skipped && !KEPT_KEYS.includes(key)) continue
       if (key in en) throw new Error(`09-i18n.md: anahtar iki kez tanımlı: ${key}`)
       en[key] = r[1]!
       tr[key] = r[2]!

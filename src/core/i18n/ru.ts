@@ -252,6 +252,7 @@ export const ru: Record<string, string> = {
   'cell.expandText': 'Показать полностью',
   'bulk.moreAria': 'Другие массовые действия',
   'bulk.aria': 'Массовые действия',
+  'sheet.export': 'Экспорт',
   'mobile.filters': 'Фильтры',
   'mobile.showResults': 'Показать результаты',
   'mobile.sort': 'Сортировка',
