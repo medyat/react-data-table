@@ -506,6 +506,8 @@ export function DataTable<Row extends object>({
   const print = onPrint && (() => onPrint({ query: unpaged, visibleColumns }))
   // Export (D46): ekranda görünen sütunlar ve satırlar; seçim varsa seçili satırlar, yoksa sayfadaki satırlar.
   const exportRows = selectedRows.length ? selectedRows : rows
+  // Aksiyonsuz çubuk yalnızca sayaç ve × olurdu: seçim Export'ta, header checkbox'ında ve Esc'te kalır (React sapması).
+  const bulkBar = selectedRows.length > 0 && (!!bulkActions?.length || !!selectionActions)
   const exportLabel = exportable
     ? selectedRows.length
       ? i18n.t('toolbar.exportSelected', { count: selectedRows.length })
@@ -598,7 +600,7 @@ export function DataTable<Row extends object>({
   return (
     // Kökün yazı boyutu (--dt-fs) kökteki yoğunluktan çözülür; yalnızca ızgarada olsaydı hep standard kalırdı.
     <div ref={root} className={phone ? 'dt dt-list is-phone' : 'dt dt-list'} data-density={table.density}>
-      {selectionBar === 'toolbar' && selectedRows.length > 0 && toolbar !== false ? (
+      {selectionBar === 'toolbar' && bulkBar && toolbar !== false ? (
         <BulkBar variant="toolbar" rows={selectedRows} actions={bulkActions ?? []} onClear={table.clearSelection}>
           {selectionActions?.({ rows: selectedRows, clear: table.clearSelection })}
         </BulkBar>
@@ -833,7 +835,7 @@ export function DataTable<Row extends object>({
         onCopy={copyId}
         rowError={rowError}
       />
-      {selectionBar === 'floating' && selectedRows.length > 0 && (
+      {selectionBar === 'floating' && bulkBar && (
         <BulkBar
           variant="floating"
           phone={phone}
@@ -845,10 +847,7 @@ export function DataTable<Row extends object>({
         </BulkBar>
       )}
       {copied > 0 && (
-        <div
-          className={selectionBar === 'floating' && selectedRows.length ? 'dt-toast is-raised' : 'dt-toast'}
-          role="status"
-        >
+        <div className={selectionBar === 'floating' && bulkBar ? 'dt-toast is-raised' : 'dt-toast'} role="status">
           <CheckIcon size={16} aria-hidden="true" />
           {i18n.t('cell.copied')}
         </div>

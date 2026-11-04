@@ -258,6 +258,9 @@ Faz 4 notları:
   kullanılmadı: kural (sorgu değişince temizle, refresh'te yeni veride olmayan anahtarı düşür) sayfa kapsamlı ve
   satır modelinden bağımsız. Sıfırlama, isteğin kimliği değişince render sırasında yapılır; aynı sayfaya dönmek
   eski seçimi geri getirmez.
+- `bulkActions` ve `selectionActions` yoksa seçim çubuğu çizilmez, `selectionBar="toolbar"` de araç çubuğunun yerini
+  almaz: çubukta yalnızca sayaç ve × kalıyordu (aksiyon bölümünün ayırıcıları yan yana). Seçim Export'ta ("Export 3
+  selected rows"), header checkbox'ında ve Esc'te kalır. Vue çubuğu her seçimde çizer.
 - Vue'daki `expand` prop'u + `#expanded` slot'u yerine `renderExpanded({ row, close })` ve `canExpand(row)`;
   `#selection-actions` yerine `selectionActions({ rows, clear })`. `onRowOpen({ row, href, event })` Vue'daki
   `row-open` ile aynı: paket gezinmeyi durdurmaz, dinleyici `event.preventDefault()` çağırır.

@@ -135,7 +135,7 @@ Birincil hücre gerçek bir `<a href>`'tir (D6): ⌘/orta tık tarayıcıya kal�
 ```
 
 `run` beklenmez (D20): uzun işlemin onayı, ilerlemesi ve sonucu uygulamanındır. Seçim çubuğu varsayılan olarak kartın
-altında yüzer; `selectionBar="toolbar"` onu araç çubuğunun yerine koyar, `selectionActions` içeriğini tümüyle uygulamaya
+altında yüzer; `bulkActions` ve `selectionActions` yoksa hiç çizilmez (seçim Export'ta ve header checkbox'ında kalır); `selectionBar="toolbar"` onu araç çubuğunun yerine koyar, `selectionActions` içeriğini tümüyle uygulamaya
 bırakır. Seçili satırlar `onSelectionChange` ile de okunabilir.
 
 ### Diğer

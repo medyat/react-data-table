@@ -59,7 +59,8 @@ afterEach(() => {
 describe('seçim', () => {
   it('satır gövdesine tık seçmez; checkbox seçer, bar sayacı ve onSelectionChange', async () => {
     const onSelectionChange = vi.fn()
-    await mount({ selectable: true, onSelectionChange })
+    const run = vi.fn()
+    await mount({ selectable: true, onSelectionChange, bulkActions: [{ id: 'a', label: 'Release', run }] })
     fireEvent.click(cell(0))
     expect(selected()).toEqual([])
     expect(onSelectionChange).not.toHaveBeenCalled()
@@ -192,6 +193,17 @@ describe('bulk bar', () => {
     expect(bar()!.textContent).not.toContain('Release')
     fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }))
     expect(bar()).toBeNull()
+  })
+
+  it('bulkActions ve selectionActions yoksa çubuk yok; toolbar modunda araç çubuğu yerinde kalır', async () => {
+    const { rerender } = await mount({ selectable: true })
+    fireEvent.click(box(0))
+    expect(selected()).toEqual(['WO-1'])
+    expect(bar()).toBeNull()
+    rerender({ selectable: true, selectionBar: 'toolbar', bulkActions: [] })
+    await flush()
+    expect(bar()).toBeNull()
+    expect(document.querySelector('.dt-toolbar')).not.toBeNull()
   })
 
   it('selectionBar="toolbar": seçim varken araç çubuğunun yerine', async () => {
