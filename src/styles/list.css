@@ -76,10 +76,9 @@
   opacity: 0.6;
   cursor: default;
 }
-/* Uygulamanın şeridi (R16): içerik uygulamanın; yatay hiza Stale şeridiyle aynı. */
+/* Uygulamanın şeridi (R16): kenardan kenara; boşluk ve renk içeriğin, paket yalnızca yeri verir. */
 .dt-list-notice {
   flex: none;
-  padding: var(--dt-space) 12px;
   border-bottom: 1px solid var(--dt-line);
 }
 
@@ -561,7 +560,8 @@
   color: var(--dt-bulk-fg-2);
   cursor: default;
 }
-.dt-bulk-btn.is-destructive {
+.dt-bulk-btn.is-destructive,
+.dt-bulk-btn.is-destructive > svg {
   color: var(--dt-bulk-danger);
 }
 .dt-bulk-btn.dt-bulk-more,

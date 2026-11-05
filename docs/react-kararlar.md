@@ -224,8 +224,14 @@ oturunca çıkar.
   çubuğunun hemen altında okunmalıdır: kartın dışında araç çubuğunun üstünde kalırsa filtre ile karışır.
 - `notice?: ReactNode`. Sıra: araç çubuğu, `notice`, Stale şeridi, filtre çipleri, grid. Çipler grid'e bağlı durumdur,
   grid'e en yakın kalır; `notice` bütün liste için bağlamdır.
-- Paket yalnızca yeri verir: yatay hiza Stale şeridiyle aynı (12 px), dikeyde `--dt-space`, altta `--dt-line`. İçerik,
-  rengi ve ARIA rolü uygulamanın; paket rol eklemez. Araç çubuğu kapalıyken (`toolbar={false}`) de çizilir.
+- Paket yalnızca yeri verir: kenardan kenara, iç boşluksuz, altta `--dt-line`. Zemin rengi şeridin tamamını
+  kaplasın diye boşluk içeriğindir; içerik, rengi, boşluğu ve ARIA rolü uygulamanın; paket rol eklemez. Araç çubuğu kapalıyken (`toolbar={false}`) de çizilir.
+
+## R17 · Toplu çubukta tehlikeli aksiyonun ikonu
+
+- Vue'da `.dt-bulk-btn > svg` ikonu her zaman `--dt-bulk-fg-2` yapıyor, `is-destructive` yalnızca metni boyuyordu:
+  ikon gri, metin kırmızı kalıyordu. Satır menüsünde ikon metinle aynı renkte; toplu çubuk da öyle olur.
+- `is-destructive` düğmede ikon da `--dt-bulk-danger` alır.
 
 ## Yol haritası
 
