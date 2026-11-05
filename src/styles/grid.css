@@ -389,7 +389,7 @@
 
 /* Odak halkası kalıbı (02): widget'lar ve header düğmeleri; DataSheet kendi aktif hücre çerçevesini kullanır. */
 .dt-grid:not(.dt-sheet-grid)
-  :is(.dt-cell-action, .dt-head-label, .dt-head-icon, .dt-link, .dt-text-expand, button, a[href]):focus-visible {
+  :is(.dt-cell-action, .dt-head-label, .dt-head-icon, .dt-text-expand, button, a[href]:not(.dt-link)):focus-visible {
   outline: none;
   box-shadow:
     0 0 0 2px var(--dt-row-bg, var(--dt-surface)),

@@ -19,14 +19,24 @@
   color: var(--dt-text-3);
 }
 
+/* Tıklanabildiği üzerine gelmeden anlaşılsın diye alt çizgi hep var (R20). */
 .dt-link {
   color: inherit;
-  text-decoration: none;
-  border-radius: var(--dt-radius-xs);
+  text-decoration: underline;
+  text-decoration-color: var(--dt-text-3);
+  text-underline-offset: 2px;
 }
 .dt-link:hover {
   color: var(--dt-accent-text);
-  text-decoration: underline;
+  text-decoration-color: currentColor;
+}
+/* Halka hücrenin taşma sınırında kesiliyordu; odak alt çizgiyle gösterilir (R20). */
+.dt-grid:not(.dt-sheet-grid) .dt-link:focus-visible {
+  outline: none;
+  box-shadow: none;
+  color: var(--dt-accent-text);
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 2px;
 }
 .dt-link-icon {
   display: inline-block;

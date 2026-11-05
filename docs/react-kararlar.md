@@ -259,6 +259,13 @@ oturunca çıkar.
 - Adapter yoksa ve uygulama görünüm vermediyse eklenmez: kaydetme olmayan, tek seçenekli menü çizilmez (eski davranış).
 - Vue'dan sapma: 04 §7'deki "hiç görünüm yoksa tablonun varsayılan durumu" adapter'lı tabloda artık oluşmaz.
 
+## R20 · Bağlantı hücresinin görünümü
+
+- `.dt-link` (birincil hücre, `id`, `url`) her zaman altı çizili; çizgi `--dt-text-3`, hover'da accent. Vue yalnızca
+  hover'da çiziyor: kullanıcı hücrenin tıklanabildiğini üzerine gelmeden anlamıyordu.
+- Bağlantının odağı halka (02) değil, accent renk ve 2 px alt çizgi. Halka hücrenin taşma sınırında kesiliyor;
+  Sheet kapanınca odak bağlantıya döndüğü için Esc'ten sonra yarım halka görünüyordu.
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:
