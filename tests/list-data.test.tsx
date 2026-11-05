@@ -296,20 +296,23 @@ describe('istek (R4)', () => {
 
 describe('durum (R5) ve tercihler', () => {
   it('controlled sort: tık onStateChange ile bildirilir, ekran dışarıdaki duruma uyar', async () => {
-    const onStateChange = vi.fn<(s: TableState) => void>()
+    const onStateChange = vi.fn<(s: TableState, changed: Partial<TableState>) => void>()
     const state = { sort: [] }
     const view = render(<Harness options={{ rows: people(3), state, onStateChange }} />)
     await flush()
     fireEvent.click(label('score'))
     await flush()
-    expect(onStateChange).toHaveBeenLastCalledWith({
-      view: null,
-      search: '',
-      filters: [],
-      sort: [{ column: 'score', dir: 'asc' }],
-      page: 1,
-      pageSize: 100,
-    })
+    expect(onStateChange).toHaveBeenLastCalledWith(
+      {
+        view: null,
+        search: '',
+        filters: [],
+        sort: [{ column: 'score', dir: 'asc' }],
+        page: 1,
+        pageSize: 100,
+      },
+      { sort: [{ column: 'score', dir: 'asc' }] },
+    )
     expect(label('score').closest('[role="columnheader"]')!.classList).not.toContain('is-sorted')
     view.rerender(
       <Harness options={{ rows: people(3), state: { sort: [{ column: 'score', dir: 'desc' }] }, onStateChange }} />,

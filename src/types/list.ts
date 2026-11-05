@@ -30,12 +30,18 @@ export interface UseDataTableOptions<Row extends object> {
   density?: Density
   /** Boş durum, hata ve sayfa metinlerinde: { one: 'order', other: 'orders' }. Verilmezse `id`. */
   entityName?: Plural
-  /** Controlled alanlar (R5). */
+  /**
+   * Controlled durum (R5). Verilince tablonun durumu yalnızca budur; eksik alan varsayılandır: görünüm → varsayılan
+   * görünüm, filtre ve sıralama → görünümün kayıtlısı, arama boş, sayfa 1, sayfa boyutu tercih.
+   */
   state?: Partial<TableState>
   /** Uncontrolled başlangıç. */
   initialState?: Partial<TableState>
-  /** Her değişimde tam durum; controlled alanlar burada güncellenir. */
-  onStateChange?: (state: TableState) => void
+  /**
+   * Her değişimde: tam durum ve yalnızca varsayılandan farklı alanlar (`changed`). Adrese `changed` yazılır; boşsa
+   * adres temizdir. Açılışta çağrılmaz.
+   */
+  onStateChange?: (state: TableState, changed: Partial<TableState>) => void
   /** Tercih yoksa sayfa boyutu. Varsayılan 100. */
   pageSize?: number
   /** Varsayılan [50, 100, 250, 500]. */

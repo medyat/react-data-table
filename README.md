@@ -76,18 +76,18 @@ nesnesinin `message` ve `id` alanları hata ekranında gösterilir; `refetch` yo
 
 ### Durumu adrese bağlamak
 
-Durum varsayılan olarak tablonun içindedir. `state` + `onStateChange` ile alan alan dışarı açılır (R5); paket adrese
-kendisi dokunmaz. TanStack Router ile:
+Durum varsayılan olarak tablonun içindedir. `state` + `onStateChange` ile dışarı açılır (R5); paket adrese kendisi
+dokunmaz. `state` verilince eksik alan varsayılandır (varsayılan görünüm ve onun filtre/sıralaması, sayfa 1). İkinci argüman
+`changed` yalnızca varsayılandan farklı alanları taşır: adrese onu yazın, varsayılan liste temiz adres olur. TanStack Router ile:
 
 ```tsx
-const search = Route.useSearch()
+const search = Route.useSearch() // { view?, search?, filters?, sort?, page?, pageSize? }
 const navigate = Route.useNavigate()
 const table = useDataTable({
   id: 'production-orders',
   columns,
-  state: { search: search.q ?? '', filters: search.filters ?? [], sort: search.sort ?? [], page: search.page ?? 1 },
-  onStateChange: (s) =>
-    navigate({ search: { q: s.search, filters: s.filters, sort: s.sort, page: s.page }, replace: true }),
+  state: search,
+  onStateChange: (_state, changed) => navigate({ search: changed, replace: true }),
 })
 ```
 

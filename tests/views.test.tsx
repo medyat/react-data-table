@@ -1,6 +1,7 @@
 // Faz 3b · görünümler (04 §7, R6): açılış seçimi, tek adımda uygulama, edited + kaydetme bölümü, görünüm başına taslak,
 // ⌘S, Save as new view dialog'u, Rename / Duplicate / Delete, adapter'sız menü, Display › Reset, controlled görünüm (R5).
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { useEffect, useState } from 'react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { DataTableProvider } from '../src/core/provider'
 import { DataTable } from '../src/list/data-table'
@@ -82,6 +83,16 @@ afterEach(cleanup)
 function Table({ options }: { options?: Partial<UseDataTableOptions<Order>> }) {
   const table = useDataTable({ id: 'orders', columns, rows: orders, views: sys, ...options })
   return <DataTable table={table} />
+}
+/** Adres gibi dışarıdaki durum: tablo yalnızca varsayılandan farklı alanları yazar. */
+const address: { url: Partial<TableState>; set?: (url: Partial<TableState>) => void } = { url: {} }
+function Address({ initial = {} }: { initial?: Partial<TableState> }) {
+  const [url, setUrl] = useState(initial)
+  useEffect(() => {
+    address.url = url
+    address.set = setUrl
+  }, [url])
+  return <Table options={{ state: url, onStateChange: (_state, changed) => setUrl(changed) }} />
 }
 const mount = async (o: {
   adapter?: ViewsAdapter
@@ -407,19 +418,55 @@ describe('Display › Reset ve controlled görünüm (R5)', () => {
     expect(document.querySelectorAll('.dt-chip')).toHaveLength(1)
     expect(ariaSort('value')).toBe('ascending')
   })
-  it('controlled: adresten gelen görünüm uygulanmaz, ekrandaki durum ona göre "Edited"; açılış seçimi bir kez bildirilir', async () => {
+  it('controlled: adresten gelen görünüm uygulanmaz, ekrandaki durum ona göre "Edited"; açılış bildirilmez', async () => {
     const onStateChange = vi.fn()
     await mount({ options: { state: { view: 'late', filters: [] }, onStateChange } })
     expect(trigger().textContent).toContain('Late orders')
     expect(trigger().textContent).toContain('Edited')
     expect(document.querySelector('.dt-chip')).toBeNull()
     expect(onStateChange).not.toHaveBeenCalled()
-    cleanup()
+  })
+  it('controlled: eksik alan varsayılandır; adrese yalnızca varsayılandan farklı alanlar yazılır', async () => {
+    render(<Address />)
+    await flush()
+    expect(address.url).toEqual({})
+    expect(trigger().textContent).toBe('All orders')
 
-    const changes: TableState[] = []
-    await mount({ options: { state: { filters: [] }, onStateChange: (s) => changes.push(s) } })
-    expect(changes).toHaveLength(1)
-    expect(changes[0]).toMatchObject({ view: 'all', filters: [] })
+    await pickView('Late orders')
+    expect(address.url).toEqual({ view: 'late' })
+    expect(document.querySelector('.dt-chip[data-col="status"]')).not.toBeNull()
+
+    await sortBy('number')
+    expect(address.url).toEqual({ view: 'late', sort: [{ column: 'number', dir: 'asc' }] })
+
+    await pickView('All orders')
+    expect(address.url).toEqual({})
+
+    // Tercihi kalıcı saklamayan uygulamada sayfa boyutu yalnızca adreste yaşar.
+    fireEvent.change(document.querySelector('.dt-footer select')!, { target: { value: '50' } })
+    await flush()
+    expect(address.url).toEqual({ pageSize: 50 })
+  })
+  it('controlled: temiz adreste Set as default ekrandaki görünümü değiştirmez, görünüm adrese yazılır', async () => {
+    render(<Address />)
+    await flush()
+    await rowAction('Late orders', 'Set as default')
+    expect(trigger().textContent).toBe('All orders')
+    expect(address.url).toEqual({ view: 'all' })
+  })
+  it('controlled: adres boşalınca görünüm, filtre, sıralama ve sütunlar varsayılana döner', async () => {
+    render(<Address initial={{ view: 'late' }} />)
+    await flush()
+    expect(trigger().textContent).toBe('Late orders')
+    expect(heads()).toEqual(['number', 'status', 'value'])
+    expect(document.querySelector('.dt-chip[data-col="status"]')).not.toBeNull()
+
+    act(() => address.set!({}))
+    await flush()
+    expect(trigger().textContent).toBe('All orders')
+    expect(heads()).toEqual(['number', 'product', 'status', 'value'])
+    expect(document.querySelector('.dt-chip')).toBeNull()
+    expect(ariaSort('value')).toBeNull()
   })
   it('controlled: adresten gelen görünümün sütunları uygulanır (adreste sütun yok); kişisel olan liste gelince', async () => {
     const late = sys[1]!.state

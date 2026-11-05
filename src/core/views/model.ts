@@ -31,10 +31,13 @@ const filtersKey = (fs: FilterCondition[]) =>
   canonical(fs.map(normFilter).sort((a, b) => a.column.localeCompare(b.column)))
 const sorted = (ids: string[]) => [...ids].sort().join('\u0000')
 
+/** Sırasız filtre eşitliği; adrese yalnızca görünümden farklı olan yazılır (R5). */
+export const sameFilters = (a: FilterCondition[], b: FilterCondition[]) => filtersKey(a) === filtersKey(b)
+export const sameSort = (a: ViewState['sort'], b: ViewState['sort']) => canonical(a) === canonical(b)
+
 /** Normalize karşılaştırma: `in` değerleri sırasız, görünürler küme, genişlikte ±2 px tolerans. */
 export function sameState(a: ViewState, b: ViewState): boolean {
-  if (filtersKey(a.filters) !== filtersKey(b.filters)) return false
-  if (canonical(a.sort) !== canonical(b.sort)) return false
+  if (!sameFilters(a.filters, b.filters) || !sameSort(a.sort, b.sort)) return false
   const ca = a.columns
   const cb = b.columns
   if (ca.order.join('\u0000') !== cb.order.join('\u0000') || sorted(ca.visible) !== sorted(cb.visible)) return false

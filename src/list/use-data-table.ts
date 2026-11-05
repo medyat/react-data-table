@@ -1,10 +1,10 @@
 // Tablonun durumu ve mantığı (R3, R5). Ekranın başka yerleri de buradan okur; `<DataTable table={…} />` çizer.
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { useColumnLayout } from '../core/columns/use-column-layout'
 import { readPath } from '../core/columns/read-path'
 import { usePreferences } from '../core/preferences/use-preferences'
 import { useDataTableContext } from '../core/provider'
-import { defaultView } from '../core/views/model'
+import { defaultView, sameFilters, sameSort } from '../core/views/model'
 import type { ColumnDef } from '../types/columns'
 import type { TableState, UseDataTableOptions } from '../types/list'
 import type { FilterCondition, SortRule, TableQuery } from '../types/query'
@@ -52,48 +52,16 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
     appViews.some((v) => v.id === ALL_VIEW_ID) || (!appViews.length && !ctx.viewsAdapter)
       ? appViews
       : [{ id: ALL_VIEW_ID, name: ctx.i18n.t('views.all'), kind: 'system', state: {} }, ...appViews]
-  // Görünüm verilmediyse (ne `state` ne `initialState`) açılış görünümü pakette seçilir (04 §7): kullanıcı varsayılanı →
-  // system default → ilk system. Filtresi, sıralaması ve sütunları başlangıç durumu olur; kişisel varsayılan liste gelince.
-  const [opening] = useState(() => {
-    const id = options.state?.view !== undefined ? options.state.view : options.initialState?.view
-    const given = id !== undefined
-    return {
-      auto: !given,
-      view: given ? null : defaultView(system, prefs.prefs.defaultViewId),
-      // Dışarıdan gelen görünümün filtresi ve sıralaması olduğu gibi okunur ama sütunları adreste yoktur: system görünümünde
-      // hemen, kişiselde liste gelince (useViews) görünümden alınır.
-      columns: (given ? system.find((v) => v.id === id) : null)?.state.columns,
-    }
-  })
-  const layout = useColumnLayout({ columns: options.columns, layout: opening.view?.state.columns ?? opening.columns })
-
-  // R5: `state`'teki alan dışarıdan, diğerleri içeriden. Uncontrolled sayfa boyutu tercihi izler.
-  const [inner, setInner] = useState<Partial<TableState>>(() => {
-    const v = opening.view
-    return v
-      ? { ...options.initialState, view: v.id, filters: v.state.filters ?? [], sort: v.state.sort ?? [] }
-      : { ...options.initialState }
-  })
-  const state: TableState = {
-    view: options.state?.view !== undefined ? options.state.view : (inner.view ?? null),
-    search: options.state?.search ?? inner.search ?? '',
-    filters: options.state?.filters ?? inner.filters ?? [],
-    sort: options.state?.sort ?? inner.sort ?? [],
-    page: options.state?.page ?? inner.page ?? 1,
-    pageSize: options.state?.pageSize ?? inner.pageSize ?? prefs.prefs.pageSize,
-  }
-  const update = (patch: Partial<TableState>) => {
-    const next = { ...state, ...patch }
-    setInner(next)
-    options.onStateChange?.(next)
-  }
-  // Açılış görünümü pakette seçildiyse controlled alanlar (ör. adres) onu bir kez öğrenir.
-  useEffect(() => {
-    const v = opening.view
-    if (v) options.onStateChange?.({ ...state, view: v.id, filters: v.state.filters ?? [], sort: v.state.sort ?? [] })
-    // Yalnızca açılışta.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  // R5: `state` verilince durum yalnızca odur, eksik alan varsayılandır; verilmezse içeride (`initialState` ile başlar).
+  const [inner, setInner] = useState<Partial<TableState>>(() => ({ ...options.initialState }))
+  const source = options.state ?? inner
+  // Açılıştaki sütun düzeni: istenen ya da varsayılan system görünümünün; kişisel olan liste gelince (useViews).
+  const [opening] = useState(() =>
+    source.view === undefined
+      ? defaultView(system, prefs.prefs.defaultViewId)
+      : system.find((v) => v.id === source.view),
+  )
+  const layout = useColumnLayout({ columns: options.columns, layout: opening?.state.columns })
 
   // Genişlik değişimi hook'u yeniden çizmez (05 · Resize); "edited" için sürükleme bitince bir kez çizilir.
   useSyncExternalStore(layout.subscribeSizing, () => (layout.resizing() ? '' : JSON.stringify(layout.state().widths)))
@@ -108,18 +76,48 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
     adapter: ctx.viewsAdapter,
     locale: ctx.locale,
     defaultViewId: prefs.prefs.defaultViewId,
-    setDefaultViewId: (id) => prefs.set({ defaultViewId: id }),
-    activeId: state.view,
-    auto: opening.auto,
-    prefsReady: prefs.ready,
-    current: { filters: state.filters, sort: state.sort, columns: layout.state() },
+    setDefaultViewId: (id) => {
+      // Temiz adres "varsayılan" demektir: varsayılan değişince ekrandaki görünüm adreste açıkça kalır.
+      if (source.view === undefined) update({}, defaultView(views.all, id)?.id ?? null)
+      prefs.set({ defaultViewId: id })
+    },
+    requested: source.view,
+    query: { filters: source.filters, sort: source.sort },
+    columns: layout.state(),
     resolve,
     apply: (view, s) => {
       layout.reset(s.columns)
       update({ view, filters: s.filters, sort: s.sort, page: 1 })
     },
-    restoreColumns: (columns) => layout.reset(columns),
+    // `reset(undefined)` açılışın düzenine döner; sütunsuz görünüm tablonun varsayılanıdır.
+    restoreColumns: (columns) => layout.reset(columns ?? {}),
   })
+  const state: TableState = {
+    view: views.activeId,
+    search: source.search ?? '',
+    filters: views.current.filters,
+    sort: views.current.sort,
+    page: source.page ?? 1,
+    pageSize: source.pageSize ?? prefs.prefs.pageSize,
+  }
+  /**
+   * `changed`: varsayılandan farklı alanlar. `defaultId` yalnızca bu değişimle birlikte değişen varsayılan görünüm için.
+   * Sayfa boyutu değişimden önceki tercihle karşılaştırılır: tercihi kalıcı saklamayan uygulamada yalnızca adreste yaşar.
+   */
+  const update = (patch: Partial<TableState>, defaultId = views.defaultId) => {
+    const next = { ...state, ...patch }
+    setInner(next)
+    const stored = resolve(views.all.find((v) => v.id === next.view)?.state ?? {})
+    const changed: Partial<TableState> = {
+      ...(next.view !== defaultId && { view: next.view }),
+      ...(next.search && { search: next.search }),
+      ...(!sameFilters(next.filters, stored.filters) && { filters: next.filters }),
+      ...(!sameSort(next.sort, stored.sort) && { sort: next.sort }),
+      ...(next.page > 1 && { page: next.page }),
+      ...(next.pageSize !== prefs.prefs.pageSize && { pageSize: next.pageSize }),
+    }
+    options.onStateChange?.(next, changed)
+  }
 
   // Sütun taşımak ya da gizlemek isteği değiştirmez (R4): alanlar yalnızca yeni görünen sütunla, ya da sorgu değişince
   // yeniden kurulur. Önceki isteğin alanları render'lar arasında saklanır.
@@ -178,7 +176,7 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
     /** Display › Reset: tercihler ve sütun düzeni aktif görünümün kayıtlı haline döner; filtre ve sıralama kalır (04 §8). */
     resetDisplay: () => {
       prefs.reset()
-      layout.reset(views.active?.state.columns)
+      layout.reset(views.active?.state.columns ?? {})
     },
     /** Seçili satır anahtarları (05 §6). Satırların kendisi `DataTable`'ın `onSelectionChange`'inde. */
     selection,

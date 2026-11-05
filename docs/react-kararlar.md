@@ -91,9 +91,18 @@ uncontrolled.
 
 `TableState = { view, search, filters, sort, page, pageSize, layout }`; alanlar fazlarla eklenir (Faz 2:
 `sort`, `page`, `pageSize`; Faz 3a: `search`, `filters`; Faz 3b: `view`). `filters` yalnızca tam koşulları taşır: değeri
-seçilmemiş çip ekranda kalır, duruma ve adrese girmez. Her alan ayrı ayrı controlled olabilir: `state`'te verilen alan dışarıdan
-okunur, diğerleri içeride kalır (TanStack Table'ın `state` kalıbı). Uncontrolled sayfa boyutu
-tercihten (`preferences`) gelir; sayfa boyutu değişimi controlled olsa da tercihe yazılır.
+seçilmemiş çip ekranda kalır, duruma ve adrese girmez. `state` verilince tablonun durumu yalnızca odur ve **eksik alan
+varsayılandır**: görünüm → varsayılan görünüm (kullanıcı varsayılanı → system default → ilk system), filtre ve sıralama → etkin
+görünümün kayıtlısı, arama boş, sayfa 1, sayfa boyutu tercih (`preferences`). Sayfa boyutu değişimi controlled olsa da tercihe
+yazılır.
+
+`onStateChange(state, changed)`: tam durum ve yalnızca varsayılandan farklı alanlar. Uygulama adrese `changed`'i yazar; varsayılan
+liste temiz adrestir, menüden aynı sayfaya dönmek (adresin boşalması) listeyi varsayılana döndürür. Açılışta çağrılmaz. Temiz
+adresteyken varsayılan görünüm değişirse (Set as default / Remove default) ekrandaki görünüm `changed.view` ile adreste açıkça
+kalır, ekran değişmez.
+
+Önceki sürümde alanlar ayrı ayrı controlled'dı (verilmeyen içeride kalırdı) ve açılış görünümü adrese bir kez bildirilirdi.
+Adres boşalınca tablo son filtreyi korur, adres ile ekran ayrışırdı; varsayılan liste de `?view=all&filters=&sort=` yazardı.
 
 Paket adres okumaz, yazmaz (D25 paket için geçerli); ama uygulama durumu tek satırda adrese bağlayabilir. Swors, filtre/sıralama/
 sayfa/görünümü adreste, sütun düzenini bellekte tutar.
@@ -110,7 +119,7 @@ sıralama anahtarlarında sıralıdır.
   görünümün kayıtlı durumuyla (`layout.resolve` ile tamamlanmış) karşılaştırılır. Adresten gelen görünüm + filtre
   uygulanmaz, olduğu gibi okunur; farklıysa "Edited" görünür.
   Sütun düzeni adreste olmadığı için görünümden alınır: system görünümünde açılışta, kişisel görünümde liste
-  gelince bir kez (kullanıcı o arada bir görünüm seçmediyse).
+  gelince.
 - Vue'dan sapma: varsayılan görünümün satır menüsünde "Set as default" yerine "Remove default" çıkar ve tercihi
   `null` yapar; açılış system default'a döner. Vue'da varsayılan yalnızca başka bir görünüm seçilerek değişir; system
   görünümü olmayan ekranda kişisel varsayılandan dönülemiyordu. Öğe yıkıcı (kırmızı) çizilir. Metin `scripts/docs.ts`
@@ -118,9 +127,9 @@ sıralama anahtarlarında sıralıdır.
   ve menüyü genişletmez: menü öğeleri kadar geniştir, not o genişlikte kırılır.
 - "Edited" Türkçede "Kaydedilmedi", Rusçada "Не сохранено"dir (`REACT_MESSAGES`): "Değişti" kullanıcılarca sistemin
   kendiliğinden güncellemesi diye okundu. Karşılaştırma nesne anahtarlarının sırasına bakmaz (jsonb sırayı korumaz).
-- `state.view` verilmezse açılış görünümü pakette seçilir (kullanıcı varsayılanı → system default → ilk system);
-  filtresi, sıralaması ve sütunları başlangıç durumu olur ve `onStateChange` ile bir kez bildirilir. Kişisel varsayılan
-  ya da Promise dönen tercih, liste ve tercih ilk geldiğinde bir kez uygulanır; sonra "Set as default" görünümü değiştirmez.
+- `state.view` yoksa etkin görünüm varsayılandır ve her çizimde türetilir: kişisel varsayılan ya da Promise dönen tercih
+  gelince ekran ona geçer. Görünüm seçim dışında değişirse (adres, geri tuşu, geç gelen liste ya da tercih) sütun düzeni o
+  görünümün kayıtlısına döner; sütunsuz görünüm tablonun varsayılan düzenidir.
 - Görünüm kimliği `request`'e girmez: sorgu anahtarını yalnızca filtre / sıralama / sayfa değiştirir.
 - Görünüm menüsü Base UI Popover + kendi combobox'ı, liste grid popup (Faz 7c'de listbox'tan çevrildi): odak aramada, ↑↓
   vurgu (`aria-activedescendant`), Enter seçer, Tab ⋯ düğmelerine ve New view'a gider. Base UI Combobox liste içindeki

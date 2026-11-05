@@ -1,12 +1,13 @@
-// Görünümler (04 §7, D4, D5, D30, R6): system görünümler (`views` seçeneği) + adapter'daki kişisel görünümler, açılış seçimi,
+// Görünümler (04 §7, D4, D5, D30, R6): system görünümler (`views` seçeneği) + adapter'daki kişisel görünümler, etkin görünüm,
 // düzenlenmiş durum, görünüm başına kaydedilmemiş taslak (bellekte, oturum boyu), kaydet / kopyala / yeniden adlandır / sil.
 // Paket veri çekmez (D18): adapter'ı uygulama verir, yoksa kaydetme yoktur.
 //
-// Vue'dan farkı: aktif görünüm tablonun durumundadır (`state.view`, adrese bağlanabilir, R5) ve "edited" saklanmaz, her
-// çizimde ekrandaki durum görünümün kayıtlı durumuyla karşılaştırılarak türetilir. Böylece adresten gelen görünüm + filtre
-// sayfa yenilenince de doğru "edited" gösterir.
+// Vue'dan farkı: etkin görünüm tablonun durumundan türetilir (`state.view`, adrese bağlanabilir, R5). Görünüm verilmemişse
+// varsayılandır, filtre ve sıralama verilmemişse görünümün kayıtlısıdır; "edited" saklanmaz, her çizimde karşılaştırılır.
+// Böylece temiz adres varsayılan görünümü, adresten gelen görünüm + filtre de sayfa yenilenince doğru "edited"i gösterir.
 import { useEffect, useRef, useState } from 'react'
 import { byName, defaultView, sameState } from '../core/views/model'
+import type { FilterCondition, SortRule } from '../types/query'
 import type { View, ViewPatch, ViewState, ViewsAdapter } from '../types/views'
 
 export interface ViewsOptions {
@@ -16,42 +17,56 @@ export interface ViewsOptions {
   locale: string
   defaultViewId: string | null
   setDefaultViewId: (id: string | null) => void
-  /** `state.view`: undefined ise açılışta varsayılan seçildi (`auto`). */
-  activeId: string | null
-  /** Açılış görünümü paket tarafından seçildiyse: kişisel liste / tercih gelince varsayılana geçilebilir. */
-  auto: boolean
-  /** Tercihler yüklendi (Promise dönen adapter'da sonradan). */
-  prefsReady: boolean
-  /** Ekrandaki durum (filtre + sıralama + sütun düzeni). */
-  current: ViewState
+  /** İstenen görünüm: undefined → varsayılan (kullanıcı varsayılanı → system default → ilk system), null → görünümsüz. */
+  requested: string | null | undefined
+  /** İstenen filtre ve sıralama; eksikse etkin görünümün kayıtlısı. */
+  query: { filters?: FilterCondition[]; sort?: SortRule[] }
+  /** Ekrandaki sütun düzeni. */
+  columns: ViewState['columns']
   /** Kayıtlı (kısmi) durum → tam durum; eksikler tablonun varsayılanı. */
   resolve: (patch: ViewPatch) => ViewState
   /** Tek adımda uygular (tek istek): görünüm kimliği, filtre, sıralama, sütunlar, sayfa 1. */
   apply: (id: string | null, state: ViewState) => void
-  /** Yalnızca sütun düzeni: dışarıdan verilen kişisel görünüm liste gelince. */
+  /** Yalnızca sütun düzeni: görünüm dışarıdan değişince (adres, geç gelen liste ya da tercih). */
   restoreColumns: (columns: ViewPatch['columns']) => void
 }
 
 export function useViews(o: ViewsOptions) {
   const [saved, setSaved] = useState<View[]>([])
-  const [loaded, setLoaded] = useState(!o.adapter)
   const [drafts, setDrafts] = useState<Record<string, ViewState>>({})
-  // Kullanıcı bir görünüm seçti ya da kaydetti: geç gelen liste / tercih açılış seçimini artık değiştirmez.
-  const touched = useRef(false)
-  // Geç gelen varsayılan yalnızca bir kez, liste ve tercih ilk geldiğinde: sonra "Set as default" görünümü değiştirmez.
-  const settled = useRef(false)
 
   const all = [...o.system, ...saved]
-  const active = all.find((v) => v.id === o.activeId) ?? null
-  const edited = !!active && !sameState(o.current, o.resolve(active.state))
+  const defaultId = defaultView(all, o.defaultViewId)?.id ?? null
+  const activeId = o.requested === undefined ? defaultId : o.requested
+  const active = all.find((v) => v.id === activeId) ?? null
+  const stored = o.resolve(active?.state ?? {})
+  const current: ViewState = {
+    filters: o.query.filters ?? stored.filters,
+    sort: o.query.sort ?? stored.sort,
+    columns: o.columns,
+  }
+  const edited = !!active && !sameState(current, stored)
+
+  // Sütun düzeni adreste yoktur: ekrandaki düzenin ait olduğu görünüm. Görünüm `activate` dışında değişirse (adres boşaldı,
+  // geri tuşu, kişisel liste ya da varsayılan tercihi sonradan geldi) düzen o görünümün kayıtlısına döner.
+  const shown = useRef(active?.id ?? null)
+  useEffect(() => {
+    const id = active?.id ?? null
+    if (shown.current === id) return
+    shown.current = id
+    o.restoreColumns(active?.state.columns)
+    // Yalnızca etkin görünüm değişince.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active?.id])
 
   const activate = (view: View | null, keepDraft = true) => {
     const next = { ...drafts }
     if (active) {
-      if (keepDraft && edited) next[active.id] = o.current
+      if (keepDraft && edited) next[active.id] = current
       else delete next[active.id]
     }
     setDrafts(next)
+    shown.current = view?.id ?? null
     o.apply(view?.id ?? null, view ? (next[view.id] ?? o.resolve(view.state)) : o.resolve({}))
   }
 
@@ -62,30 +77,10 @@ export function useViews(o: ViewsOptions) {
       .list(o.tableId)
       .then((vs) => live && setSaved(vs))
       .catch(() => {})
-      .finally(() => live && setLoaded(true))
     return () => {
       live = false
     }
   }, [o.adapter, o.tableId])
-
-  // Kullanıcı varsayılanı kişisel bir görünüm olabilir ya da tercih sonradan gelebilir: ikisi de gelince, açılış seçimi
-  // paketinse ve dokunulmadıysa bir kez varsayılana geçilir (Vue: Promise.all([list, prefsReady])).
-  const ready = loaded && o.prefsReady
-  useEffect(() => {
-    if (!ready || settled.current) return
-    settled.current = true
-    if (!o.auto) {
-      // Görünüm dışarıdan (adres) verildi: filtre ve sıralama oradan okunur, sütunlar yalnızca görünümde (R5).
-      const given = saved.find((v) => v.id === o.activeId)
-      if (given && !touched.current) o.restoreColumns(given.state.columns)
-      return
-    }
-    const preferred = defaultView(all, o.defaultViewId)
-    if (!preferred || !o.auto || touched.current || edited || preferred.id === o.activeId) return
-    activate(preferred)
-    // Yalnızca hazır olunca bir kez; `activate` her çizimde yeni.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready])
 
   const replace = (next: View) => setSaved((vs) => vs.map((v) => (v.id === next.id ? next : v)))
   const dropDraft = (id: string) => setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([k]) => k !== id)))
@@ -94,6 +89,10 @@ export function useViews(o: ViewsOptions) {
 
   return {
     all,
+    /** Durumda görünüm verilmezse açılan görünüm. */
+    defaultId,
+    activeId,
+    current,
     sections: { system: o.system, personal: byName(saved, collator) },
     active,
     edited,
@@ -102,13 +101,14 @@ export function useViews(o: ViewsOptions) {
     canSave: !!o.adapter,
     hasDraft: (id: string) => id in drafts,
     writable,
+    /** Set as default / Remove default; temiz adresteki ekran görünümü değişmez. */
+    setDefault: o.setDefaultViewId,
     select: (id: string) => {
-      touched.current = true
       activate(all.find((v) => v.id === id) ?? null)
     },
     saveChanges: async () => {
       if (!writable(active) || !o.adapter) return
-      replace(await o.adapter.update(o.tableId, active!.id, { state: o.current }))
+      replace(await o.adapter.update(o.tableId, active!.id, { state: current }))
       dropDraft(active!.id)
     },
     discard: () => {
@@ -122,7 +122,6 @@ export function useViews(o: ViewsOptions) {
       const v = await o.adapter.create(o.tableId, { name: input.name, state: input.state })
       setSaved((vs) => [...vs, v])
       if (input.makeDefault) o.setDefaultViewId(v.id)
-      touched.current = true
       activate(v, !input.fromCurrent)
     },
     rename: async (id: string, name: string) => {
@@ -136,7 +135,7 @@ export function useViews(o: ViewsOptions) {
       dropDraft(id)
       const preferredId = o.defaultViewId === id ? null : o.defaultViewId
       if (o.defaultViewId === id) o.setDefaultViewId(null)
-      if (o.activeId === id)
+      if (activeId === id)
         activate(
           defaultView(
             all.filter((v) => v.id !== id),

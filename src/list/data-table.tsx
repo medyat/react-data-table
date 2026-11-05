@@ -650,7 +650,7 @@ export function DataTable<Row extends object>({
                     })
                   }
                   onDuplicate={openSaveAs}
-                  onSetDefault={(id) => prefs.set({ defaultViewId: id })}
+                  onSetDefault={vw.setDefault}
                   onDelete={setConfirmDelete}
                   sheet={phone}
                 />
