@@ -270,4 +270,5 @@ export const tr: Record<string, string> = {
   "views.removeDefault": "Varsayılanı kaldır",
   "header.columnSettings": "Sütun ayarları",
   "views.unsaved": "Bu görünümde kaydedilmemiş değişiklik var.",
+  "views.all": "Tümü",
 }

@@ -8,11 +8,13 @@ import { defaultView } from '../core/views/model'
 import type { ColumnDef } from '../types/columns'
 import type { TableState, UseDataTableOptions } from '../types/list'
 import type { FilterCondition, SortRule, TableQuery } from '../types/query'
-import type { ViewPatch, ViewState } from '../types/views'
+import type { View, ViewPatch, ViewState } from '../types/views'
 import { setSort, toggleSort } from './sort'
 import { useListTable } from './use-list-table'
 import { useViews } from './use-views'
 
+/** Hazır "Tümü" görünümünün kimliği (R19); adreste ve kişisel varsayılan tercihinde bu değerle durur. */
+const ALL_VIEW_ID = 'all'
 const PAGE_SIZES = [50, 100, 250, 500]
 const NONE: Record<string, true> = {}
 
@@ -43,7 +45,13 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
     pageSize: options.pageSize ?? 100,
     defaultViewId: null,
   })
-  const system = options.views ?? []
+  // R19: hazır "Tümü" görünümü her ekranda ilk sıradadır; uygulama aynı kimlikle verirse onunki geçer. Adapter da görünüm
+  // de yoksa menü hiç çizilmez: tek seçenekli menü anlamsız olurdu.
+  const appViews = options.views ?? []
+  const system: View[] =
+    appViews.some((v) => v.id === ALL_VIEW_ID) || (!appViews.length && !ctx.viewsAdapter)
+      ? appViews
+      : [{ id: ALL_VIEW_ID, name: ctx.i18n.t('views.all'), kind: 'system', state: {} }, ...appViews]
   // Görünüm verilmediyse (ne `state` ne `initialState`) açılış görünümü pakette seçilir (04 §7): kullanıcı varsayılanı →
   // system default → ilk system. Filtresi, sıralaması ve sütunları başlangıç durumu olur; kişisel varsayılan liste gelince.
   const [opening] = useState(() => {

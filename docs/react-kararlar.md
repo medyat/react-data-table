@@ -240,6 +240,16 @@ oturunca çıkar.
   bir şey gerekmiyor. Kapatılabilir bir seçenek yerine öğe, toast ve çevirileri (`row.copyId`, `cell.copied`) silindi.
 - Satır menüsü: Open, Open in new tab (birincil sütunun `href`'i varsa), ─, uygulamanın `rowActions`'ı.
 
+## R19 · Hazır "Tümü" görünümü
+
+- Her uygulama her listeye filtresiz bir "Tümü" system görünümü ekliyordu. Paket onu kendisi koyar: kimliği `all`,
+  adı `views.all` ("All" / "Tümü" / "Все"), durumu boş (tablonun varsayılanı), system görünümlerinin ilk sırasında.
+- `default` işareti yoktur: uygulama başka bir system görünümünü `default: true` verirse açılış onundur; vermezse ilk
+  system olarak "Tümü" açılır (04 §7 sırası değişmez).
+- Uygulama `all` kimliğiyle bir görünüm verirse (başka ad, sütun düzeni) hazır olan eklenmez, onunki kullanılır.
+- Adapter yoksa ve uygulama görünüm vermediyse eklenmez: kaydetme olmayan, tek seçenekli menü çizilmez (eski davranış).
+- Vue'dan sapma: 04 §7'deki "hiç görünüm yoksa tablonun varsayılan durumu" adapter'lı tabloda artık oluşmaz.
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

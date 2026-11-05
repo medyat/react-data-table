@@ -273,4 +273,5 @@ export const ru: Record<string, string> = {
   'views.removeDefault': 'Не использовать по умолчанию',
   'header.columnSettings': 'Настройки столбцов',
   'views.unsaved': 'В этом представлении есть несохранённые изменения.',
+  'views.all': 'Все',
 }

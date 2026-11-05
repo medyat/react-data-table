@@ -157,6 +157,8 @@ const REACT_ONLY_MESSAGES: Record<string, [string, string]> = {
   // Sütun menüsünden Columns dialog'u: Display popover'ına gitmeden.
   'header.columnSettings': ['Column settings', 'Sütun ayarları'],
   'views.unsaved': ['This view has unsaved changes.', 'Bu görünümde kaydedilmemiş değişiklik var.'],
+  // R19: her tabloda hazır gelen görünüm.
+  'views.all': ['All', 'Tümü'],
 }
 
 /** Vue dokümanında olup React'te bilerek olmayan anahtarlar. */

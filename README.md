@@ -54,7 +54,7 @@ export function OrdersScreen() {
     id: 'production-orders', // görünümler ve tercihler bu kimlikle saklanır
     columns,
     entityName: { one: 'order', other: 'orders' },
-    views: systemViews, // kodda tanımlı system görünümleri; kişisel olanlar viewsAdapter'dan
+    views: systemViews, // kodda tanımlı system görünümleri; filtresiz "Tümü" hazır gelir (R19), kişisel olanlar viewsAdapter'dan
     count: (query, signal) => api.countOrders(query, signal), // footer'da "Count total"
   })
   const result = useQuery({

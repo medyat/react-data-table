@@ -111,6 +111,8 @@ const pickView = async (name: string) => {
   fireEvent.click(row(name)!.querySelector('.dt-view-item')!)
   await flush()
 }
+const viewNames = () =>
+  [...menu()!.querySelectorAll<HTMLElement>('.dt-view-row .dt-view-item')].map((e) => e.textContent?.trim())
 const menuButton = (text: string) => within(menu()!).queryByRole('button', { name: text }) ?? undefined
 const rowAction = async (name: string, item: string) => {
   await openMenu()
@@ -351,15 +353,26 @@ describe('düzenlenmiş durum ve kaydetme', () => {
     await openMenu()
     expect(row('Late orders')!.textContent).not.toContain('Default')
   })
-  it('hiç görünüm yokken adapter varsa tetik "Views" yazar ve New view sunar; adapter de yoksa tetik yok', async () => {
+  it('hazır "All" görünümü (R19): verilmese de ilk sırada ve açılışta seçili; adapter yoksa ve görünüm verilmediyse tetik yok', async () => {
     await mount({ adapter: memoryAdapter(), options: { views: [] } })
-    expect(trigger().textContent).toBe('Views')
+    expect(trigger().textContent).toBe('All')
     await openMenu()
     expect(menuButton('New view')).toBeTruthy()
     cleanup()
 
+    await mount({ options: { views: [sys[1]!] } })
+    expect(trigger().textContent).toBe('All')
+    await openMenu()
+    expect(viewNames()).toEqual(['All', 'Late orders'])
+    cleanup()
+
     await mount({ options: { views: [] } })
     expect(trigger()).toBeNull()
+  })
+  it('uygulama "all" kimliğiyle görünüm verirse hazır olanın yerine geçer', async () => {
+    await mount({})
+    await openMenu()
+    expect(viewNames()).toEqual(['All orders', 'Late orders'])
   })
   it('adapter yoksa yalnızca Discard ve Set as default; New view yok', async () => {
     await mount({})

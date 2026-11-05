@@ -270,4 +270,5 @@ export const en: Record<string, string> = {
   "views.removeDefault": "Remove default",
   "header.columnSettings": "Column settings",
   "views.unsaved": "This view has unsaved changes.",
+  "views.all": "All",
 }
