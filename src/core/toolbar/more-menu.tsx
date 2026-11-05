@@ -2,11 +2,12 @@
 // Export › CSV / Excel (D46); içe aktarma bu sürümde yok (R1).
 import { Menu } from '@base-ui/react/menu'
 import { DotsThreeIcon } from '@phosphor-icons/react'
+import { useId } from 'react'
 import { useDataTableContext } from '../provider'
 import { DtMenu, DtMenuItem, DtMenuSeparator } from '../ui/menu'
 
 export function MoreMenu({
-  exportLabel,
+  exportHint,
   onExport,
   onRefresh,
   onPrint,
@@ -14,8 +15,8 @@ export function MoreMenu({
   autoRefreshOn,
   onAutoRefresh,
 }: {
-  /** "Export 100 rows" / "Export 3 selected rows"; verilmezse Export yok. */
-  exportLabel?: string
+  /** Export'un altındaki satır: "100 satır dışa aktarılır"; verilmezse Export yok. */
+  exportHint?: string
   onExport: (format: 'csv' | 'xlsx') => void
   onRefresh?: () => void
   onPrint?: () => void
@@ -25,6 +26,7 @@ export function MoreMenu({
   onAutoRefresh: (on: boolean) => void
 }) {
   const { i18n } = useDataTableContext()
+  const hintId = useId()
   return (
     <DtMenu
       className="dt-more-menu"
@@ -39,9 +41,16 @@ export function MoreMenu({
         </button>
       }
     >
-      {exportLabel && (
+      {exportHint && (
         <Menu.SubmenuRoot>
-          <Menu.SubmenuTrigger className="dt-menu-item">{exportLabel}</Menu.SubmenuTrigger>
+          <Menu.SubmenuTrigger className="dt-menu-item" aria-label={i18n.t('sheet.export')} aria-describedby={hintId}>
+            <span className="dt-item-lines">
+              {i18n.t('sheet.export')}
+              <span id={hintId} className="dt-item-hint">
+                {exportHint}
+              </span>
+            </span>
+          </Menu.SubmenuTrigger>
           <Menu.Portal>
             <Menu.Positioner className="dt-positioner" sideOffset={4}>
               <Menu.Popup className="dt-menu">
@@ -53,7 +62,7 @@ export function MoreMenu({
         </Menu.SubmenuRoot>
       )}
       {onPrint && <DtMenuItem onSelect={onPrint}>{i18n.t('toolbar.print')}</DtMenuItem>}
-      {(exportLabel || onPrint) && (onRefresh || autoRefresh) && <DtMenuSeparator />}
+      {(exportHint || onPrint) && (onRefresh || autoRefresh) && <DtMenuSeparator />}
       {onRefresh && (
         <DtMenuItem onSelect={onRefresh}>
           {i18n.t('toolbar.refresh')}

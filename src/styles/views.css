@@ -40,35 +40,9 @@
   color: var(--dt-text-3);
 }
 
-/* Menü: üstte kaydetme bölümü (iki satırlı öğe 44 px), Find a view…, bölümler, altta New view. */
+/* Menü (R15): bölümler, aktif görünümde solda işaret; altta düzenlenmişse kaydetme satırı, değilse New view. */
 .dt-views {
   width: calc(316 * var(--dt-ui-fs) / 13);
-}
-.dt-view-action {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0;
-  min-height: 44px;
-  padding: 6px 8px;
-  cursor: pointer;
-}
-.dt-view-action.is-single {
-  min-height: var(--dt-control-h);
-  justify-content: center;
-}
-.dt-view-action-main {
-  display: flex;
-  align-items: center;
-  gap: var(--dt-space);
-}
-.dt-view-action-main .dt-kbd {
-  margin-left: auto;
-  background: transparent;
-  color: var(--dt-text-3);
-}
-.dt-view-action-sub {
-  color: var(--dt-text-3);
-  font-size: var(--dt-ui-fs-xs);
 }
 .dt-views-list {
   max-height: 360px;
@@ -95,6 +69,12 @@
 .dt-view-item[data-highlighted],
 .dt-view-row:hover .dt-view-item {
   background: var(--dt-surface-3);
+}
+.dt-view-check {
+  flex: none;
+  display: inline-flex;
+  width: 14px;
+  color: var(--dt-accent);
 }
 .dt-view-row-name {
   flex: 1;
@@ -141,7 +121,39 @@
   font-size: var(--dt-ui-fs-xs);
   line-height: 1.4;
 }
+.dt-views-foot {
+  margin: 4px calc(-1 * var(--dt-pop-pad)) calc(-1 * var(--dt-pop-pad));
+  padding: 10px var(--dt-pop-pad) var(--dt-pop-pad);
+  border-top: 1px solid var(--dt-line);
+}
+.dt-views-unsaved {
+  display: flex;
+  align-items: center;
+  gap: var(--dt-space);
+  margin: 0 0 8px;
+  padding: 0 8px;
+  color: var(--dt-text-2);
+  font-size: var(--dt-ui-fs-sm);
+}
+.dt-views-foot-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dt-views-revert {
+  margin-right: auto;
+}
+.dt-btn-primary .dt-kbd {
+  height: auto;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+}
 .dt-view-new {
+  /* Artı, satırlardaki işaret yuvasının yerinde; metin görünüm adlarıyla aynı hizada. */
+  gap: var(--dt-space-sm);
+  padding-left: 8px;
   color: var(--dt-text-2);
   cursor: pointer;
 }

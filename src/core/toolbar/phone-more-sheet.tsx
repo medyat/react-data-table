@@ -10,7 +10,7 @@ import {
   DotsThreeIcon,
   XIcon,
 } from '@phosphor-icons/react'
-import { lazy, Suspense, useRef, useState } from 'react'
+import { lazy, Suspense, useId, useRef, useState } from 'react'
 import type { Density } from '../../types/core'
 import type { SortRule } from '../../types/query'
 import type { ColumnsDraft, PanelColumn } from '../columns/use-column-layout'
@@ -38,7 +38,7 @@ export function PhoneMoreSheet<Row extends object>({
   onSort,
   persistent,
   onReset,
-  exportLabel,
+  exportHint,
   onExport,
   onRefresh,
   onPrint,
@@ -57,7 +57,8 @@ export function PhoneMoreSheet<Row extends object>({
   onSort: (sort: SortRule[]) => void
   persistent: boolean
   onReset: () => void
-  exportLabel?: string
+  /** Export'un altındaki satır: "100 satır dışa aktarılır"; verilmezse Export yok. */
+  exportHint?: string
   onExport: (format: 'csv' | 'xlsx') => void
   onRefresh?: () => void
   onPrint?: () => void
@@ -66,6 +67,7 @@ export function PhoneMoreSheet<Row extends object>({
   onAutoRefresh: (on: boolean) => void
 }) {
   const { i18n } = useDataTableContext()
+  const hintId = useId()
   const [open, setOpen] = useState(false)
   const [level, setLevel] = useState<Level>('main')
   const [columnsOpen, setColumnsOpen] = useState(false)
@@ -76,7 +78,7 @@ export function PhoneMoreSheet<Row extends object>({
   const sortSummary = lead
     ? `${headerOf(lead.column)} ${lead.dir === 'asc' ? '↑' : '↓'}${sort.length > 1 ? ` +${sort.length - 1}` : ''}`
     : i18n.t('common.empty')
-  const hasActions = !!(exportLabel || onPrint || onRefresh || autoRefresh)
+  const hasActions = !!(exportHint || onPrint || onRefresh || autoRefresh)
   const setOpenAll = (o: boolean) => {
     setOpen(o)
     if (!o) setLevel('main')
@@ -147,9 +149,20 @@ export function PhoneMoreSheet<Row extends object>({
               <CaretRightIcon size={16} aria-hidden="true" />
             </button>
             {hasActions && <div className="dt-bsheet-sep" />}
-            {exportLabel && (
-              <button type="button" className="dt-bsheet-row" onClick={() => setLevel('export')}>
-                {exportLabel}
+            {exportHint && (
+              <button
+                type="button"
+                className="dt-bsheet-row"
+                aria-label={i18n.t('sheet.export')}
+                aria-describedby={hintId}
+                onClick={() => setLevel('export')}
+              >
+                <span className="dt-item-lines">
+                  {i18n.t('sheet.export')}
+                  <span id={hintId} className="dt-item-hint">
+                    {exportHint}
+                  </span>
+                </span>
                 <CaretRightIcon size={16} className="dt-bsheet-end" aria-hidden="true" />
               </button>
             )}

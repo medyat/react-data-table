@@ -22,6 +22,10 @@ import { FilterBar } from '../core/filters/filter-bar'
 import { toCondition } from '../core/filters/model'
 
 // Telefon Filters sayfası ilk açılışta yüklenir.
+// lazy() generic bileşenin tip parametresini düşürür; satır tipi dialog'a aynen geçer.
+const ColumnsDialog = lazy(
+  () => import('../core/toolbar/columns-dialog'),
+) as unknown as typeof import('../core/toolbar/columns-dialog').default
 const FiltersSheet = lazy(() => import('../core/filters/filters-sheet').then((m) => ({ default: m.FiltersSheet })))
 import { summarize, type Chip } from '../core/filters/model'
 import { getFormat } from '../core/format'
@@ -183,6 +187,17 @@ export function DataTable<Row extends object>({
   const hasFilter = toolbar === 'auto' && filterable.length > 0
   const hasSearch = toolbar !== false && table.columns.some((c) => isSearchable(c as ColumnDef))
   const toolbarRef = useRef<ToolbarHandle>(null)
+
+  // Columns dialog'u (D45): Display popover'ı ve sütun menüsü açar. Dialog ve @dnd-kit ilk açılışta yüklenir, sonra
+  // bağlı kalır; kapanınca odak açan düğmeye döner (açan popover / menü o an kapanmıştır).
+  const [columnsOpen, setColumnsOpen] = useState(false)
+  const [columnsUsed, setColumnsUsed] = useState(false)
+  const columnsFrom = useRef<HTMLElement | null>(null)
+  const openColumns = (from: HTMLElement | null) => {
+    columnsFrom.current = from
+    setColumnsUsed(true)
+    setColumnsOpen(true)
+  }
 
   // Görünümler (04 §7): menü, Save as new view / Rename dialog'u, silme onayı. Görünüm uygulanınca açık çip taslağı kalkar.
   const vw = table.views
@@ -508,7 +523,7 @@ export function DataTable<Row extends object>({
   const exportRows = selectedRows.length ? selectedRows : rows
   // Aksiyonsuz çubuk yalnızca sayaç ve × olurdu: seçim Export'ta, header checkbox'ında ve Esc'te kalır (React sapması).
   const bulkBar = selectedRows.length > 0 && (!!bulkActions?.length || !!selectionActions)
-  const exportLabel = exportable
+  const exportHint = exportable
     ? selectedRows.length
       ? i18n.t('toolbar.exportSelected', { count: selectedRows.length })
       : i18n.t('toolbar.export', { count: rows.length })
@@ -524,7 +539,7 @@ export function DataTable<Row extends object>({
       name: entity.other,
     })
   }
-  const moreMenu = toolbar === 'auto' && !!(refetch || print || exportLabel)
+  const moreMenu = toolbar === 'auto' && !!(refetch || print || exportHint)
   const prefs = table.prefs
 
   const state =
@@ -698,9 +713,8 @@ export function DataTable<Row extends object>({
                   onDensity={table.densityFixed ? undefined : (density) => prefs.set({ density })}
                   verticalLines={prefs.prefs.verticalLines}
                   onVerticalLines={(verticalLines) => prefs.set({ verticalLines })}
-                  columns={table.layout.panel}
                   counts={table.layout.counts}
-                  onColumnsSave={table.layout.arrange}
+                  onColumns={openColumns}
                   persistent={prefs.persistent}
                   onReset={table.resetDisplay}
                   iconOnly={size !== 'full'}
@@ -720,7 +734,7 @@ export function DataTable<Row extends object>({
                       onSort={(sort) => table.setQuery({ sort })}
                       persistent={prefs.persistent}
                       onReset={table.resetDisplay}
-                      exportLabel={exportLabel}
+                      exportHint={exportHint}
                       onExport={runExport}
                       onRefresh={refetch && (() => refetch())}
                       onPrint={print}
@@ -731,7 +745,7 @@ export function DataTable<Row extends object>({
                   )
                 : moreMenu && (
                     <MoreMenu
-                      exportLabel={exportLabel}
+                      exportHint={exportHint}
                       onExport={runExport}
                       onRefresh={refetch && (() => refetch())}
                       onPrint={print}
@@ -809,6 +823,7 @@ export function DataTable<Row extends object>({
         filtered={new Set(q.filters.map((f) => f.column))}
         canFilter={(id) => filterIds.has(id)}
         onFilter={pick}
+        onColumns={toolbar === 'auto' && !phone ? openColumns : undefined}
         notice={
           load.stillLoading && (
             <>
@@ -919,6 +934,17 @@ export function DataTable<Row extends object>({
             }
           }}
         />
+      )}
+      {columnsUsed && (
+        <Suspense fallback={null}>
+          <ColumnsDialog
+            open={columnsOpen}
+            onOpenChange={setColumnsOpen}
+            columns={table.layout.panel}
+            onSave={table.layout.arrange}
+            finalFocus={columnsFrom}
+          />
+        </Suspense>
       )}
       <ConfirmDialog
         open={!!confirmDelete}

@@ -543,13 +543,8 @@
 .dt-bsheet.dt-views {
   width: auto;
 }
-.dt-bsheet .dt-view-item {
-  padding-left: 34px;
-}
-.dt-view-check {
-  position: absolute;
-  left: 8px;
-  color: var(--dt-accent);
+.dt-bsheet .dt-view-check {
+  width: 18px;
 }
 /* Dokunmatikte vurgu yok: aktif görünümü Check gösterir (T13-06). */
 .dt-bsheet .dt-view-item[data-highlighted],
@@ -562,10 +557,6 @@
   border-radius: var(--dt-radius-pop);
   font-size: 15px;
 }
-.dt-bsheet .dt-view-action {
-  padding: 8px 8px;
-}
-.dt-bsheet .dt-view-action-sub,
 .dt-bsheet .dt-view-default,
 .dt-bsheet .dt-view-edited {
   font-size: 13px;

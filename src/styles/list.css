@@ -420,8 +420,10 @@
 .dt-cols-list .dt-col-row:has(.dt-col-desc) {
   height: auto;
 }
+/* Uygulamanın CSS sıfırlaması (Tailwind preflight) svg'yi blok yapar; metin içi ikon açıkça satır içi. */
 .dt-col-pin {
-  margin-left: 4px;
+  display: inline-block;
+  margin-right: 4px;
   color: var(--dt-text-3);
   vertical-align: -1px;
 }

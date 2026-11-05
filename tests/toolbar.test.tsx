@@ -160,6 +160,21 @@ describe('Columns dialog', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(heads()).toEqual(['code', 'name', 'qty', 'site'])
   })
+  it('sütun menüsünün sonunda Column settings dialog\'u açar; kapanınca odak ⋯\'ya döner', async () => {
+    await mount(<Table />)
+    const more = screen.getByRole('button', { name: 'Name column options' })
+    fireEvent.click(more)
+    await flush()
+    const items = screen.getAllByRole('menuitem')
+    expect(items.at(-1)!.textContent).toBe('Column settings')
+    fireEvent.click(items.at(-1)!)
+    const dialog = await screen.findByRole('dialog')
+    await flush()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    await flush()
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(document.activeElement).toBe(more)
+  })
   it('konumsal sabitleme: "Last column" son görünür sütunu sağa sabitler, listede raptiye', async () => {
     await mount(<Table />)
     const dialog = await openColumns()
@@ -233,9 +248,12 @@ describe('⋯ menüsü', () => {
       visibleColumns: ['code', 'name', 'qty'],
     })
   })
-  const openExport = async (label: string) => {
+  /** Export'un adı sabit; kaç satırın gideceği açıklamasındadır. */
+  const openExport = async (description: string) => {
     await openMore()
-    fireEvent.click(screen.getByRole('menuitem', { name: label }))
+    const item = screen.getByRole('menuitem', { name: 'Export' })
+    expect(document.getElementById(item.getAttribute('aria-describedby')!)!.textContent).toBe(description)
+    fireEvent.click(item)
     await flush()
   }
   it('Export: seçim varsa seçili satırlar; onExport verilince paket dosya yazmaz', async () => {
@@ -243,7 +261,7 @@ describe('⋯ menüsü', () => {
     await mount(<Table selectable onExport={onExport} />)
     fireEvent.click(document.querySelector('.dt-row[data-index="0"] .dt-select-box')!)
     await flush()
-    await openExport('Export 1 selected row')
+    await openExport('1 selected row will be exported')
     fireEvent.click(screen.getByRole('menuitem', { name: 'Excel (.xlsx)' }))
     await flush()
     expect(onExport).toHaveBeenCalledWith({
@@ -259,7 +277,7 @@ describe('⋯ menüsü', () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
     onTestFinished(() => click.mockRestore())
     await mount(<Table />)
-    await openExport('Export 1 row')
+    await openExport('1 row will be exported')
     fireEvent.click(screen.getByRole('menuitem', { name: 'CSV' }))
     await flush()
     expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe('items.csv')

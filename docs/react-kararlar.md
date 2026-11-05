@@ -207,6 +207,16 @@ oturunca çıkar.
   filtrelemek görünmeyen bir değer arar; tam sayı kolonda sunucu ondalığı reddeder. Ondalık
   isteyen yüzde `decimalPlaces: 1` verir.
 
+## R15 · Görünüm menüsü
+
+- Vue 04 §7'de kaydetme bölümü menünün üstündeydi, iki satırlı öğelerle. React'te altta tek bir satır: durum
+  cümlesi ("Bu görünümde kaydedilmemiş değişiklik var."), solda Geri al, sağda kaydetme düğmeleri. Personal görünümde
+  Farklı kaydet… ve Kaydet ⌘S, system'de Görünüm olarak kaydet…. Düzenlenmemiş görünümde aynı yerde Yeni görünüm var.
+  Aktif görünümün durumu bu satırda olduğu için listede tekrar "Kaydedilmedi" yazılmaz.
+- Find a view… yalnızca 8 ve üzeri görünümde var. Azsa odak listenin kendisindedir (grid, `aria-activedescendant`);
+  klavye aynı: ↑↓, Home/End, Enter. Swors'taki Picker'ın arama eşiğiyle aynı sayı.
+- Aktif görünümde solda işaret var, bütün adlar aynı hizada. Bölüm başlıklarında ipucu yok ("Hazır", "Yalnızca siz").
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

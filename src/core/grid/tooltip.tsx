@@ -10,11 +10,15 @@ interface Tip {
   top: number
 }
 
-const tipOf = (target: Element | null): { el: HTMLElement; text: string } | null => {
+const overflows = (el: HTMLElement) => el.scrollWidth > el.clientWidth + 1
+/** Metni içteki öğe de kesebilir (etiket, kişi adı, başlık metni, özel hücre); taşıp görünen öğe kesmez. */
+const clips = (el: HTMLElement) => overflows(el) && getComputedStyle(el).overflowX !== 'visible'
+
+export const tipOf = (target: Element | null): { el: HTMLElement; text: string } | null => {
   const tipped = target?.closest<HTMLElement>('[data-dt-tip]')
   if (tipped?.dataset.dtTip) return { el: tipped, text: tipped.dataset.dtTip }
   const content = target?.closest<HTMLElement>('.dt-cell-content, .dt-head-label')
-  if (content && content.scrollWidth > content.clientWidth + 1)
+  if (content && (overflows(content) || [...content.querySelectorAll<HTMLElement>('*')].some(clips)))
     return { el: content, text: content.textContent?.trim() ?? '' }
   return null
 }

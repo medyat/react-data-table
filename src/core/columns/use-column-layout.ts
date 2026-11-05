@@ -217,6 +217,20 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
     const me = ordered[at]
     if (!me) return
     const region = me.getIsPinned()
+    // TanStack sabit sütunları columnOrder'a değil sabitleme dizisinin sırasına göre çizer; birincil sütun başta kalır.
+    if (region) {
+      const p = table.atoms.columnPinning.get()
+      const list = [...(p[region] ?? [])]
+      const free = (cid: string) => !fixed.includes(cid) && table.getColumn(cid)?.getIsVisible() === true
+      const i = list.indexOf(id)
+      let k = i + delta
+      while (k >= 0 && k < list.length && !free(list[k]!)) k += delta
+      if (!free(id) || k < 0 || k >= list.length) return
+      list[i] = list[k]!
+      list[k] = id
+      table.setColumnPinning({ ...p, [region]: list })
+      return
+    }
     let j = at + delta
     while (j >= 0 && j < ordered.length && !(ordered[j]!.getIsVisible() && ordered[j]!.getIsPinned() === region))
       j += delta

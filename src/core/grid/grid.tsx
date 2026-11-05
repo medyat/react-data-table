@@ -74,6 +74,8 @@ export interface GridProps<Row extends object> {
   /** Verilirse filtrelenebilir sütunlarda header menüsünde "Filter by this column…". */
   canFilter?: (id: string) => boolean
   onFilter?: (id: string) => void
+  /** Sütun menüsünde Column settings; verilmezse yok. */
+  onColumns?: (from: HTMLElement | null) => void
   /** Satır gövdesine düz tık (05 §7): hücredeki widget'a, metin seçimine, sürüklemeye ve değiştirici tuşa karşı tek guard. */
   onRowClick?: (row: Row, event: MouseEvent) => void
   /** Seçim sütunu (05 §6): anahtar → seçili. */
@@ -121,6 +123,7 @@ export function Grid<Row extends object>({
   filtered,
   canFilter,
   onFilter,
+  onColumns,
   onRowClick,
   selection,
   onSelectRows,
@@ -371,6 +374,7 @@ export function Grid<Row extends object>({
         onSortSet={sortable && onSortSet ? (dir) => onSortSet(col.id, dir) : undefined}
         filtered={filtered?.has(col.id)}
         onFilter={onFilter && canFilter?.(col.id) ? () => onFilter(col.id) : undefined}
+        onColumns={onColumns}
       />
     )
   }

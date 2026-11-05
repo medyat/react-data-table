@@ -89,6 +89,22 @@ describe('useColumnLayout', () => {
     act(() => hook.result.current.move('customer', -1))
     expect(hook.result.current.columns[1]!.id).toBe('customer')
   })
+  it('move: sabit bölgede sabitleme sırası değişir; birincil sütun yerinde kalır', () => {
+    const hook = renderHook(() =>
+      useColumnLayout<Order>({
+        columns,
+        layout: { pinned: { left: ['product.name', 'customer'], right: ['value', 'actions'] } },
+      }),
+    )
+    const ids = () => hook.result.current.columns.map((c) => c.id)
+    act(() => hook.result.current.move('value', 1))
+    expect(ids()).toEqual(['number', 'product.name', 'customer', 'actions', 'value'])
+    act(() => hook.result.current.move('customer', -1))
+    expect(ids()).toEqual(['number', 'customer', 'product.name', 'actions', 'value'])
+    act(() => hook.result.current.move('customer', -1))
+    expect(ids()[0]).toBe('number')
+    expect(hook.result.current.state().pinned).toEqual({ left: ['number', 'customer', 'product.name'], right: ['actions', 'value'] })
+  })
   it("ölçek: tip varsayılanı ve geliştiricinin width'i çarpılır, sürüklenen genişlik değişmez (02 · Ölçek)", () => {
     const { hook } = setup()
     act(() => hook.result.current.setScale(14 / 13))

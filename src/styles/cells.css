@@ -29,6 +29,7 @@
   text-decoration: underline;
 }
 .dt-link-icon {
+  display: inline-block;
   margin-left: 4px;
   vertical-align: -1px;
   color: var(--dt-text-3);

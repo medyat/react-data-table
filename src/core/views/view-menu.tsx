@@ -1,8 +1,9 @@
-// Görünüm seçici + menüsü (04 §7, handoff 03 §4.1, T3-01/02/03): üstte kaydetme bölümü (yalnızca düzenlenmişse, D27),
-// Find a view…, System / My views bölümleri (D30: paylaşım yok), satır ⋯ menüsü, altta New view. Kısayol `V` DataTable'da.
-// Liste ARIA'nın combobox + grid popup kalıbıdır (Vue'da reka Listbox; 7c'de axe'e göre ayrıldı): odak aramada kalır, ↑↓
-// vurguyu taşır (`aria-activedescendant` satırın görünüm hücresine), Enter seçer; Tab satırların ⋯ düğmelerine ve New
-// view'a gider. Base UI Combobox liste içindeki düğmeleri Tab sırasından çıkardığı için kullanılmadı.
+// Görünüm seçici + menüsü (04 §7, handoff 03 §4.1, T3-01/02/03; R15): System / My views bölümleri (D30: paylaşım yok),
+// satır ⋯ menüsü; altta düzenlenmişse kaydetme satırı (D27), değilse New view. Kısayol `V` DataTable'da.
+// Liste ARIA grid'idir (Vue'da reka Listbox; 7c'de axe'e göre ayrıldı): ↑↓ vurguyu taşır (`aria-activedescendant` satırın
+// görünüm hücresine), Enter seçer; Tab satırların ⋯ düğmelerine ve alttaki düğmelere gider. Görünüm çoksa (R15) odak
+// Find a view… aramasındadır (combobox + grid popup), azsa listenin kendisinde. Base UI Combobox liste içindeki
+// düğmeleri Tab sırasından çıkardığı için kullanılmadı.
 import { Popover } from '@base-ui/react/popover'
 import {
   CaretDownIcon,
@@ -12,12 +13,15 @@ import {
   PlusIcon,
   StackIcon,
 } from '@phosphor-icons/react'
-import { useId, useState, type FocusEvent } from 'react'
+import { useId, useState, type FocusEvent, type KeyboardEvent } from 'react'
 import type { View } from '../../types/views'
 import { SAVE_KBD } from '../interaction/kbd'
 import { useDataTableContext } from '../provider'
 import { BottomSheet } from '../ui/bottom-sheet'
 import { DtMenu, DtMenuItem, DtMenuSeparator } from '../ui/menu'
+
+/** Bu sayıdan az görünümde arama yok (R15): liste bir bakışta okunur. */
+const SEARCH_MIN_VIEWS = 8
 
 export function ViewMenu({
   sections,
@@ -74,18 +78,19 @@ export function ViewMenu({
   const needle = q.toLocaleLowerCase()
   const groups = (
     [
-      ['system', 'views.system', 'views.builtIn'],
-      ['personal', 'views.mine', 'views.onlyYou'],
+      ['system', 'views.system'],
+      ['personal', 'views.mine'],
     ] as const
   )
-    .map(([key, title, hint]) => ({
+    .map(([key, title]) => ({
       key,
       title,
-      hint,
       views: sections[key].filter((v) => !q || v.name.toLocaleLowerCase().includes(needle)),
     }))
     .filter((g) => g.views.length)
-  const isEdited = (v: View) => (v.id === active?.id ? edited : hasDraft(v.id))
+  // Aktif görünümün durumu alttaki kaydetme satırındadır; listede yalnızca bırakılmış taslaklar işaretlenir.
+  const isEdited = (v: View) => v.id !== active?.id && hasDraft(v.id)
+  const searchable = sections.system.length + sections.personal.length >= SEARCH_MIN_VIEWS
   const canEdit = (v: View) => canSave && v.kind !== 'system'
   const flat = groups.flatMap((g) => g.views)
   const setOpen = (o: boolean) => {
@@ -108,20 +113,6 @@ export function ViewMenu({
     setOpen(false)
     setTimeout(fn, 0)
   }
-  const action = (main: string, onClick: () => void, sub?: string, kbd?: boolean) => (
-    <button
-      type="button"
-      className={sub ? 'dt-pop-item dt-view-action' : 'dt-pop-item dt-view-action is-single'}
-      onClick={onClick}
-    >
-      <span className="dt-view-action-main">
-        {main}
-        {kbd && <kbd className="dt-kbd">{SAVE_KBD}</kbd>}
-      </span>
-      {sub && <span className="dt-view-action-sub">{sub}</span>}
-    </button>
-  )
-
   const triggerLabel = i18n.t(edited ? 'sr.viewEdited' : 'sr.view', { name })
   const triggerContent = (
     <>
@@ -140,75 +131,55 @@ export function ViewMenu({
       <CaretDownIcon size={14} aria-hidden="true" />
     </>
   )
-  const focusSearch = () => document.getElementById(`${listId}-q`)
+  const focusList = () => document.getElementById(searchable ? `${listId}-q` : listId)
+  const onListKey = (e: KeyboardEvent<HTMLElement>) => {
+    const i = flat.findIndex((v) => v.id === hl)
+    const step = { ArrowDown: 1, ArrowUp: -1 }[e.key]
+    if (step) {
+      e.preventDefault()
+      const next = flat[Math.min(flat.length - 1, Math.max(0, i < 0 ? 0 : i + step))]
+      if (next) setHl(next.id)
+    } else if (e.key === 'Home' || e.key === 'End') {
+      e.preventDefault()
+      setHl((e.key === 'Home' ? flat[0] : flat.at(-1))?.id ?? null)
+    } else if (e.key === 'Enter' && i >= 0 && e.target === e.currentTarget) {
+      e.preventDefault()
+      pick(flat[i]!.id)
+    }
+  }
+  const activeDescendant = hl && flat.some((v) => v.id === hl) ? optionId(hl) : undefined
   const content = (
     <>
-      {edited && active && (
-        <>
-          <div className="dt-pop-label">{i18n.t('views.editedName', { name: active.name })}</div>
-          {canWrite ? (
-            <>
-              {action(
-                i18n.t('views.saveChanges'),
-                () => after(onSaveChanges),
-                i18n.t('views.updates', { name: active.name }),
-                true,
-              )}
-              {action(
-                i18n.t('views.saveAsNew'),
-                () => after(onSaveAs),
-                i18n.t('views.keepsUnchanged', { name: active.name }),
-              )}
-            </>
-          ) : (
-            canSave && action(i18n.t('views.saveAsMine'), () => after(onSaveAs), undefined, true)
-          )}
-          {action(i18n.t('views.discard'), () => after(onDiscard))}
-          <div className="dt-pop-sep" />
-        </>
+      {searchable && (
+        <label className="dt-input has-icon dt-picker-search">
+          <span className="dt-input-icon">
+            <MagnifyingGlassIcon size={14} aria-hidden="true" />
+          </span>
+          <input
+            id={`${listId}-q`}
+            type="text"
+            role="combobox"
+            aria-expanded="true"
+            aria-haspopup="grid"
+            aria-controls={listId}
+            aria-activedescendant={activeDescendant}
+            autoComplete="off"
+            value={q}
+            placeholder={i18n.t('views.find')}
+            aria-label={i18n.t('views.find')}
+            onBlur={leave}
+            onChange={(e) => {
+              const text = e.target.value
+              setQ(text)
+              const first = sections.system
+                .concat(sections.personal)
+                .find((v) => v.name.toLocaleLowerCase().includes(text.toLocaleLowerCase()))
+              setHl(first?.id ?? null)
+            }}
+            onKeyDown={onListKey}
+          />
+        </label>
       )}
-      <label className="dt-input has-icon dt-picker-search">
-        <span className="dt-input-icon">
-          <MagnifyingGlassIcon size={14} aria-hidden="true" />
-        </span>
-        <input
-          id={`${listId}-q`}
-          type="text"
-          role="combobox"
-          aria-expanded="true"
-          aria-haspopup="grid"
-          aria-controls={listId}
-          aria-activedescendant={hl && flat.some((v) => v.id === hl) ? optionId(hl) : undefined}
-          autoComplete="off"
-          value={q}
-          placeholder={i18n.t('views.find')}
-          aria-label={i18n.t('views.find')}
-          onBlur={leave}
-          onChange={(e) => {
-            const text = e.target.value
-            setQ(text)
-            const first = sections.system
-              .concat(sections.personal)
-              .find((v) => v.name.toLocaleLowerCase().includes(text.toLocaleLowerCase()))
-            setHl(first?.id ?? null)
-          }}
-          onKeyDown={(e) => {
-            const i = flat.findIndex((v) => v.id === hl)
-            const step = { ArrowDown: 1, ArrowUp: -1 }[e.key]
-            if (step) {
-              e.preventDefault()
-              const next = flat[Math.min(flat.length - 1, Math.max(0, i < 0 ? 0 : i + step))]
-              if (next) setHl(next.id)
-            } else if (e.key === 'Home' || e.key === 'End') {
-              e.preventDefault()
-              setHl((e.key === 'Home' ? flat[0] : flat.at(-1))?.id ?? null)
-            } else if (e.key === 'Enter' && i >= 0) {
-              e.preventDefault()
-              pick(flat[i]!.id)
-            }
-          }}
-        />
-      </label>
       {/* Combobox + grid popup (ARIA 1.2): satır = görünüm hücresi + ⋯ hücresi. listbox yalnızca option alabildiği için
           satırdaki ⋯ düğmesi onu bozuyordu (axe aria-required-children). Grup başlığı satır değil: rowgroup'un adı. */}
       <div
@@ -216,13 +187,16 @@ export function ViewMenu({
         role={groups.length ? 'grid' : undefined}
         className="dt-views-list"
         aria-label={groups.length ? i18n.t('views.title') : undefined}
+        // Arama yoksa odak listededir: klavye ve vurgu onunla.
+        tabIndex={searchable ? undefined : 0}
+        aria-activedescendant={searchable ? undefined : activeDescendant}
+        onKeyDown={searchable ? undefined : onListKey}
         onBlur={leave}
       >
         {groups.map((g) => (
           <div key={g.key} role="rowgroup" aria-labelledby={`${listId}-${g.key}`}>
             <div id={`${listId}-${g.key}`} className="dt-pop-label" aria-hidden="true">
               {i18n.t(g.title)}
-              <span>{i18n.t(g.hint)}</span>
             </div>
             {g.views.map((v) => (
               <div key={v.id} role="row" className={v.id === active?.id ? 'dt-view-row is-active' : 'dt-view-row'}>
@@ -231,11 +205,14 @@ export function ViewMenu({
                   role="gridcell"
                   aria-selected={v.id === active?.id}
                   className="dt-view-item"
-                  data-highlighted={v.id === hl ? '' : undefined}
+                  // Açılışta vurgu yok, aktifi işaret gösterir; klavyeyle ya da yazınca taşınan vurgu çizilir.
+                  data-highlighted={moved && v.id === hl ? '' : undefined}
                   onPointerEnter={() => setHl(v.id)}
                   onClick={() => pick(v.id)}
                 >
-                  {sheet && v.id === active?.id && <CheckIcon size={18} className="dt-view-check" aria-hidden="true" />}
+                  <span className="dt-view-check" aria-hidden="true">
+                    {v.id === active?.id && <CheckIcon size={sheet ? 18 : 14} />}
+                  </span>
                   <span className="dt-view-row-name">{v.name}</span>
                   {isEdited(v) && (
                     <>
@@ -286,14 +263,47 @@ export function ViewMenu({
         ))}
         {groups.length === 0 && <div className="dt-options-empty">{i18n.t('views.noMatch')}</div>}
       </div>
-      {canSave && (
-        <>
-          <div className="dt-pop-sep" />
-          <button type="button" className="dt-pop-item dt-view-new" onClick={() => after(onSaveAs)}>
-            <PlusIcon size={14} aria-hidden="true" />
-            {i18n.t('views.new')}
-          </button>
-        </>
+      {edited && active ? (
+        <div className="dt-views-foot">
+          <p className="dt-views-unsaved">
+            <span className="dt-view-dot" aria-hidden="true" />
+            {i18n.t('views.unsaved')}
+          </p>
+          <div className="dt-views-foot-actions">
+            <button type="button" className="dt-btn dt-btn-ghost dt-views-revert" onClick={() => after(onDiscard)}>
+              {i18n.t('views.discard')}
+            </button>
+            {canWrite ? (
+              <>
+                <button type="button" className="dt-btn dt-btn-sm" onClick={() => after(onSaveAs)}>
+                  {i18n.t('views.saveAsNew')}
+                </button>
+                <button type="button" className="dt-btn dt-btn-sm dt-btn-primary" onClick={() => after(onSaveChanges)}>
+                  {i18n.t('views.saveChanges')}
+                  <kbd className="dt-kbd" aria-hidden="true">
+                    {SAVE_KBD}
+                  </kbd>
+                </button>
+              </>
+            ) : (
+              canSave && (
+                <button type="button" className="dt-btn dt-btn-sm dt-btn-primary" onClick={() => after(onSaveAs)}>
+                  {i18n.t('views.saveAsMine')}
+                </button>
+              )
+            )}
+          </div>
+        </div>
+      ) : (
+        canSave && (
+          <>
+            <div className="dt-pop-sep" />
+            <button type="button" className="dt-pop-item dt-view-new" onClick={() => after(onSaveAs)}>
+              <PlusIcon size={14} aria-hidden="true" />
+              {i18n.t('views.new')}
+            </button>
+          </>
+        )
       )}
     </>
   )
@@ -306,7 +316,7 @@ export function ViewMenu({
         title={i18n.t('views.title')}
         hideTitle
         className="dt-views"
-        initialFocus={focusSearch}
+        initialFocus={focusList}
         trigger={
           <button type="button" className="dt-btn dt-btn-ghost has-icon dt-view-trigger" aria-label={triggerLabel}>
             {triggerContent}
@@ -323,7 +333,7 @@ export function ViewMenu({
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner className="dt-positioner" align="start" sideOffset={4}>
-          <Popover.Popup className="dt-pop dt-views" initialFocus={focusSearch}>
+          <Popover.Popup className="dt-pop dt-views" initialFocus={focusList}>
             {content}
           </Popover.Popup>
         </Popover.Positioner>

@@ -305,6 +305,17 @@
 .dt-menu-item[data-disabled] {
   color: var(--dt-text-3);
 }
+/* İki satırlı öğe: ad ve altında küçük açıklama (Export: kaç satır gider). */
+.dt-item-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 0;
+}
+.dt-item-hint {
+  color: var(--dt-text-3);
+  font-size: var(--dt-ui-fs-xs);
+}
 .dt-menu-item.is-destructive {
   color: var(--dt-r-fg);
 }

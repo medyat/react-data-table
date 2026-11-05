@@ -32,6 +32,7 @@ export function HeaderCell<Row extends object>({
   onSortSet,
   filtered,
   onFilter,
+  onColumns,
 }: {
   column: LayoutColumn<Row>
   layout: ColumnLayoutApi<Row>
@@ -44,6 +45,8 @@ export function HeaderCell<Row extends object>({
   filtered?: boolean
   /** Verilmezse sütun filtrelenemez. Çipi açar, yoksa oluşturur. */
   onFilter?: () => void
+  /** Columns dialog'unu açar; odak dönsün diye ⋯ düğmesini verir. Verilmezse menüde yok. */
+  onColumns?: (from: HTMLElement | null) => void
 }) {
   const { i18n } = useDataTableContext()
   const def = column.def
@@ -55,6 +58,7 @@ export function HeaderCell<Row extends object>({
   const [menuOpen, setMenuOpen] = useState(false)
   // Filter by this column… ile kapanınca odak ⋯'ya dönmez: açılan çip editörü alır (08 §2 · Popover).
   const toFilter = useRef(false)
+  const menuButton = useRef<HTMLButtonElement>(null)
   // Yalnızca sürüklenen sütunun başlığı yeniden çizilir; diğerleri sabit -1 okur.
   const resizing = useSyncExternalStore(layout.subscribeSizing, () => {
     const r = layout.resizing()
@@ -182,6 +186,7 @@ export function HeaderCell<Row extends object>({
         }}
         trigger={
           <button
+            ref={menuButton}
             type="button"
             className="dt-head-icon dt-head-menu"
             aria-label={i18n.t('header.optionsAria', { column: def.header })}
@@ -226,6 +231,9 @@ export function HeaderCell<Row extends object>({
         <DtMenuItem disabled={!!column.pinned || !column.canHide} onSelect={() => layout.setVisible(column.id, false)}>
           {i18n.t('header.hide')}
         </DtMenuItem>
+        {onColumns && (
+          <DtMenuItem onSelect={() => onColumns(menuButton.current)}>{i18n.t('header.columnSettings')}</DtMenuItem>
+        )}
       </DtMenu>
       <span className="dt-head-sep" aria-hidden="true" />
       <span className="dt-resize" aria-hidden="true" onMouseDown={onResizeStart} onTouchStart={onResizeStart}>

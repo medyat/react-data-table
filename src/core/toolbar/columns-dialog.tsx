@@ -242,8 +242,8 @@ function Name<Row extends object>({ column, pinned }: { column: PanelColumn<Row>
   return (
     <span className="dt-col-name">
       <span>
-        {column.def.header}
         {pinned && <PushPinIcon size={12} className="dt-col-pin" aria-label={i18n.t('columns.pinned')} />}
+        {column.def.header}
       </span>
       {column.def.description && <span className="dt-col-desc">{column.def.description}</span>}
     </span>

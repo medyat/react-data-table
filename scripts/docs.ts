@@ -132,7 +132,17 @@ const REACT_MESSAGES: Record<string, [string, string]> = {
   'filter.chooseValueAria': ['{column} {op} {value}. Choose a value', '{column} {op} {value}. Bir değer seçin'],
   // "Değişti" sistemin kendiliğinden güncellediği diye okundu; kastedilen kaydedilmemiş değişiklik.
   'views.edited': ['Edited', 'Kaydedilmedi'],
-  'views.editedName': ['“{name}” edited', '“{name}” kaydedilmedi'],
+  // R15: kaydetme menünün altında düğme satırı; düğme metinleri kısa, durum tek cümlede.
+  'views.system': ['Built-in views', 'Hazır görünümler'],
+  // ⋯ menüsünde öğenin adı "Dışa aktar"; kaç satır gideceği altında küçük yazıyla (sheet.export başlıktır).
+  'toolbar.export.one': ['{count} row will be exported', '{count} satır dışa aktarılır'],
+  'toolbar.export.other': ['{count} rows will be exported', '{count} satır dışa aktarılır'],
+  'toolbar.exportSelected.one': ['{count} selected row will be exported', '{count} seçili satır dışa aktarılır'],
+  'toolbar.exportSelected.other': ['{count} selected rows will be exported', '{count} seçili satır dışa aktarılır'],
+  'views.discard': ['Revert', 'Geri al'],
+  'views.saveAsNew': ['Save as…', 'Farklı kaydet…'],
+  'views.saveChanges': ['Save', 'Kaydet'],
+  'views.saveAsMine': ['Save as view…', 'Görünüm olarak kaydet…'],
   // Varsayılan system görünümünde "Set as default" yerine "Remove default" çıkar (R6); yasaklananı söylemek iki durumda da doğru.
   'views.systemNote': [
     "System views can't be renamed or deleted.",
@@ -144,6 +154,9 @@ const REACT_MESSAGES: Record<string, [string, string]> = {
 const REACT_ONLY_MESSAGES: Record<string, [string, string]> = {
   // R6: sistem görünümü olmayan ekranda varsayılandan dönmenin tek yolu.
   'views.removeDefault': ['Remove default', 'Varsayılanı kaldır'],
+  // Sütun menüsünden Columns dialog'u: Display popover'ına gitmeden.
+  'header.columnSettings': ['Column settings', 'Sütun ayarları'],
+  'views.unsaved': ['This view has unsaved changes.', 'Bu görünümde kaydedilmemiş değişiklik var.'],
 }
 
 /** 09-i18n.md'deki anahtar tabloları: `| \`key\` | EN | TR |`. */

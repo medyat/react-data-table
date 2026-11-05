@@ -111,8 +111,7 @@ const pickView = async (name: string) => {
   fireEvent.click(row(name)!.querySelector('.dt-view-item')!)
   await flush()
 }
-const menuButton = (text: string) =>
-  [...menu()!.querySelectorAll<HTMLElement>('.dt-pop-item')].find((b) => b.textContent?.includes(text))
+const menuButton = (text: string) => within(menu()!).queryByRole('button', { name: text }) ?? undefined
 const rowAction = async (name: string, item: string) => {
   await openMenu()
   fireEvent.click(row(name)!.querySelector('.dt-view-more')!)
@@ -169,26 +168,38 @@ describe('açılış ve seçim', () => {
     expect(trigger().textContent).toBe('Late orders')
     expect(document.querySelector('.dt-chip[data-col="status"]')).not.toBeNull()
   })
-  it('liste combobox + grid: satırda görünüm hücresi ve ⋯ hücresi; ↑↓ vurguyu taşır, Enter seçer', async () => {
+  it('az görünümde arama yok: odak listede, ↑↓ vurguyu taşır, Enter seçer; aktifte işaret, grup başlığında ipucu yok', async () => {
     await mount({})
     await openMenu()
+    expect(within(menu()!).queryByRole('combobox')).toBeNull()
     const grid = within(menu()!).getByRole('grid', { name: 'Views' })
-    const search = within(menu()!).getByRole('combobox', { name: 'Find a view…' })
-    expect(search.getAttribute('aria-haspopup')).toBe('grid')
-    expect(search.getAttribute('aria-controls')).toBe(grid.id)
-    within(grid).getByRole('rowgroup', { name: /^System views/ })
+    expect(document.activeElement).toBe(grid)
+    expect(within(grid).getByRole('rowgroup', { name: 'Built-in views' })).toBeTruthy()
     const rows = within(grid).getAllByRole('row')
     expect(rows.map((r) => within(r).getAllByRole('gridcell').length)).toEqual([2, 2])
     expect(within(rows[1]!).getAllByRole('gridcell')[1]!.querySelector('.dt-view-more')).not.toBeNull()
+    expect(rows[0]!.querySelector('.dt-view-check svg')).not.toBeNull()
+    expect(rows[1]!.querySelector('.dt-view-check svg')).toBeNull()
 
     const cell = (r: HTMLElement) => within(r).getAllByRole('gridcell')[0]!
-    expect(search.getAttribute('aria-activedescendant')).toBe(cell(rows[0]!).id)
+    expect(grid.getAttribute('aria-activedescendant')).toBe(cell(rows[0]!).id)
     expect(cell(rows[0]!).getAttribute('aria-selected')).toBe('true')
-    fireEvent.keyDown(search, { key: 'ArrowDown' })
-    expect(search.getAttribute('aria-activedescendant')).toBe(cell(rows[1]!).id)
-    fireEvent.keyDown(search, { key: 'Enter' })
+    fireEvent.keyDown(grid, { key: 'ArrowDown' })
+    expect(grid.getAttribute('aria-activedescendant')).toBe(cell(rows[1]!).id)
+    fireEvent.keyDown(grid, { key: 'Enter' })
     await flush()
     expect(trigger().textContent).toBe('Late orders')
+  })
+  it('8 ve üzeri görünümde arama: combobox listeyi yönetir ve süzer', async () => {
+    const many: View[] = Array.from({ length: 8 }, (_, i) => ({ id: `s${i}`, name: `View ${i}`, kind: 'system', state: {} }))
+    await mount({ options: { views: many } })
+    await openMenu()
+    const grid = within(menu()!).getByRole('grid', { name: 'Views' })
+    const search = within(menu()!).getByRole('combobox', { name: 'Find a view…' })
+    expect(search.getAttribute('aria-controls')).toBe(grid.id)
+    expect(document.activeElement).toBe(search)
+    fireEvent.change(search, { target: { value: 'View 7' } })
+    expect(within(grid).getAllByRole('row')).toHaveLength(1)
   })
 
   it('kişisel varsayılan: liste gelince ona geçilir; kullanıcı önce seçtiyse geçilmez', async () => {
@@ -208,10 +219,14 @@ describe('düzenlenmiş durum ve kaydetme', () => {
     expect(trigger().textContent).toContain('Edited')
     expect(trigger().getAttribute('aria-label')).toBe('View All orders, edited')
     await openMenu()
-    expect(menu()!.textContent).toContain('“All orders” edited')
-    expect(menuButton('Save as my view…')).toBeTruthy()
-    expect(menuButton('Save changes')).toBeUndefined()
-    fireEvent.click(menuButton('Discard changes')!)
+    expect(menu()!.textContent).toContain('This view has unsaved changes.')
+    expect(menuButton('Save as view…')).toBeTruthy()
+    expect(menuButton('Save')).toBeUndefined()
+    // Düzenlenmiş görünümde alt satır kaydetme bölümüdür; New view yok.
+    expect(menuButton('New view')).toBeUndefined()
+    // Aktif görünümün durumu alttaki satırda; listede tekrar "Edited" yazmaz.
+    expect(row('All orders')!.textContent).not.toContain('Edited')
+    fireEvent.click(menuButton('Revert')!)
     await act(() => new Promise((r) => setTimeout(r, 0)))
     await flush()
     expect(trigger().textContent).not.toContain('Edited')
@@ -255,8 +270,13 @@ describe('düzenlenmiş durum ve kaydetme', () => {
     expect(row('All orders')!.textContent).not.toContain('Edited')
     fireEvent.click(trigger())
     await flush()
-    // Personal: ⌘S dialog açmadan kaydeder.
+    // Personal: altta Farklı kaydet… ve Kaydet; ⌘S dialog açmadan kaydeder.
     await sortBy('product')
+    await openMenu()
+    expect(menuButton('Save as…')).toBeTruthy()
+    expect(menuButton('Save')).toBeTruthy()
+    fireEvent.click(trigger())
+    await flush()
     await pressSave()
     expect(dialog()).toBeNull()
     expect(adapter.views[0]!.state.sort).toEqual([{ column: 'product', dir: 'desc' }])
@@ -340,8 +360,8 @@ describe('düzenlenmiş durum ve kaydetme', () => {
     await mount({})
     await sortBy('product')
     await openMenu()
-    expect(menuButton('Discard changes')).toBeTruthy()
-    expect(menuButton('Save as my view…')).toBeUndefined()
+    expect(menuButton('Revert')).toBeTruthy()
+    expect(menuButton('Save as view…')).toBeUndefined()
     expect(menuButton('New view')).toBeUndefined()
   })
 })
