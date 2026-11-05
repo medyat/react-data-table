@@ -1,10 +1,20 @@
 {
   "name": "@medyat/react-data-table",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "description": "React 19 için liste tablosu: @medyat/vue-data-table sözleşmesiyle aynı çekirdek.",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/medyat/react-data-table.git"
+  },
+  "homepage": "https://github.com/medyat/react-data-table#readme",
+  "bugs": {
+    "url": "https://github.com/medyat/react-data-table/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "packageManager": "pnpm@10.34.7",
   "engines": {
     "node": ">=22"
@@ -36,7 +46,8 @@
     "test:e2e": "playwright test",
     "gen:docs": "node --experimental-strip-types scripts/tokens-from-docs.ts && node --experimental-strip-types scripts/i18n-from-docs.ts",
     "check": "pnpm typecheck && pnpm lint && prettier --check . && pnpm test && pnpm build",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "prepublishOnly": "pnpm check"
   },
   "peerDependencies": {
     "@base-ui/react": "^1.9.0",
