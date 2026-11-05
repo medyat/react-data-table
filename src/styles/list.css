@@ -593,30 +593,3 @@
   margin: 0 4px;
   background: var(--dt-line-2);
 }
-
-/* Toast (handoff 02 §6): 40 px, kartın altında ortada; bulk bar görünürken onun üstünde. Yalnızca "Copied" (Faz 4). */
-.dt-toast {
-  position: absolute;
-  left: 50%;
-  bottom: 64px;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--dt-space);
-  height: 40px;
-  padding: 0 14px 0 12px;
-  border-radius: var(--dt-radius-card);
-  background: var(--dt-bulk-bg);
-  color: var(--dt-bulk-fg);
-  box-shadow: var(--dt-shadow-float);
-  font-size: var(--dt-ui-fs);
-  font-weight: 600;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  z-index: 6;
-}
-.dt-toast.is-raised {
-  bottom: 116px;
-}
-.dt-toast > svg {
-  color: var(--dt-g-dot);
-}

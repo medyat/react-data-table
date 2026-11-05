@@ -93,12 +93,10 @@ export interface GridProps<Row extends object> {
   rowActions?: Array<RowAction<Row>>
   primaryHref?: (row: Row) => string | undefined
   primaryLabel?: (row: Row) => string
-  primaryHeader?: string
   /** Satır hatası (05 §4, D35): metin ya da metin listesi; boş → yok. Harita uygulamanın. */
   rowError?: (row: Row) => string | string[] | null | undefined
   /** Birincil linke düz sol tık, menüde Open (05 §7). Tarayıcı gezinmesi dinleyicide durdurulabilir. */
   onRowOpen?: (row: Row, event: MouseEvent) => void
-  onCopy?: (row: Row) => void
 }
 
 export function Grid<Row extends object>({
@@ -136,9 +134,7 @@ export function Grid<Row extends object>({
   rowActions = [],
   primaryHref,
   primaryLabel,
-  primaryHeader,
   onRowOpen,
-  onCopy,
   rowError,
 }: GridProps<Row>) {
   const ctx = useDataTableContext()
@@ -324,9 +320,7 @@ export function Grid<Row extends object>({
             edge: !layout.end.length,
             actions: rowActions,
             href: primaryHref?.(row),
-            primaryHeader,
             onOpen: (e) => onRowOpen?.(row, e),
-            onCopy: () => onCopy?.(row),
           }
         : undefined,
     }

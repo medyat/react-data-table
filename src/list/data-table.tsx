@@ -1,6 +1,6 @@
 // Liste bileşeni (05): ızgara, footer, durum ekranları, yükleme geçişleri (R4). Paket veri çekmez (D18): sunucu modunda
 // `useQuery` sonucunu `result` olarak alır; istemci modunda satırlar `useDataTable({ rows })`'dan gelir.
-import { CheckIcon, CircleNotchIcon, FunnelIcon, PlusIcon, WarningIcon } from '@phosphor-icons/react'
+import { CircleNotchIcon, FunnelIcon, PlusIcon, WarningIcon } from '@phosphor-icons/react'
 import {
   lazy,
   Suspense,
@@ -324,17 +324,6 @@ export function DataTable<Row extends object>({
       const id = table.rowId(row)
       toggleExpand(id, !expanded[id])
     }
-  }
-  // Toast: yalnızca "Copied" (handoff 02 §6); bulk aksiyonlar için toast uygulamanındır (D20).
-  const [copied, setCopied] = useState(0)
-  useEffect(() => {
-    if (!copied) return
-    const t = setTimeout(() => setCopied(0), 2000)
-    return () => clearTimeout(t)
-  }, [copied])
-  const copyId = (row: Row) => {
-    void navigator.clipboard?.writeText(primaryLabel(row))
-    setCopied((n) => n + 1)
   }
 
   // Count total (05 §8): sonuç arama/filtre/sıralama değişene kadar geçerli; değişince bekleyen sayım iptal edilir.
@@ -852,9 +841,7 @@ export function DataTable<Row extends object>({
         rowActions={rowActions}
         primaryHref={primaryHref}
         primaryLabel={primaryLabel}
-        primaryHeader={primaryDef?.header}
         onRowOpen={(row, event) => onRowOpen?.({ row, href: primaryHref(row) ?? '', event })}
-        onCopy={copyId}
         rowError={rowError}
       />
       {selectionBar === 'floating' && bulkBar && (
@@ -867,12 +854,6 @@ export function DataTable<Row extends object>({
         >
           {selectionActions?.({ rows: selectedRows, clear: table.clearSelection })}
         </BulkBar>
-      )}
-      {copied > 0 && (
-        <div className={selectionBar === 'floating' && bulkBar ? 'dt-toast is-raised' : 'dt-toast'} role="status">
-          <CheckIcon size={16} aria-hidden="true" />
-          {i18n.t('cell.copied')}
-        </div>
       )}
       <Footer
         rowCount={rows.length}

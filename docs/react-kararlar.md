@@ -233,6 +233,13 @@ oturunca çıkar.
   ikon gri, metin kırmızı kalıyordu. Satır menüsünde ikon metinle aynı renkte; toplu çubuk da öyle olur.
 - `is-destructive` düğmede ikon da `--dt-bulk-danger` alır.
 
+## R18 · Satır menüsünde yerleşik "Copy" yok
+
+- Vue spesifikasyonu (05 §143) satır menüsüne birincil sütunu panoya yazan yerleşik bir "Copy {sütun}" öğesi ve
+  "Copied" toast'u koyuyordu. Swors'ta hiçbir listede istenmedi; metin seçilip kopyalanabildiği için (D6) yerine
+  bir şey gerekmiyor. Kapatılabilir bir seçenek yerine öğe, toast ve çevirileri (`row.copyId`, `cell.copied`) silindi.
+- Satır menüsü: Open, Open in new tab (birincil sütunun `href`'i varsa), ─, uygulamanın `rowActions`'ı.
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

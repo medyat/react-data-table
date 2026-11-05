@@ -1,4 +1,4 @@
-// Satır menüsü (05 §4, handoff 03 §8, T6-03; 268 px): Open ↵ (gerçek <a href>) · Open in new tab · Copy {birincil} · ─ ·
+// Satır menüsü (05 §4, handoff 03 §8, T6-03; 268 px): Open ↵ (gerçek <a href>) · Open in new tab · ─ ·
 // uygulamanın `rowActions`'ı (pasif olan gerekçesiyle iki satır; yıkıcı en altta, kırmızı). `run` beklenmez (D20).
 import { Menu } from '@base-ui/react/menu'
 import { DotsThreeIcon } from '@phosphor-icons/react'
@@ -11,21 +11,16 @@ import { inlineActionsOf } from './inline-actions'
 export function RowMenu<Row extends object>({
   row,
   label,
-  primaryHeader,
   href,
   actions,
   onOpen,
-  onCopy,
 }: {
   row: Row
   /** Birincil hücre metni (aria etiketleri). */
   label: string
-  /** Birincil sütun başlığı: "Copy Order no."; yoksa Copy öğesi yok. */
-  primaryHeader?: string
   href?: string
   actions: Array<RowAction<Row>>
   onOpen: (event: MouseEvent) => void
-  onCopy: () => void
 }) {
   const { i18n } = useDataTableContext()
   // `when(row)` false olan yok (D34); satırda inline çizilen menüde yok (D36); yıkıcılar en altta.
@@ -33,7 +28,7 @@ export function RowMenu<Row extends object>({
   const shown = actions.filter((a) => !inline.has(a) && (!a.when || a.when(row)))
   const ordered = [...shown.filter((a) => !a.destructive), ...shown.filter((a) => a.destructive)]
   // Menüde bir şey yoksa ⋯ çizilmez; hizalama için yeri kalır.
-  if (!href && !primaryHeader && !ordered.length) return <span className="dt-row-more-space" aria-hidden="true" />
+  if (!href && !ordered.length) return <span className="dt-row-more-space" aria-hidden="true" />
   const firstDestructive = ordered.findIndex((a) => a.destructive)
   const subOf = (a: RowAction<Row>): string | null => {
     const d = a.disabled?.(row)
@@ -69,14 +64,13 @@ export function RowMenu<Row extends object>({
           </Menu.LinkItem>
         </>
       )}
-      {primaryHeader && <DtMenuItem onSelect={onCopy}>{i18n.t('row.copyId', { column: primaryHeader })}</DtMenuItem>}
-      {(href || primaryHeader) && ordered.length > 0 && <DtMenuSeparator />}
+      {href && ordered.length > 0 && <DtMenuSeparator />}
       {ordered.map((a, i) => {
         const Icon = a.icon
         const sub = subOf(a)
         return (
           <Fragment key={a.id}>
-            {(a.separatorBefore || i === firstDestructive) && <DtMenuSeparator />}
+            {i > 0 && (a.separatorBefore || i === firstDestructive) && <DtMenuSeparator />}
             <DtMenuItem
               destructive={a.destructive}
               twoLine={!!sub}

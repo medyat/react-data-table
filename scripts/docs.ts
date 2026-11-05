@@ -159,6 +159,13 @@ const REACT_ONLY_MESSAGES: Record<string, [string, string]> = {
   'views.unsaved': ['This view has unsaved changes.', 'Bu görünümde kaydedilmemiş değişiklik var.'],
 }
 
+/** Vue dokümanında olup React'te bilerek olmayan anahtarlar. */
+const REACT_DROPPED_KEYS = [
+  // R18: satır menüsünde yerleşik Copy ve "Copied" toast'u yok.
+  'row.copyId',
+  'cell.copied',
+]
+
 /** 09-i18n.md'deki anahtar tabloları: `| \`key\` | EN | TR |`. */
 export function docMessages(): DocMessages {
   const en: Record<string, string> = {}
@@ -174,6 +181,11 @@ export function docMessages(): DocMessages {
       en[key] = r[1]!
       tr[key] = r[2]!
     }
+  }
+  for (const key of REACT_DROPPED_KEYS) {
+    if (!(key in en)) throw new Error(`REACT_DROPPED_KEYS: dokümanda olmayan anahtar: ${key}`)
+    delete en[key]
+    delete tr[key]
   }
   for (const [key, [e, t]] of Object.entries(REACT_MESSAGES)) {
     if (!(key in en)) throw new Error(`REACT_MESSAGES: dokümanda olmayan anahtar: ${key}`)

@@ -102,13 +102,14 @@ export function BulkBar<Row extends object>({
                 const tip = tipOf(a)
                 return (
                   <Fragment key={a.id}>
-                    {i === firstDestructive && <div className="dt-bsheet-sep" />}
+                    {i > 0 && i === firstDestructive && <div className="dt-bsheet-sep" />}
                     <button
                       type="button"
                       className={a.destructive ? 'dt-bsheet-row is-destructive' : 'dt-bsheet-row'}
                       disabled={!!disabledOf(a)}
                       onClick={() => run(a)}
                     >
+                      {a.icon && <a.icon size={18} aria-hidden="true" />}
                       <span className="dt-menu-text">
                         <span>{a.label}</span>
                         {tip && <span className="dt-menu-sub">{tip}</span>}
@@ -139,13 +140,14 @@ export function BulkBar<Row extends object>({
                 const tip = tipOf(a)
                 return (
                   <Fragment key={a.id}>
-                    {i === firstDestructive && <DtMenuSeparator />}
+                    {i > 0 && i === firstDestructive && <DtMenuSeparator />}
                     <DtMenuItem
                       destructive={a.destructive}
                       twoLine={!!tip}
                       disabled={!!disabledOf(a)}
                       onSelect={() => run(a)}
                     >
+                      {a.icon && <a.icon size={16} aria-hidden="true" />}
                       <span className="dt-menu-text">
                         <span>{a.label}</span>
                         {tip && <span className="dt-menu-sub">{tip}</span>}

@@ -150,9 +150,7 @@ export interface RowExtras<Row extends object> {
     edge: boolean
     actions: Array<RowAction<Row>>
     href?: string
-    primaryHeader?: string
     onOpen: (event: MouseEvent) => void
-    onCopy: () => void
   }
 }
 
@@ -237,15 +235,7 @@ export function Row<Row extends object>({
           {inlineActionsOf(menu.actions, row).map((a) => (
             <InlineAction key={a.id} action={a} row={row} uid={extras.uid} />
           ))}
-          <RowMenu
-            row={row}
-            label={extras.label}
-            primaryHeader={menu.primaryHeader}
-            href={menu.href}
-            actions={menu.actions}
-            onOpen={menu.onOpen}
-            onCopy={menu.onCopy}
-          />
+          <RowMenu row={row} label={extras.label} href={menu.href} actions={menu.actions} onOpen={menu.onOpen} />
         </div>
       )}
     </div>

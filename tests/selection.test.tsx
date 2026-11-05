@@ -177,6 +177,18 @@ describe('bulk bar', () => {
     expect(document.querySelector('.dt-bulk-menu .dt-menu-sep')).not.toBeNull()
   })
 
+  it('⋯ menüsünde ikon satır menüsündeki gibi çizilir; yalnızca yıkıcı varsa ayraç yok', async () => {
+    await mount({
+      selectable: true,
+      bulkActions: [{ id: 'delete', label: 'Delete', icon: PlayIcon, destructive: true, run }],
+    })
+    fireEvent.click(box(0))
+    fireEvent.click(screen.getByRole('button', { name: 'More bulk actions' }))
+    await flush()
+    expect(document.querySelector('.dt-bulk-menu .dt-menu-item > svg')).not.toBeNull()
+    expect(document.querySelector('.dt-bulk-menu .dt-menu-sep')).toBeNull()
+  })
+
   it('× seçimi temizler; selectionActions içeriği aksiyonların yerine', async () => {
     await mount({
       selectable: true,
@@ -231,25 +243,28 @@ describe('satır menüsü ve açma', () => {
     return [...document.querySelectorAll<HTMLElement>('.dt-row-menu .dt-menu-item')]
   }
 
-  it('Open / Open in new tab gerçek link, Copy panoya yazar ve "Copied" gösterir; aksiyonlar sırası ve yetki', async () => {
-    const writeText = vi.fn(() => Promise.resolve())
-    Object.assign(navigator, { clipboard: { writeText } })
+  it('Open / Open in new tab gerçek link; Copy öğesi yok (R18); aksiyonlar sırası ve yetki', async () => {
     await mount({ rowActions })
     const items = await openMenu(0)
     expect(items.map((i) => i.textContent)).toEqual([
       'Open↵',
       'Open in new tab',
-      'Copy Order no.',
       'ReleaseAlready running',
       'Cancel order…',
     ])
     expect(items[0]!.getAttribute('href')).toBe('/orders/1')
     expect(items[1]!.getAttribute('target')).toBe('_blank')
-    fireEvent.click(items[2]!)
-    expect(writeText).toHaveBeenCalledWith('WO-1')
-    expect(document.querySelector('.dt-toast')!.textContent).toBe('Copied')
-    fireEvent.click((await openMenu(0))[4]!)
+    fireEvent.click(items[3]!)
     expect(run).toHaveBeenLastCalledWith(expect.objectContaining({ id: 1 }))
+  })
+
+  it('ilk aksiyon yıkıcıysa üstte tek ayraç kalır', async () => {
+    await mount({ rowActions: [{ id: 'delete', label: 'Delete', destructive: true, run }] })
+    await openMenu(0)
+    const kids = [...document.querySelector('.dt-row-menu')!.children]
+    const seps = kids.flatMap((k, i) => (k.classList.contains('dt-menu-sep') ? [i] : []))
+    expect(seps.length).toBe(1)
+    expect(kids[seps[0]! + 1]!.textContent).toBe('Delete')
   })
 
   it("inline aksiyon ⋯'nın solunda ve o satırın menüsünde yok", async () => {
