@@ -76,6 +76,12 @@
   opacity: 0.6;
   cursor: default;
 }
+/* Uygulamanın şeridi (R16): içerik uygulamanın; yatay hiza Stale şeridiyle aynı. */
+.dt-list-notice {
+  flex: none;
+  padding: var(--dt-space) 12px;
+  border-bottom: 1px solid var(--dt-line);
+}
 
 /* Durum mesajı bloğu (handoff 02 §9): gövdede ortalı, en fazla 440 px, alt dolgu 64. */
 .dt-body-state {

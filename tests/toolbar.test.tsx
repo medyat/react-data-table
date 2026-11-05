@@ -296,3 +296,23 @@ describe('⋯ menüsü', () => {
     expect(refetch).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('notice (R16)', () => {
+  const follows = (a: Element, b: Element) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+
+  it('araç çubuğu ile sütun başlıkları arasında çizilir; verilmezse alan yok', async () => {
+    const view = await mount(<Table notice={<p>Only archived rows</p>} />)
+    const notice = document.querySelector('.dt-list-notice')!
+    expect(notice.textContent).toBe('Only archived rows')
+    expect(follows(document.querySelector('.dt-toolbar')!, notice)).toBe(true)
+    expect(follows(notice, document.querySelector('.dt-head-cell')!)).toBe(true)
+
+    view.rerender(<Table />)
+    expect(document.querySelector('.dt-list-notice')).toBeNull()
+  })
+
+  it('araç çubuğu kapalıyken de çizilir', async () => {
+    await mount(<Table toolbar={false} notice={<p>Only archived rows</p>} />)
+    expect(document.querySelector('.dt-list-notice')?.textContent).toBe('Only archived rows')
+  })
+})

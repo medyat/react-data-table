@@ -217,6 +217,16 @@ oturunca çıkar.
   klavye aynı: ↑↓, Home/End, Enter. Swors'taki Picker'ın arama eşiğiyle aynı sayı.
 - Aktif görünümde solda işaret var, bütün adlar aynı hizada. Bölüm başlıklarında ipucu yok ("Hazır", "Yalnızca siz").
 
+## R16 · Uygulamanın şeridi (`notice`)
+
+- Vue spesifikasyonunda araç çubuğu ile sütun başlıkları arasında yalnızca paketin şeridi var (Stale, 05 §states).
+  Liste bağlamını anlatan bir uyarı ("Yalnızca arşivlenmiş kayıtlar") uygulamanındır ama listenin içinde, araç
+  çubuğunun hemen altında okunmalıdır: kartın dışında araç çubuğunun üstünde kalırsa filtre ile karışır.
+- `notice?: ReactNode`. Sıra: araç çubuğu, `notice`, Stale şeridi, filtre çipleri, grid. Çipler grid'e bağlı durumdur,
+  grid'e en yakın kalır; `notice` bütün liste için bağlamdır.
+- Paket yalnızca yeri verir: yatay hiza Stale şeridiyle aynı (12 px), dikeyde `--dt-space`, altta `--dt-line`. İçerik,
+  rengi ve ARIA rolü uygulamanın; paket rol eklemez. Araç çubuğu kapalıyken (`toolbar={false}`) de çizilir.
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

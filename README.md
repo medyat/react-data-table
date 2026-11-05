@@ -144,6 +144,8 @@ bırakır. Seçili satırlar `onSelectionChange` ile de okunabilir.
   `toolbarEnd`) ya da `false`.
 - `autoRefresh={30}`: ⋯ menüsünde Auto-refresh anahtarı; açıkken footer "Live". `onPrint` verilirse ⋯ menüsünde Print.
 - `empty`: hiç kayıt yokken (filtre ve arama da yokken) gövdede gösterilecek içerik.
+- `notice`: araç çubuğu ile sütun başlıkları arasında uygulamanın şeridi (R16), ör. "Yalnızca arşivlenmiş
+  kayıtlar listeleniyor". İçerik, rengi ve rolü uygulamanın; paket yer, yatay hiza ve alt çizgiyi verir.
 - Dışa aktarma (D46): ⋯ › **Export 100 rows** › CSV / Excel (.xlsx). Ekranda görünen sütunlar ve satırlar yazılır: seçim
   varsa seçili satırlar, yoksa sayfadaki satırlar (sunucu modunda yüklü sayfa; "tüm eşleşenler" yok). .xlsx için
   `write-excel-file` peer'ı gerekir (`pnpm add write-excel-file`); ilk dışa aktarmada yüklenir. `exportable={false}`

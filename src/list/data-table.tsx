@@ -74,6 +74,7 @@ export function DataTable<Row extends object>({
   empty,
   toolbar = 'auto',
   toolbarEnd,
+  notice,
   searchPlaceholder,
   autoRefresh,
   onPrint,
@@ -104,6 +105,11 @@ export function DataTable<Row extends object>({
   toolbar?: 'auto' | 'minimal' | false
   /** Ekrana özgü birincil aksiyon, araç çubuğunun sonunda (ör. "New order"). */
   toolbarEnd?: ReactNode
+  /**
+   * Araç çubuğu ile sütun başlıkları arasında uygulamanın şeridi (R16): listenin bağlamını anlatır
+   * ("Yalnızca arşivlenmiş kayıtlar"). İçerik ve rolü uygulamanındır; paket yer ve hizayı verir.
+   */
+  notice?: ReactNode
   /** Verilmezse "Search {entity}…". */
   searchPlaceholder?: string
   /** Saniye. Verilirse ⋯ menüsünde Auto-refresh; açıkken footer "Live". */
@@ -759,6 +765,7 @@ export function DataTable<Row extends object>({
           />
         )
       )}
+      {notice && <div className="dt-list-notice">{notice}</div>}
       {load.errorKind === 'stale' && load.updatedAt && (
         <div className="dt-strip" role="status">
           <WarningIcon size={16} aria-hidden="true" />

@@ -142,6 +142,7 @@ function Operations({ row }: { row: Order }) {
 // Yoğunluk sabitlenmez (Vue T1 gibi): Display › Density kullanıcının seçimi, üst çubuktaki seçici bu sayfayı etkilemez.
 export function T1List() {
   const [rowClick, setRowClick] = useState<RowClickMode>('none')
+  const [notice, setNotice] = useState(false)
   /** Toplu aksiyonun kısmi hatası (D35): harita uygulamada, paket yalnızca okur. */
   const [rowErrors, setRowErrors] = useState(new Map<number, string>())
   const table = useDataTable({
@@ -231,6 +232,10 @@ export function T1List() {
           </select>
         </label>
         <label>
+          <input type="checkbox" checked={notice} onChange={(e) => setNotice(e.target.checked)} />
+          Notice
+        </label>
+        <label>
           Server
           <select value={location.search} onChange={(e) => (location.search = e.target.value)}>
             {SCENARIOS.map(([q, label]) => (
@@ -249,6 +254,7 @@ export function T1List() {
         bulkActions={bulkActions}
         rowActions={rowActions}
         rowError={(r) => rowErrors.get(r.id)}
+        notice={notice && <p className="pg-notice">Only archived orders are listed below.</p>}
         rowClick={rowClick}
         renderExpanded={({ row }) => <Operations row={row} />}
         autoRefresh={30}

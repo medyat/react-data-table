@@ -260,3 +260,13 @@ body {
   font-weight: 500;
   text-decoration: none;
 }
+
+/* R16 senaryosu: uygulamanın kendi uyarı şeridi. */
+.pg-notice {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--dt-radius);
+  background: var(--dt-a-bg);
+  color: var(--dt-a-fg);
+  font-size: var(--dt-ui-fs-sm);
+}
