@@ -160,7 +160,7 @@ describe('Columns dialog', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(heads()).toEqual(['code', 'name', 'qty', 'site'])
   })
-  it('sütun menüsünün sonunda Column settings dialog\'u açar; kapanınca odak ⋯\'ya döner', async () => {
+  it("sütun menüsünün sonunda Column settings dialog'u açar; kapanınca odak ⋯'ya döner", async () => {
     await mount(<Table />)
     const more = screen.getByRole('button', { name: 'Name column options' })
     fireEvent.click(more)

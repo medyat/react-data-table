@@ -23,7 +23,9 @@ describe('tipOf', () => {
     expect(tipOf(content)?.text).toBe('PAKETLİ ÜRÜNLER')
   })
   it('içteki öğe kesiyorsa (overflow gizli) yine metni', () => {
-    const content = cell('<span class="photo"></span><span class="name" style="overflow-x:hidden">BEREKET SPAGETTİ MAKARNA</span>')
+    const content = cell(
+      '<span class="photo"></span><span class="name" style="overflow-x:hidden">BEREKET SPAGETTİ MAKARNA</span>',
+    )
     sized(content.querySelector<HTMLElement>('.name')!, 260, 140)
     expect(tipOf(content.querySelector('.name'))?.text).toBe('BEREKET SPAGETTİ MAKARNA')
   })

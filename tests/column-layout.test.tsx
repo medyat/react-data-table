@@ -103,7 +103,10 @@ describe('useColumnLayout', () => {
     expect(ids()).toEqual(['number', 'customer', 'product.name', 'actions', 'value'])
     act(() => hook.result.current.move('customer', -1))
     expect(ids()[0]).toBe('number')
-    expect(hook.result.current.state().pinned).toEqual({ left: ['number', 'customer', 'product.name'], right: ['actions', 'value'] })
+    expect(hook.result.current.state().pinned).toEqual({
+      left: ['number', 'customer', 'product.name'],
+      right: ['actions', 'value'],
+    })
   })
   it("ölçek: tip varsayılanı ve geliştiricinin width'i çarpılır, sürüklenen genişlik değişmez (02 · Ölçek)", () => {
     const { hook } = setup()

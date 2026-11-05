@@ -191,7 +191,12 @@ describe('açılış ve seçim', () => {
     expect(trigger().textContent).toBe('Late orders')
   })
   it('8 ve üzeri görünümde arama: combobox listeyi yönetir ve süzer', async () => {
-    const many: View[] = Array.from({ length: 8 }, (_, i) => ({ id: `s${i}`, name: `View ${i}`, kind: 'system', state: {} }))
+    const many: View[] = Array.from({ length: 8 }, (_, i) => ({
+      id: `s${i}`,
+      name: `View ${i}`,
+      kind: 'system',
+      state: {},
+    }))
     await mount({ options: { views: many } })
     await openMenu()
     const grid = within(menu()!).getByRole('grid', { name: 'Views' })

@@ -196,7 +196,9 @@ describe('⋯ sayfası', () => {
     fireEvent.click(screen.getByRole('button', { name: 'More actions' }))
     await flush()
     const exportRow = within(sheet()).getByRole('button', { name: 'Export' })
-    expect(document.getElementById(exportRow.getAttribute('aria-describedby')!)!.textContent).toBe('10 rows will be exported')
+    expect(document.getElementById(exportRow.getAttribute('aria-describedby')!)!.textContent).toBe(
+      '10 rows will be exported',
+    )
     fireEvent.click(exportRow)
     expect(within(sheet()).getByRole('heading', { name: 'Export' })).toBeTruthy()
     fireEvent.click(within(sheet()).getByRole('button', { name: 'CSV' }))
