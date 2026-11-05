@@ -30,6 +30,9 @@ import '@medyat/react-data-table/shadcn-bridge.css' // shadcn teması kullanıl�
 Sağlayıcı isteğe bağlıdır; yoksa paket metinleri ve tarayıcı dili kullanılır, görünüm ve tercih kaydedilmez. `messages`
 ile tek tek metin anahtarı ezilebilir.
 
+Backend'e bağlamak (Laravel + Laraql: liste sorgusu, kişisel görünümler, kullanıcı tercihleri) için
+[`docs/backend-integration.md`](docs/backend-integration.md).
+
 ## Kullanım
 
 `useDataTable` durumu ve isteği tutar, `<DataTable>` çizer (R3). Sütun tanımları feature'ın kendi dosyasında yaşar.

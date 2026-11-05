@@ -10,7 +10,8 @@
     "node": ">=22"
   },
   "files": [
-    "dist"
+    "dist",
+    "docs/backend-integration.md"
   ],
   "sideEffects": [
     "**/*.css"
