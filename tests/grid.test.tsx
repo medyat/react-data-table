@@ -130,8 +130,8 @@ describe('roller ve yapı', () => {
     expect(label.textContent).not.toContain('Net of discounts')
     fireEvent.focusIn(label)
     const tip = q('.dt-tip')
-    expect(tip.textContent).toContain('Net of discounts')
-    expect(tip.classList).toContain('is-multi')
+    // İki satır `white-space: pre-line` ile; tooltip uzun metni de satırlara böler.
+    expect(tip.textContent).toBe('Value\nNet of discounts')
     expect(q('.dt-head-cell[data-col="status"] .dt-head-label').dataset.dtTip).toBe('Status')
   })
 })

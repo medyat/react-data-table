@@ -289,6 +289,13 @@ oturunca çıkar.
 - Vue'dan sapma: Vue paketinde satır sıralama yok; Vue `CLAUDE.md`'deki reddedilenler listesi React için bu maddeyle
   daralır.
 
+
+## R22 · Tooltip kesmez
+
+- Kesilen hücrenin tooltip'i metnin tamamını gösterir: tek satır ve `…` yerine en çok 480 px genişlikte satırlara
+  bölünür (`white-space: pre-line`, `overflow-wrap: anywhere`). Vue tooltip'i 320 px'te `…` ile kesiyordu; uzun formül ya
+  da açıklama tooltip'te de okunamıyordu. Tek satırlık tooltip 26 px kalır (02).
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

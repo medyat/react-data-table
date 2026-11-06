@@ -445,32 +445,24 @@
   }
 }
 
-/* Tek tooltip (02 · Tooltip). */
+/* Tek tooltip (02 · Tooltip). Kesilen hücrenin tamamını göstermek için vardır: kendisi kesmez, uzun metin satırlara
+   bölünür. Tek satırda 16 + 2 × 5 = 26 px; D33'teki ad + açıklama satır sonuyla ayrılır. */
 .dt-tip {
   position: fixed;
   z-index: 50;
-  max-width: calc(320 * var(--dt-ui-fs) / 13);
-  height: 26px;
-  padding: 0 8px;
+  max-width: calc(480 * var(--dt-ui-fs) / 13);
+  padding: 5px 8px;
   border-radius: var(--dt-radius-item);
   background: var(--dt-tip-bg);
   color: var(--dt-tip-fg);
   font-size: var(--dt-ui-fs-xs);
   font-weight: 500;
-  line-height: 26px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 16px;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
   transform: translateX(-50%);
   box-shadow: var(--dt-shadow-tip);
   pointer-events: none;
-}
-/* D33: ad + açıklama iki satır. */
-.dt-tip.is-multi {
-  height: auto;
-  padding: 5px 8px;
-  line-height: 16px;
-  white-space: pre-line;
 }
 
 /* Faz 2 (05 §8, §10; 08 §3): dikey çizgiler, sorgu değişiminde soluk gövde, yenileme çubuğu, bildirim satırı, kaydırma hapı, header odağı. */

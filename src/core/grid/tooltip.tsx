@@ -81,11 +81,7 @@ export function DelegatedTooltip({ root }: { root: RefObject<HTMLElement | null>
   if (!tip) return null
   // position: fixed; kökün içinde kalır, yoğunluk ve font token'larını oradan alır.
   return (
-    <div
-      className={tip.text.includes('\n') ? 'dt-tip is-multi' : 'dt-tip'}
-      role="tooltip"
-      style={{ left: tip.left, top: tip.top }}
-    >
+    <div className="dt-tip" role="tooltip" style={{ left: tip.left, top: tip.top }}>
       {tip.text}
     </div>
   )
