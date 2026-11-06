@@ -8,7 +8,7 @@ karşılığı. Yalnızca liste; sheet bu sürümde yok.
 1. Spesifikasyon Vue paketindedir, kardeş repo `../data-table`: `docs/data-table/README.md` (karar günlüğü
    D1–D47), `10-roadmap.md` (fazın kabul kriterleri), ilgili bileşen belgesi, `api-draft.ts`, tasarımlar
    `design/`, ölçüler `docs/handoff/`.
-2. `docs/react-kararlar.md`: React'te farklı olan kararlar (R1–R20). Burada geçmeyen konuda Vue
+2. `docs/react-kararlar.md`: React'te farklı olan kararlar (R1–R21). Burada geçmeyen konuda Vue
    spesifikasyonu geçerlidir. Vue kodu referanstır, kaynak değil: React'te daha iyi bir yol varsa o
    yazılır ve kararı `react-kararlar.md`'ye eklenir.
 3. Bir karar uygulamada sorun çıkarırsa değiştirmeden önce sor. Açık soru varsa tek soru sor.

@@ -9,6 +9,7 @@ import {
 import { T1List } from './pages/t1-list'
 import { T7Actions } from './pages/t7-actions'
 import { T8Cells } from './pages/t8-cells'
+import { R21Reorder } from './pages/r21-reorder'
 import { applySettings, loadSettings, type Settings, type Theme } from './settings'
 
 const THEMES: Theme[] = ['light', 'dark-class', 'dark-attr']
@@ -20,6 +21,7 @@ const PAGES: Array<{ id: string; title: string; render: (s: Settings) => ReactNo
   { id: 't1', title: 'T1 · List', render: () => <T1List /> },
   { id: 't7', title: 'T7 · Cell actions', render: (s) => <T7Actions density={s.density} /> },
   { id: 't8', title: 'T8 · Cell types', render: (s) => <T8Cells density={s.density} /> },
+  { id: 'r21', title: 'R21 · Reorder', render: (s) => <R21Reorder density={s.density} /> },
 ]
 
 const queryClient = new QueryClient()

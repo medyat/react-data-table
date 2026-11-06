@@ -271,4 +271,11 @@ export const tr: Record<string, string> = {
   "header.columnSettings": "Sütun ayarları",
   "views.unsaved": "Bu görünümde kaydedilmemiş değişiklik var.",
   "views.all": "Tümü",
+  "reorder.column": "Sıra",
+  "reorder.handleAria": "{row} satırını taşı",
+  "reorder.instructions": "Satırı almak için boşluk tuşuna basın, yukarı ve aşağı ok tuşlarıyla taşıyın, bırakmak için yeniden boşluk tuşuna basın. İptal için Escape'e basın.",
+  "reorder.dragStart": "{row} alındı. Sıra {position} / {total}.",
+  "reorder.dragOver": "{row} {position} / {total} sırasına taşındı.",
+  "reorder.dragEnd": "{row} {position} / {total} sırasına bırakıldı.",
+  "reorder.dragCancel": "Taşıma iptal edildi. {row} yerine döndü.",
 }

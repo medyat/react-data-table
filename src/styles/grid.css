@@ -580,6 +580,49 @@
   padding: 0;
   cursor: pointer;
 }
+/* Sıra tutamağı (R21): seçimden önce, sol sabit; yalnızca tutamak sürüklenir. Pasifken soluk, gerekçe tooltip'te. */
+.dt-cell-handle,
+.dt-head-handle {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.dt-row-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dt-control-h-sm);
+  height: var(--dt-control-h-sm);
+  padding: 0;
+  border: 0;
+  border-radius: var(--dt-radius-item);
+  background: transparent;
+  color: var(--dt-text-3);
+  cursor: grab;
+  touch-action: none;
+}
+.dt-row:hover .dt-row-handle:not([aria-disabled='true']),
+.dt-row-handle:focus-visible {
+  color: var(--dt-text-2);
+}
+.dt-row-handle[aria-disabled='true'] {
+  cursor: default;
+  opacity: 0.4;
+}
+.dt-row-handle[aria-pressed='true'],
+.dt-item.is-dragging .dt-row-handle {
+  background: var(--dt-line-2);
+  color: var(--dt-text);
+  cursor: grabbing;
+}
+/* Sürüklenen satır öteki satırların üstünde ve gölgeli. */
+.dt-item.is-dragging {
+  z-index: 3;
+}
+.dt-item.is-dragging .dt-row {
+  box-shadow: var(--dt-shadow-pop);
+}
 /* ⋯ sütunu (05 §4, D28): içeriğe göre 44 / 66 px (GridRoot MENU_W), sağ sabit; ⋯ her zaman görünür, --dt-text-3, hover --dt-text-2, açıkken --dt-line-2 zemin. */
 /* Dolgu 8, öğeler arası 8; ⋯ sağa yaslı: hata ikonu (D35) soluna gelince ⋯ diğer satırlarla aynı hizada kalır. */
 .dt-cell-menu,

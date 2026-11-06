@@ -1,7 +1,7 @@
 // Satır + hücreler. Kabuk burada: hizalama, kesme, sabit sütun sticky'si, --dt-row-bg, ikinci satır, aksiyon overlay'i (05 §4, 03);
 // seçim hücresi (40 px, sol sabit), birincil hücrede expand chevron'u, sağ sabit ⋯ hücresi, inline aksiyonlar ve satır hatası
 // (05 §4, §6–7, D28, D35, D36).
-import { CaretRightIcon, WarningCircleIcon } from '@phosphor-icons/react'
+import { CaretRightIcon, DotsSixVerticalIcon, WarningCircleIcon } from '@phosphor-icons/react'
 import type { CSSProperties, MouseEvent, ReactNode } from 'react'
 import type { RowAction } from '../../types/list'
 import { CellActions } from '../cells/cell-actions'
@@ -12,6 +12,7 @@ import { readPath } from '../columns/read-path'
 import { inlineActionsOf } from './inline-actions'
 import { fillIndex, pinClasses, pinStyle } from './pin'
 import { RowMenu } from './row-menu'
+import type { HandleBind } from './sortable-rows'
 
 export const FillCell = () => <div className="dt-cell dt-cell-fill" role="presentation" aria-hidden="true" />
 
@@ -144,7 +145,10 @@ export interface RowExtras<Row extends object> {
   uid: string
   /** Satır hatası mesajları (D35); boş = yok. */
   error: string[]
-  select?: { selected: boolean; edge: boolean; onChange: (value: boolean, shift: boolean) => void }
+  /** Sıra tutamağı (R21): `bind` yalnızca sürükleme açıkken; pasifken gerekçe tooltip'te. */
+  handle?: { disabled: boolean; reason?: string; edge: boolean; bind?: HandleBind }
+  /** `left`: önündeki tutamak sütununun genişliği. */
+  select?: { selected: boolean; edge: boolean; left: number; onChange: (value: boolean, shift: boolean) => void }
   expand?: Omit<Expand, 'label'>
   menu?: {
     edge: boolean
@@ -173,6 +177,7 @@ export function Row<Row extends object>({
   // Comfortable: `secondary` görünür (02 · Yoğunluk).
   const secondaryVisible = env.density === 'comfortable'
   const sel = extras?.select
+  const handle = extras?.handle
   const menu = extras?.menu
   const expand = extras?.expand && { ...extras.expand, label: extras.label }
   const error = extras?.error ?? []
@@ -194,13 +199,37 @@ export function Row<Row extends object>({
       data-dt-tip={tip || undefined}
       data-index={index}
     >
+      {handle && (
+        <div
+          className={
+            handle.edge
+              ? 'dt-cell dt-cell-handle is-pinned-start is-pin-edge'
+              : 'dt-cell dt-cell-handle is-pinned-start'
+          }
+          style={{ left: 0 }}
+          role="cell"
+        >
+          <button
+            type="button"
+            className="dt-row-handle"
+            {...handle.bind?.props}
+            ref={handle.bind?.ref}
+            aria-label={env.i18n.t('reorder.handleAria', { row: extras.label })}
+            // Pasif tutamak odaklanabilir kalır: gerekçe tooltip'te okunur.
+            aria-disabled={handle.disabled || undefined}
+            data-dt-tip={handle.reason}
+          >
+            <DotsSixVerticalIcon size={16} weight="bold" aria-hidden="true" />
+          </button>
+        </div>
+      )}
       {sel && (
         // 40 px'in tamamı tıklanır; ⇧ aralığı ızgarada.
         <label
           className={
             sel.edge ? 'dt-cell dt-cell-select is-pinned-start is-pin-edge' : 'dt-cell dt-cell-select is-pinned-start'
           }
-          style={{ left: 0 }}
+          style={{ left: sel.left }}
           role="cell"
         >
           <input

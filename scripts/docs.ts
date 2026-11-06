@@ -159,6 +159,26 @@ const REACT_ONLY_MESSAGES: Record<string, [string, string]> = {
   'views.unsaved': ['This view has unsaved changes.', 'Bu görünümde kaydedilmemiş değişiklik var.'],
   // R19: her tabloda hazır gelen görünüm.
   'views.all': ['All', 'Tümü'],
+  // R21: satır sıralama tutamağı ve duyuruları (Columns dialog'undaki columns.drag* ile aynı kalıp).
+  'reorder.column': ['Order', 'Sıra'],
+  'reorder.handleAria': ['Move {row}', '{row} satırını taşı'],
+  'reorder.instructions': [
+    'Press space to pick up a row, use the up and down arrow keys to move it, then press space again to drop it. Press escape to cancel.',
+    "Satırı almak için boşluk tuşuna basın, yukarı ve aşağı ok tuşlarıyla taşıyın, bırakmak için yeniden boşluk tuşuna basın. İptal için Escape'e basın.",
+  ],
+  'reorder.dragStart': ['Picked up {row}. Position {position} of {total}.', '{row} alındı. Sıra {position} / {total}.'],
+  'reorder.dragOver': [
+    '{row} moved to position {position} of {total}.',
+    '{row} {position} / {total} sırasına taşındı.',
+  ],
+  'reorder.dragEnd': [
+    '{row} dropped at position {position} of {total}.',
+    '{row} {position} / {total} sırasına bırakıldı.',
+  ],
+  'reorder.dragCancel': [
+    'Reordering cancelled. {row} returned to its place.',
+    'Taşıma iptal edildi. {row} yerine döndü.',
+  ],
 }
 
 /** Vue dokümanında olup React'te bilerek olmayan anahtarlar. */

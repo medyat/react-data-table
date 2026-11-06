@@ -271,4 +271,11 @@ export const en: Record<string, string> = {
   "header.columnSettings": "Column settings",
   "views.unsaved": "This view has unsaved changes.",
   "views.all": "All",
+  "reorder.column": "Order",
+  "reorder.handleAria": "Move {row}",
+  "reorder.instructions": "Press space to pick up a row, use the up and down arrow keys to move it, then press space again to drop it. Press escape to cancel.",
+  "reorder.dragStart": "Picked up {row}. Position {position} of {total}.",
+  "reorder.dragOver": "{row} moved to position {position} of {total}.",
+  "reorder.dragEnd": "{row} dropped at position {position} of {total}.",
+  "reorder.dragCancel": "Reordering cancelled. {row} returned to its place.",
 }

@@ -274,4 +274,12 @@ export const ru: Record<string, string> = {
   'header.columnSettings': 'Настройки столбцов',
   'views.unsaved': 'В этом представлении есть несохранённые изменения.',
   'views.all': 'Все',
+  'reorder.column': 'Порядок',
+  'reorder.handleAria': 'Переместить «{row}»',
+  'reorder.instructions':
+    'Чтобы взять строку, нажмите пробел, перемещайте её клавишами со стрелками вверх и вниз, затем снова нажмите пробел, чтобы отпустить. Для отмены нажмите Escape.',
+  'reorder.dragStart': 'Строка «{row}» взята. Позиция {position} из {total}.',
+  'reorder.dragOver': 'Строка «{row}» перемещена на позицию {position} из {total}.',
+  'reorder.dragEnd': 'Строка «{row}» помещена на позицию {position} из {total}.',
+  'reorder.dragCancel': 'Перемещение отменено. Строка «{row}» возвращена на место.',
 }

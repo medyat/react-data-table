@@ -99,6 +99,22 @@ export interface RowAction<Row = any> {
   run: (row: Row) => void | Promise<void>
 }
 
+/** Satır taşıma (R21): `after` yeni yerde üstte kalan, `before` altta kalan satır; liste başı / sonu → `null`. */
+export interface RowMove<Row = unknown> {
+  row: Row
+  after: Row | null
+  before: Row | null
+}
+
+/** Satır sıralama (R21): varsayılan kapalı; verilince satırın başında tutamak. Paket numara üretmez, taşımayı bildirir. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Row için üst sınır; RowAction ile aynı
+export interface RowReorder<Row = any> {
+  /** true veya gerekçe metni → tutamak pasif, gerekçe tooltip'te. Sıranın anlamlı olduğu durumu uygulama bilir. */
+  disabled?: boolean | string
+  /** Bırakınca. Promise reddedilirse eski sıraya döner; hata mesajı uygulamanın (D20). */
+  onMove: (move: RowMove<Row>) => void | Promise<unknown>
+}
+
 /** Toplu aksiyon. Seçim sayfa kapsamlıdır (D19): `rows` o anda seçili, yüklü satırlardır. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Row için üst sınır; api-draft ile aynı
 export interface BulkAction<Row = any> {

@@ -266,6 +266,29 @@ oturunca çıkar.
 - Bağlantının odağı halka (02) değil, accent renk ve 2 px alt çizgi. Halka hücrenin taşma sınırında kesiliyor;
   Sheet kapanınca odak bağlantıya döndüğü için Esc'ten sonra yarım halka görünüyordu.
 
+## R21 · Satır sıralama (D22'yi genişletir)
+
+- D22 sürükle-bırakı Columns dialog'uyla sınırlıyordu; gerekçesi bakımsız bağımlılıktı ve D22 revizesiyle `@dnd-kit` zaten
+  pakette. Kullanıcı isteği: kayıtların sırasını (formdaki alan sırası gibi) listenin kendisinde değiştirmek.
+- Varsayılan kapalı. `DataTable`'a `reorder` verilince satırın başında, seçim sütunundan önce sol sabit bir tutamak sütunu
+  çıkar; yalnızca tutamak sürüklenir, satır tıklaması, seçim ve metin seçimi aynen kalır.
+- **Paket numara üretmez, taşıma bilgisi verir:** `onMove({ row, after, before })`; `after` yeni yerde üstte kalan satır,
+  `before` altta kalan (liste başı / sonu → `null`). Sıra kolonunun yönünü ve aralığını yalnızca sunucu bilir; ekranda
+  sayfanın ya da arama sonucunun bir kısmı olsa da "şunun hemen arkası" bilgisi doğrudur.
+- **Ne zaman açık olduğuna uygulama karar verir:** `reorder.disabled` true ya da gerekçe metni ise tutamak pasif, gerekçe
+  tooltip'te ("Sıralamak için bir kapsam seçin"). Paket sıralama durumunu yorumlamaz: hangi sıralamanın ve hangi
+  filtrenin sırayı anlamlı kıldığı veriye bağlıdır.
+- **İyimser gösterim:** bırakınca yeni sıra hemen çizilir. `onMove` Promise dönerse sonuçlanana kadar tutamaklar pasif;
+  reddedilirse eski sıraya döner, hata mesajı uygulamanındır (D20). Gösterilen sıra, gelen satırların sırası değişene
+  (yenilenen sonuç) kadar paketin elinde kalır.
+- Klavye ve duyurular Columns dialog'uyla aynı: tutamakta `Space` al · `↑↓` · `Space` bırak · `Esc` iptal; metinler
+  `reorder.*` anahtarlarından. Sürükleme kodu yalnızca `reorder` açıkken tembel yüklenir.
+- Sürüklenen satır sanal listede DOM'dan çıkmaz (odaktaki satır gibi tutulur). Kenara yaklaşınca liste kayar, yeni çizilen
+  satırlar hedef olur: 300 satırda ekranda olmayan bir yere taşıma e2e ile doğrulandı. Sürükleme sırasında satır konumu
+  `transform` değil `top`: @dnd-kit ölçerken `transform`'u yok sayar, sanal satırların hepsini en üstte sanırdı.
+- Vue'dan sapma: Vue paketinde satır sıralama yok; Vue `CLAUDE.md`'deki reddedilenler listesi React için bu maddeyle
+  daralır.
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

@@ -44,7 +44,7 @@ import { nameError } from '../core/views/model'
 import { ViewDialog, type ViewSummary } from '../core/views/view-dialog'
 import { ViewMenu } from '../core/views/view-menu'
 import type { ColumnDef } from '../types/columns'
-import type { BulkAction, DataTableResult, RowAction, RowClickMode } from '../types/list'
+import type { BulkAction, DataTableResult, RowAction, RowClickMode, RowReorder } from '../types/list'
 import type { FilterCondition, QueryWithoutPage } from '../types/query'
 import type { View, ViewState } from '../types/views'
 import { BulkBar } from './bulk-bar'
@@ -53,6 +53,7 @@ import { useChips } from './use-chips'
 import { isFilterable, isSearchable, isSortable } from './use-list-table'
 import type { DataTableInstance } from './use-data-table'
 import { useLoadState } from './use-load-state'
+import { useRowOrder } from './use-row-order'
 
 /** `error` yapısal okunur: TanStack Query'nin `Error`'u, uygulamanın `{ message, id }`'si ya da düz metin. */
 const NONE: Record<string, true> = {}
@@ -93,6 +94,7 @@ export function DataTable<Row extends object>({
   renderExpanded,
   canExpand,
   rowError,
+  reorder,
 }: {
   table: DataTableInstance<Row>
   /** Sunucu modu: `useQuery` sonucu, dönüştürmeden (R4). İstemci modunda verilmez. */
@@ -152,6 +154,8 @@ export function DataTable<Row extends object>({
   /** Satır hatası (D35): metin ya da metin listesi → hata zemini, ⋯ hücresinde uyarı ikonu, satırda tooltip. Harita
    * uygulamanın: paket hata saklamaz, temizlemez. */
   rowError?: (row: Row) => string | string[] | null | undefined
+  /** Satır sıralama (R21): verilince satırın başında tutamak; paket taşımayı komşularıyla bildirir, numara üretmez. */
+  reorder?: RowReorder<Row>
 }) {
   const { i18n, locale } = useDataTableContext()
   const fmt = getFormat(locale)
@@ -159,7 +163,10 @@ export function DataTable<Row extends object>({
   const q = table.request
   const server = table.rows === undefined
   const load = useLoadState(server ? result : undefined, JSON.stringify([q.search, q.filters, q.sort, q.page]), q.page)
-  const rows = server ? load.rows : (table.rows ?? [])
+  const loaded = server ? load.rows : (table.rows ?? [])
+  // Sürüklenip bırakılan sıra, yenilenen sonuç gelene kadar (R21).
+  const order = useRowOrder(loaded, table.rowId, reorder?.onMove)
+  const rows = order.rows
   const hasRows = rows.length > 0
   const refetch = server ? result?.refetch : undefined
   const busy = load.busy
@@ -843,6 +850,7 @@ export function DataTable<Row extends object>({
         primaryLabel={primaryLabel}
         onRowOpen={(row, event) => onRowOpen?.({ row, href: primaryHref(row) ?? '', event })}
         rowError={rowError}
+        reorder={reorder && { disabled: reorder.disabled ?? false, pending: order.pending, onMove: order.move }}
       />
       {selectionBar === 'floating' && bulkBar && (
         <BulkBar

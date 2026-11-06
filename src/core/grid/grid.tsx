@@ -2,6 +2,8 @@
 // sanal satırlar (öğe = satır + açık detay, ölçülen yükseklik), seçim sütunu (40 px) ve ⋯ sütunu. Veri çekmez; sütun düzenini
 // use-column-layout'tan, seçim ve expand durumunu üstten alır. Satır klavyesi yok (D40): widget'lar doğal Tab sırasında.
 import {
+  lazy,
+  Suspense,
   useId,
   useLayoutEffect,
   useRef,
@@ -23,7 +25,11 @@ import { HeaderCell, type HeaderSort } from './header-cell'
 import { inlineActionsOf } from './inline-actions'
 import { Row, type RowExtras } from './row'
 import { SkeletonRow } from './skeleton-row'
+import type { HandleBind, SortableState } from './sortable-rows'
 import { useVirtualRows } from './use-virtual-rows'
+
+// lazy() generic bileşenin tip parametresini düşürür; öğe tipi aynen geçer. @dnd-kit yalnızca sıralama açıkken yüklenir (R21).
+const SortableRows = lazy(() => import('./sortable-rows')) as unknown as typeof import('./sortable-rows').default
 
 const SKELETON_ROWS = 12
 // jsdom ve ilk render: token okunamazsa standard yoğunluk.
@@ -38,6 +44,9 @@ const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)
 // en kalabalık satır) + düğme + gap.
 const SELECT_W = 40
 const SELECT_W_PHONE = 48
+// Sıra tutamağı (R21): seçimden önce, 28 px düğme + dolgu; telefonda dokunma payı.
+const HANDLE_W = 32
+const HANDLE_W_PHONE = 44
 const MENU_PAD = 8
 
 export interface GridProps<Row extends object> {
@@ -97,6 +106,8 @@ export interface GridProps<Row extends object> {
   rowError?: (row: Row) => string | string[] | null | undefined
   /** Birincil linke düz sol tık, menüde Open (05 §7). Tarayıcı gezinmesi dinleyicide durdurulabilir. */
   onRowOpen?: (row: Row, event: MouseEvent) => void
+  /** Satır sıralama (R21): tutamak sütunu; `disabled` gerekçesi tooltip'te, `pending` önceki taşıma sürerken. */
+  reorder?: { disabled: boolean | string; pending: boolean; onMove: (from: number, to: number) => void }
 }
 
 export function Grid<Row extends object>({
@@ -136,6 +147,7 @@ export function Grid<Row extends object>({
   primaryLabel,
   onRowOpen,
   rowError,
+  reorder,
 }: GridProps<Row>) {
   const ctx = useDataTableContext()
   const root = useRef<HTMLDivElement>(null)
@@ -148,11 +160,16 @@ export function Grid<Row extends object>({
   const [metrics, setMetrics] = useState({ row: FALLBACK_ROW_H, head: FALLBACK_HEAD_H, bar: 0 })
   const [scrolled, setScrolled] = useState({ start: false, end: false })
   const [focused, setFocused] = useState(-1)
+  const [dragging, setDragging] = useState(-1)
 
   const selectable = !!onSelectRows
   const expandable = !!renderExpanded
   const phone = layout.phone
   const selW = selectable ? (phone ? SELECT_W_PHONE : SELECT_W) : 0
+  const handleW = reorder ? (phone ? HANDLE_W_PHONE : HANDLE_W) : 0
+  /** Düzenin önündeki sütunlar: tutamak + seçim. */
+  const leadW = handleW + selW
+  const sortable = !!reorder && !reorder.disabled && !skeleton
   const maxInline = rowActions.some((a) => a.inline)
     ? rows.reduce((m, r) => Math.max(m, inlineActionsOf(rowActions, r).length), 0)
     : 0
@@ -175,7 +192,7 @@ export function Grid<Row extends object>({
     headHeight: metrics.head,
     barHeight: metrics.bar,
     keyOf: (i) => (skeleton ? `sk-${i}` : rowId(rows[i]!)),
-    keepIndex: skeleton ? -1 : focused,
+    keepIndex: skeleton ? -1 : dragging >= 0 ? dragging : focused,
     resetKey,
   })
 
@@ -199,22 +216,24 @@ export function Grid<Row extends object>({
     const el = root.current
     if (!el) return
     const write = () => {
-      el.style.setProperty('--cols', [selW ? `${selW}px` : '', layout.cols(), menuW].filter(Boolean).join(' '))
-      const min = `${layout.minWidth() + selW}px`
+      const lead = [handleW ? `${handleW}px` : '', selW ? `${selW}px` : '']
+      el.style.setProperty('--cols', [...lead, layout.cols(), menuW].filter(Boolean).join(' '))
+      const min = `${layout.minWidth() + leadW}px`
       el.style.setProperty('--dt-min-w', menuW ? `calc(${min} + ${menuW})` : min)
-      el.style.setProperty('--dt-sel-w', `${selW}px`)
+      // Detay satırı düzenin ilk sütunuyla hizalanır: tutamak ve seçim payı birlikte.
+      el.style.setProperty('--dt-sel-w', `${leadW}px`)
       el.style.setProperty('--dt-menu-w', menuW || '0px')
       const start = new Set(layout.start.map((c) => c.offsetVar))
       const end = new Set(layout.end.map((c) => c.offsetVar))
       for (const [name, value] of Object.entries(layout.offsets())) {
-        if (start.has(name)) el.style.setProperty(name, `${parseFloat(value) + selW}px`)
+        if (start.has(name)) el.style.setProperty(name, `${parseFloat(value) + leadW}px`)
         else if (end.has(name) && menuW) el.style.setProperty(name, `calc(${value} + ${menuW})`)
         else el.style.setProperty(name, value)
       }
     }
     write()
     return layout.subscribeSizing(write)
-  }, [layout, selW, menuW])
+  }, [layout, selW, handleW, leadW, menuW])
 
   // Yoğunluk değişince: satır yüksekliği, header yüksekliği ve sütun ölçeği (--dt-fs / 13) yeniden okunur.
   const { setScale, scale } = layout
@@ -297,15 +316,28 @@ export function Grid<Row extends object>({
   const selectedCount = selectable ? rows.reduce((n, r) => n + (selection?.[rowId(r)] ? 1 : 0), 0) : 0
   const allSelected = rows.length > 0 && selectedCount === rows.length
   const uid = useId()
-  const extrasOf = (row: Row, i: number): RowExtras<Row> => {
+  const extrasOf = (row: Row, i: number, bind?: HandleBind): RowExtras<Row> => {
     const id = rowId(row)
     const subrow = `${uid}-sub-${id}`
     return {
       label: primaryLabel?.(row) ?? id,
       uid: `${uid}-r-${id}`,
       error: errorOf(row),
+      handle: reorder
+        ? {
+            disabled: !!reorder.disabled || reorder.pending,
+            reason: typeof reorder.disabled === 'string' ? reorder.disabled : undefined,
+            edge: !selectable && !layout.start.length,
+            bind,
+          }
+        : undefined,
       select: selectable
-        ? { selected: !!selection?.[id], edge: !layout.start.length, onChange: (v, shift) => onSelect(i, v, shift) }
+        ? {
+            selected: !!selection?.[id],
+            edge: !layout.start.length,
+            left: handleW,
+            onChange: (v, shift) => onSelect(i, v, shift),
+          }
         : undefined,
       expand: expandable
         ? {
@@ -373,6 +405,65 @@ export function Grid<Row extends object>({
     )
   }
 
+  const itemEl = (item: (typeof virtual.items)[number], drag?: SortableState) => {
+    const row = skeleton ? undefined : rows[item.index]
+    const open = !!row && expandable && isOpen(row)
+    // Yalnızca açık öğeler ölçülür; kapalı satır sabit yükseklikte.
+    const measure = open ? virtual.measureElement : undefined
+    return (
+      <div
+        key={item.key}
+        ref={
+          drag
+            ? (el) => {
+                drag.setNodeRef(el)
+                measure?.(el)
+              }
+            : measure
+        }
+        className={drag?.dragging ? 'dt-item is-dragging' : 'dt-item'}
+        data-index={item.index}
+        style={
+          drag
+            ? // @dnd-kit satır yerlerini transform'u yok sayarak ölçer: konum top'ta, transform yalnızca sürükleme kayması.
+              {
+                top: item.start - metrics.head,
+                transform: drag.y ? `translateY(${drag.y}px)` : undefined,
+                transition: drag.transition,
+              }
+            : { transform: `translateY(${item.start - metrics.head}px)` }
+        }
+      >
+        {!row ? (
+          <SkeletonRow index={item.index} columns={layout.columns} />
+        ) : (
+          <>
+            <Row
+              row={row}
+              index={item.index}
+              rowIndex={2 + rowIndexOffset + item.index}
+              columns={layout.columns}
+              env={env}
+              extras={extrasOf(row, item.index, drag?.handle)}
+            />
+            {open && (
+              <div
+                id={`${uid}-sub-${rowId(row)}`}
+                className="dt-subrow"
+                role="row"
+                aria-rowindex={2 + rowIndexOffset + item.index}
+              >
+                <div role="cell" aria-colspan={layout.columns.length}>
+                  {renderExpanded!(row, () => onToggleExpand?.(rowId(row), false))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div
       ref={root}
@@ -380,7 +471,7 @@ export function Grid<Row extends object>({
       role="table"
       aria-label={label}
       aria-rowcount={rowCount}
-      aria-colcount={layout.columns.length + (selectable ? 1 : 0) + (rowMenu ? 1 : 0)}
+      aria-colcount={layout.columns.length + (reorder ? 1 : 0) + (selectable ? 1 : 0) + (rowMenu ? 1 : 0)}
       aria-busy={skeleton || dim || undefined}
       data-density={density}
       onFocus={onFocus}
@@ -394,6 +485,19 @@ export function Grid<Row extends object>({
         style={{ scrollPaddingTop: metrics.head, scrollPaddingBottom: metrics.bar }}
       >
         <div className="dt-head" role="row" aria-rowindex={1}>
+          {reorder && (
+            <div
+              className={
+                selectable || layout.start.length
+                  ? 'dt-head-cell dt-head-handle is-pinned-start'
+                  : 'dt-head-cell dt-head-handle is-pinned-start is-pin-edge'
+              }
+              style={{ left: 0 }}
+              role="columnheader"
+            >
+              <span className="dt-sr-only">{ctx.i18n.t('reorder.column')}</span>
+            </div>
+          )}
           {selectable && (
             <div
               className={
@@ -401,7 +505,7 @@ export function Grid<Row extends object>({
                   ? 'dt-head-cell dt-head-select is-pinned-start'
                   : 'dt-head-cell dt-head-select is-pinned-start is-pin-edge'
               }
-              style={{ left: 0 }}
+              style={{ left: handleW }}
               role="columnheader"
             >
               <input
@@ -432,47 +536,26 @@ export function Grid<Row extends object>({
           )}
         </div>
         <div className="dt-body" role="presentation" inert={dim || undefined} style={{ height: virtual.total }}>
-          {virtual.items.map((item) => {
-            const row = skeleton ? undefined : rows[item.index]
-            const open = !!row && expandable && isOpen(row)
-            return (
-              <div
-                key={item.key}
-                // Yalnızca açık öğeler ölçülür; kapalı satır sabit yükseklikte.
-                ref={open ? virtual.measureElement : undefined}
-                className="dt-item"
-                data-index={item.index}
-                style={{ transform: `translateY(${item.start - metrics.head}px)` }}
-              >
-                {!row ? (
-                  <SkeletonRow index={item.index} columns={layout.columns} />
-                ) : (
-                  <>
-                    <Row
-                      row={row}
-                      index={item.index}
-                      rowIndex={2 + rowIndexOffset + item.index}
-                      columns={layout.columns}
-                      env={env}
-                      extras={extrasOf(row, item.index)}
-                    />
-                    {open && (
-                      <div
-                        id={`${uid}-sub-${rowId(row)}`}
-                        className="dt-subrow"
-                        role="row"
-                        aria-rowindex={2 + rowIndexOffset + item.index}
-                      >
-                        <div role="cell" aria-colspan={layout.columns.length}>
-                          {renderExpanded!(row, () => onToggleExpand?.(rowId(row), false))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )
-          })}
+          {sortable && reorder ? (
+            // Yüklenene kadar satırlar sürüklenemeden çizilir.
+            <Suspense fallback={virtual.items.map((item) => itemEl(item))}>
+              <SortableRows
+                ids={rows.map(rowId)}
+                labelOf={(id) => {
+                  const row = rows.find((r) => rowId(r) === id)
+                  return row ? (primaryLabel?.(row) ?? id) : id
+                }}
+                disabled={reorder.pending}
+                onMove={reorder.onMove}
+                onActive={setDragging}
+                items={virtual.items}
+                keyOf={(item) => item.key}
+                render={itemEl}
+              />
+            </Suspense>
+          ) : (
+            virtual.items.map((item) => itemEl(item))
+          )}
         </div>
       </div>
       {refreshing && <div className="dt-refresh-bar" aria-hidden="true" />}

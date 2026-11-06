@@ -141,6 +141,29 @@ Birincil hücre gerçek bir `<a href>`'tir (D6): ⌘/orta tık tarayıcıya kal�
 altında yüzer; `bulkActions` ve `selectionActions` yoksa hiç çizilmez (seçim Export'ta ve header checkbox'ında kalır); `selectionBar="toolbar"` onu araç çubuğunun yerine koyar, `selectionActions` içeriğini tümüyle uygulamaya
 bırakır. Seçili satırlar `onSelectionChange` ile de okunabilir.
 
+### Satır sıralama
+
+Varsayılan kapalı (R21). `reorder` verilince satırın başında tutamak çıkar; satır tutamaktan sürüklenir ya da klavyeyle
+taşınır (tutamakta `Space` · `↑↓` · `Space`, `Esc` iptal). Paket numara üretmez: taşınan satırı ve yeni komşularını
+bildirir, sırayı sunucu yazar.
+
+```tsx
+<DataTable
+  table={table}
+  result={result}
+  reorder={{
+    // Sıra yalnızca sıra kolonuna göre dizilmiş, tek grubun listesinde anlamlıdır; değilse gerekçe tooltip'te.
+    disabled: table.request.sort[0]?.column !== 'sq' && 'Sıralamak için sıra kolonuna göre dizin',
+    // after: yeni yerde üstte kalan satır, before: altta kalan; liste başı / sonu null.
+    onMove: ({ row, after }) => moveField.mutateAsync({ id: row.id, after: after?.id ?? null }),
+  }}
+/>
+```
+
+Bırakınca yeni sıra hemen çizilir ve yenilenen sonuç gelene kadar korunur. `onMove` Promise dönerse sonuçlanana kadar
+tutamaklar pasiftir; reddedilirse eski sıraya döner, hata mesajı uygulamanındır. Sürükleme kodu yalnızca sıralama
+açıkken yüklenir.
+
 ### Diğer
 
 - `toolbar`: `'auto'` (varsayılan; görünümler, arama, Filter, Display, ⋯), `'minimal'` (yalnızca arama ve
