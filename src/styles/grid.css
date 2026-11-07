@@ -450,6 +450,7 @@
 .dt-tip {
   position: fixed;
   z-index: 50;
+  width: max-content;
   max-width: calc(480 * var(--dt-ui-fs) / 13);
   padding: 5px 8px;
   border-radius: var(--dt-radius-item);
@@ -460,7 +461,6 @@
   line-height: 16px;
   white-space: pre-line;
   overflow-wrap: anywhere;
-  transform: translateX(-50%);
   box-shadow: var(--dt-shadow-tip);
   pointer-events: none;
 }

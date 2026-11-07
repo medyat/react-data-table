@@ -295,6 +295,9 @@ oturunca çıkar.
 - Kesilen hücrenin tooltip'i metnin tamamını gösterir: tek satır ve `…` yerine en çok 480 px genişlikte satırlara
   bölünür (`white-space: pre-line`, `overflow-wrap: anywhere`). Vue tooltip'i 320 px'te `…` ile kesiyordu; uzun formül ya
   da açıklama tooltip'te de okunamıyordu. Tek satırlık tooltip 26 px kalır (02).
+- Genişliği metinden gelir (`width: max-content`), konumu pencereye sığacak şekilde hesaplanır: öğenin ortasına
+  hizalanır, taşacaksa kenardan 8 px içeride durur. `left` + `translateX(-50%)` ile sağ kenardaki dar öğenin
+  (satır hatası) tooltip'i kenara kalan boşluk kadar daralıyor, metin harf harf bölünüyordu.
 
 ## Yol haritası
 

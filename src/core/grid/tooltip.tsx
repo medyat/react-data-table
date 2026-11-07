@@ -1,8 +1,10 @@
 // Tek tooltip, delegasyonla (02 · Tooltip 400 ms): kesilmiş hücre metni ve `data-dt-tip` taşıyan öğeler.
 // Hücre başına Base UI Tooltip örneği 500 satırda ağır olurdu; kökte tek dinleyici + tek DOM düğümü.
-import { useEffect, useState, type RefObject } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 
 const DELAY = 400
+/** Tooltip ile pencere kenarı arasında kalan en az boşluk. */
+const EDGE = 8
 
 interface Tip {
   text: string
@@ -25,6 +27,16 @@ export const tipOf = (target: Element | null): { el: HTMLElement; text: string }
 
 export function DelegatedTooltip({ root }: { root: RefObject<HTMLElement | null> }) {
   const [tip, setTip] = useState<Tip | null>(null)
+  const ref = useRef<HTMLDivElement>(null)
+
+  // Ortalanır ama pencereden taşmaz. `left` + `translateX(-50%)` sağ kenardaki öğede (satır hatası) genişliği
+  // kenara kalan boşlukla sınırlıyor, metin harf harf bölünüyordu; genişlik artık metinden gelir.
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el || !tip) return
+    const right = document.documentElement.clientWidth - EDGE - el.offsetWidth
+    el.style.left = `${Math.max(EDGE, Math.min(tip.left - el.offsetWidth / 2, right))}px`
+  }, [tip])
 
   useEffect(() => {
     const el = root.current
@@ -81,7 +93,7 @@ export function DelegatedTooltip({ root }: { root: RefObject<HTMLElement | null>
   if (!tip) return null
   // position: fixed; kökün içinde kalır, yoğunluk ve font token'larını oradan alır.
   return (
-    <div className="dt-tip" role="tooltip" style={{ left: tip.left, top: tip.top }}>
+    <div ref={ref} className="dt-tip" role="tooltip" style={{ top: tip.top }}>
       {tip.text}
     </div>
   )
