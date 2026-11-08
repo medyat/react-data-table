@@ -56,7 +56,7 @@ describe('tarihler', () => {
 })
 
 describe('önbellek', () => {
-  it('aynı locale aynı örnek; 10k biçimlendirme 10 ms altında', () => {
+  it('aynı locale aynı örnek; 10k biçimlendirme 50 ms altında', () => {
     expect(getFormat('en')).toBe(getFormat('en'))
     const f = getFormat('en')
     f.decimal(1) // ısınma
@@ -67,7 +67,8 @@ describe('önbellek', () => {
       for (let i = 0; i < 10_000; i++) f.decimal(i * 1.5)
       best = Math.min(best, performance.now() - t0)
     }
-    expect(best).toBeLessThan(10)
+    // Önbellekli 3 ms (yerel) – 11 ms (CI); her çağrıda yeni Intl örneği ~120 ms: sınır ikisinin arası.
+    expect(best).toBeLessThan(50)
   })
 })
 

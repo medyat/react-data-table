@@ -53,8 +53,8 @@ describe.skipIf(!hasSpec()).each([
   ['light', doc.light],
   ['dark', doc.dark],
 ])('kontrast · %s', (_theme, tokens) => {
-  const surface = parse(tokens['--dt-surface']!).rgb
-  const resolve = (name: string): RGB => over(parse(tokens[name]!), surface)
+  // Gövde atlanan suite'te de çalışır; renkler yalnızca test içinde çözülür.
+  const resolve = (name: string): RGB => over(parse(tokens[name]!), parse(tokens['--dt-surface']!).rgb)
 
   it.each(TEXT_PAIRS)('%s / %s ≥ 4.5', (fg, bg) => {
     expect(ratio(resolve(fg), resolve(bg))).toBeGreaterThanOrEqual(4.5)

@@ -23,8 +23,10 @@ function blocks(src: string): Record<string, Record<string, string>> {
 
 const b = blocks(css)
 
+// skipIf atlanan describe'ın gövdesini de toplarken çalıştırır: doküman yalnızca spesifikasyon varken okunur.
+const doc = hasSpec() ? docTokens() : undefined!
+
 describe.skipIf(!hasSpec())('tokens.css ↔ 02-design-tokens.md', () => {
-  const doc = docTokens()
   it('parser dokümanı gerçekten okuyor', () => {
     expect(Object.keys(doc.light).length).toBeGreaterThan(70)
     expect(Object.keys(doc.fixed)).toHaveLength(33) // 12 + ölçek (D41)
