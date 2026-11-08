@@ -39,9 +39,11 @@
     overflow: hidden;
   }
 
-  /* Base UI menü konumlandırıcısı: popup'ın z-index'i (ui.css) konumlandırıcının yığın bağlamında kalır. */
+  /* Base UI menü konumlandırıcısı: popup'ın z-index'i (ui.css) konumlandırıcının yığın bağlamında kalır.
+     50: uygulamanın katmanlarıyla (shadcn Sheet/Dialog z-50) aynı; sonra açılan üstte kalır. Daha alçakta,
+     modal Sheet içindeki tablonun menüsü Sheet'in arkasında açılır. */
   .dt-positioner {
-    z-index: 40;
+    z-index: 50;
   }
 
   .dt-sr-only {

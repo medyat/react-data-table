@@ -167,6 +167,10 @@ Vue'dan farkı: köprü dahil tüm CSS `@layer medyat-dt` içindedir. Tailwind v
 `utilities`'den önce bildirir (`@layer theme, base, medyat-dt, components, utilities;`); böylece
 uygulamanın sınıfları paketi ezer, paket uygulamanın temel stillerini ezer.
 
+Portal'la `body`'ye çizilen her katman (menü, popover, tooltip, diyalog, alt sheet) `z-index: 50`'dedir:
+shadcn'in Sheet ve Dialog'uyla aynı katman. Eşitlikte sonra açılan üstte kalır; tablo modal bir Sheet
+içinde olsa da menüsü Sheet'in önünde açılır.
+
 ## R10 · Bağımlılıklar
 
 | Konu | Seçim | Not |
