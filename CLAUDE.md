@@ -38,3 +38,11 @@ karşılığı. Yalnızca liste; sheet bu sürümde yok.
 - Fazın kabul kriterleri sağlandı ve testleri var; `pnpm check` temiz.
 - Light/dark ve üç yoğunlukta tasarımla eşleşiyor (ölçerek, göz kararı değil); klavyeyle kullanılabiliyor.
 - Playground'da senaryo sayfası var; `react-kararlar.md` güncel.
+
+## Yayın
+
+npm'e yalnızca GitHub Release yayınlar (`.github/workflows/publish.yml`, npm Trusted Publishing; token yok).
+
+    npm version minor --tag-version-prefix="" -m "Sürüm %s"   # ya da patch; etiket `v`siz
+    git push origin production --follow-tags
+    # GitHub'da o etiketten Release açılır; etiket package.json sürümüyle aynı değilse Action durur.
