@@ -90,12 +90,12 @@ filtre ve sıralama yanlış kolona gider.
 { "queries": { "result": { "source": "product", "fields": ["code", "title"], "page": { "number": 1, "size": 100 } } } }
 
 // 200
-{ "results": { "result": { "rows": [...], "page": { "number": 1, "size": 100, "hasMore": true }, "ignored": ["sort.0"] } } }
+{ "results": { "result": { "rows": [...], "page": { "number": 1, "size": 100, "has_more": true }, "ignored": ["sort.0"] } } }
 
 // Sorgu hatası da 200 ile gelir: { "results": { "result": { "error": { "type": "...", "status": 422, "errors": {...} } } } }
 ```
 
-- Toplam sayı yoktur; `hasMore` `size + 1` satır okunarak bulunur. Toplam istenirse `kind: "count"` sorgusu ayrı
+- Toplam sayı yoktur; `has_more` `size + 1` satır okunarak bulunur. Toplam istenirse `kind: "count"` sorgusu ayrı
   gönderilir ve `useDataTable({ count })` ile footer'daki "Count total"a bağlanır.
 - `ignored`: sunucunun atladığı yollar (eski bir görünümde kalmış, artık olmayan sütun gibi). Satırlar doğrudur, liste
   çalışmaya devam eder.
@@ -121,7 +121,7 @@ export type LaraqlQuery = {
 
 export type LaraqlResult<TRow> = {
   rows: TRow[]
-  page: { number: number; size: number; hasMore: boolean }
+  page: { number: number; size: number; has_more: boolean }
   ignored?: string[]
 }
 
@@ -153,7 +153,7 @@ const table = useDataTable({
 const { search, ...rest } = table.request
 const result = useQuery({
   ...laraqlQueryOptions<ProductListItem>({ source: 'product', ...rest, ...(search && { search }) }),
-  select: (d) => ({ rows: d.rows, hasMore: d.page.hasMore }),
+  select: (d) => ({ rows: d.rows, hasMore: d.page.has_more }),
 })
 return <DataTable table={table} result={result} />
 ```
