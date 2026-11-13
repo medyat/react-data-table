@@ -303,6 +303,23 @@ oturunca çıkar.
   hizalanır, taşacaksa kenardan 8 px içeride durur. `left` + `translateX(-50%)` ile sağ kenardaki dar öğenin
   (satır hatası) tooltip'i kenara kalan boşluk kadar daralıyor, metin harf harf bölünüyordu.
 
+## R23 · Inline satır düğmesi: etiket ve görünüm (D36'yı genişletir)
+
+- `RowAction.inline` artık `icon` istemez: ikon varsa 28 px ikon düğmesi (D36), yoksa aksiyon etiketiyle çizilir
+  ("Seç"). Etiketli düğmede `aria-label` yoktur (ad metinden gelir), tooltip yalnızca gerekçe ya da açıklamadır.
+- `RowAction.variant`: `default` | `outline` | `field` | `secondary` | `ghost` | `destructive` | `link`. Adlar
+  uygulamanın (Swors, shadcn) düğme türleriyle birebir aynıdır: `default` dolu birincil düğmedir, "verilmezse" demek
+  değildir. Verilmezse `ghost` çizilir; variant'sız ikon ⋯ ile aynı düğmedir, piksel farkı yok.
+- Variant yalnızca inline düğmeyi etkiler; menü öğesi aynı kalır (menüde kırmızı için `destructive: true`).
+  Görünümler paketin düğme sınıflarıdır (`.dt-btn-sm`); `secondary` (kenarlıksız `--dt-surface-3` dolgu), `field`
+  (giriş kutusu gibi) ve `link` (hücre bağlantısının alt çizgisi) yenidir.
+- ⋯ sütunu en geniş satır kadardır. Etiketli düğmenin genişliği metne bağlıdır: header'daki görünmez ölçü yuvasından
+  okunur, `ResizeObserver` ile yoğunluk, dil ve geç yüklenen fontta yenilenir.
+- Sayfada menüsü olan satır yoksa (adres yok, bütün aksiyonlar inline) ⋯ için yer ayrılmaz; varsa menüsü boş satır
+  yeri hizalama için tutar (D36). Önceden yer her zaman ayrılıyor, tek düğmeli sütun bir düğme kadar boş kalıyordu.
+- Neden: kullanıcı ihtiyacı (Swors ürün seçme listesi): satırdaki tek eylem ikonla anlaşılmıyor, "Seç" yazan
+  birincil düğme isteniyor. Vue spesifikasyonu yalnızca ikon düğmesi tanımlar. (2026-11-13)
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

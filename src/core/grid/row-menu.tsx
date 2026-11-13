@@ -13,6 +13,7 @@ export function RowMenu<Row extends object>({
   label,
   href,
   actions,
+  reserve,
   onOpen,
 }: {
   row: Row
@@ -20,6 +21,8 @@ export function RowMenu<Row extends object>({
   label: string
   href?: string
   actions: Array<RowAction<Row>>
+  /** Menü boşken ⋯'nın yeri tutulsun mu: sayfada menüsü olan başka satır varsa evet (R23). */
+  reserve: boolean
   onOpen: (event: MouseEvent) => void
 }) {
   const { i18n } = useDataTableContext()
@@ -27,8 +30,8 @@ export function RowMenu<Row extends object>({
   const inline = new Set(inlineActionsOf(actions, row))
   const shown = actions.filter((a) => !inline.has(a) && (!a.when || a.when(row)))
   const ordered = [...shown.filter((a) => !a.destructive), ...shown.filter((a) => a.destructive)]
-  // Menüde bir şey yoksa ⋯ çizilmez; hizalama için yeri kalır.
-  if (!href && !ordered.length) return <span className="dt-row-more-space" aria-hidden="true" />
+  // Menüde bir şey yoksa ⋯ çizilmez; öteki satırlarla hizalama için yeri kalır.
+  if (!href && !ordered.length) return reserve ? <span className="dt-row-more-space" aria-hidden="true" /> : null
   const firstDestructive = ordered.findIndex((a) => a.destructive)
   const subOf = (a: RowAction<Row>): string | null => {
     const d = a.disabled?.(row)

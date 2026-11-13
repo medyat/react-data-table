@@ -85,6 +85,18 @@
   display: inline-flex;
   flex: none;
 }
+/* Etiketli inline düğmelerin ölçü yuvası (R23): header'da, görünmez ve yer kaplamaz; çocukları doğal genişliğinde kalır. */
+.dt-row-inline-sizer {
+  position: absolute;
+  display: flex;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+.dt-row-inline-sizer > * {
+  flex: none;
+}
 .dt-row-inline:hover:not(:disabled) {
   background: var(--dt-surface-3);
   color: var(--dt-text);

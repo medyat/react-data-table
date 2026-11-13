@@ -129,7 +129,8 @@ Birincil hücre gerçek bir `<a href>`'tir (D6): ⌘/orta tık tarayıcıya kal�
     },
   ]}
   rowActions={[
-    { id: 'edit', label: 'Edit', icon: PencilSimpleIcon, inline: true, run: (row) => edit(row) },
+    { id: 'edit', label: 'Edit', icon: PencilSimpleIcon, inline: true, run: (row) => edit(row) }, // satırda ikon düğmesi
+    { id: 'pick', label: 'Select', inline: true, variant: 'default', run: (row) => pick(row) }, // ikonsuz: etiketiyle; default | outline | field | secondary | ghost | destructive | link
     { id: 'archive', label: 'Archive', when: (row) => row.status === 'done', run: (row) => archive(row) }, // yoksa görünmez
   ]}
   renderExpanded={({ row }) => <OrderOperations order={row} />} // detay verisini bileşen kendisi çeker

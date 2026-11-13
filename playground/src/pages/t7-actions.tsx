@@ -1,4 +1,4 @@
-// T7 · Cell actions (hover/odak overlay'i) ve uygulamanın çizdiği hücreler (`cell`), üç yoğunlukta.
+// T7 · Cell actions (hover/odak overlay'i), uygulamanın çizdiği hücreler (`cell`) ve inline satır düğmeleri (R23), üç yoğunlukta.
 import {
   ArrowSquareOutIcon,
   CheckIcon,
@@ -8,7 +8,7 @@ import {
   WarningIcon,
   XIcon,
 } from '@phosphor-icons/react'
-import { DataTable, useDataTable, type ColumnDef, type Density } from '@medyat/react-data-table'
+import { DataTable, useDataTable, type ColumnDef, type Density, type RowAction } from '@medyat/react-data-table'
 import { useState } from 'react'
 
 interface Lot {
@@ -149,6 +149,32 @@ function Decision({
   )
 }
 
+const variantColumns: Array<ColumnDef<Lot>> = [
+  { id: 'number', header: 'Order no.', type: 'id', primary: true, width: 136 },
+  { id: 'product.name', header: 'Product', type: 'string', secondary: (r) => r.product.sku },
+]
+
+// R23: her satırda başka bir görünüm; menüye düşen aksiyon olmadığı için ⋯ yuvası yok.
+const variantActions: Array<RowAction<Lot>> = [
+  ...(['default', 'outline', 'secondary', 'ghost', 'destructive'] as const).map((variant, i): RowAction<Lot> => ({
+    id: variant,
+    label: 'Select',
+    inline: true,
+    variant,
+    when: (r) => r.id === i + 1,
+    run: (r) => console.log(variant, r.number),
+  })),
+  {
+    id: 'open',
+    label: 'Open',
+    icon: ArrowSquareOutIcon,
+    inline: true,
+    variant: 'outline',
+    when: (r) => r.id === 1,
+    run: (r) => console.log('open', r.number),
+  },
+]
+
 export function T7Actions({ density }: { density: Density }) {
   const [lots, setLots] = useState(LOTS)
   const decide = (id: number, kind: 'approved' | 'rejected') =>
@@ -210,6 +236,7 @@ export function T7Actions({ density }: { density: Density }) {
 
   const actions = useDataTable({ id: 't7-actions', columns: actionColumns, rows: lots, density })
   const custom = useDataTable({ id: 't7-cells', columns: customColumns, rows: lots, density })
+  const variants = useDataTable({ id: 't7-variants', columns: variantColumns, rows: lots, density })
 
   return (
     <div className="pg-page pg-scroll">
@@ -227,6 +254,15 @@ export function T7Actions({ density }: { density: Density }) {
       </p>
       <div className="pg-fixed" style={{ height: 330 }}>
         <DataTable table={custom} label="Lots" />
+      </div>
+      <h1>Inline row actions · label and variant</h1>
+      <p className="pg-sub">
+        Without an icon the action draws its label; `variant` uses the app's button names (default, outline, field,
+        secondary, ghost, destructive, link) · the column is as wide as the widest row and keeps no ⋯ slot when no row
+        has a menu
+      </p>
+      <div className="pg-fixed" style={{ height: 290 }}>
+        <DataTable table={variants} label="Lots to pick" rowActions={variantActions} />
       </div>
     </div>
   )

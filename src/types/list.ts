@@ -76,7 +76,7 @@ export interface DataTableResult<Row extends object> {
   refetch?: () => unknown
 }
 
-/** Satır aksiyonu (05 §4, D34, D36): ⋯ menüsünde; `inline` ise ⋯'nın solunda ikon düğmesi. */
+/** Satır aksiyonu (05 §4, D34, D36, R23): ⋯ menüsünde; `inline` ise ⋯'nın solunda düğme. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Row için üst sınır; api-draft ile aynı
 export interface RowAction<Row = any> {
   id: string
@@ -88,8 +88,16 @@ export interface RowAction<Row = any> {
   shortcut?: string
   /** Yetkiye bağlı: false → ne menüde ne inline (D34). Duruma bağlı pasiflik için `disabled`. */
   when?: (row: Row) => boolean
-  /** ⋯'nın solunda 28 px ikon düğmesi (`icon` zorunlu); o satırın menüsünde yer almaz. Satır başına ilk 2 (D36). */
+  /**
+   * ⋯'nın solunda düğme; o satırın menüsünde yer almaz. `icon` varsa 28 px ikon düğmesi, yoksa etiketiyle
+   * çizilir (R23). Satır başına ilk 2 (D36).
+   */
   inline?: boolean
+  /**
+   * Inline düğmenin görünümü (R23); adlar uygulamanın düğme türleriyle aynıdır, `default` dolu birincil düğmedir.
+   * Verilmezse `ghost`. Menüdeki öğeyi etkilemez.
+   */
+  variant?: 'default' | 'outline' | 'field' | 'secondary' | 'ghost' | 'destructive' | 'link'
   /** true veya gerekçe metni ("Already running") → pasif, gerekçe ikinci satırda. */
   disabled?: (row: Row) => boolean | string
   destructive?: boolean

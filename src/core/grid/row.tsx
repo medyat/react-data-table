@@ -9,7 +9,7 @@ import { cellFillStyle, renderCellContent, type RenderEnv } from '../cells/rende
 import { alignOf, isNumericType } from '../cells/specs'
 import type { LayoutColumn } from '../columns/use-column-layout'
 import { readPath } from '../columns/read-path'
-import { inlineActionsOf } from './inline-actions'
+import { inlineActionsOf, inlineClass } from './inline-actions'
 import { fillIndex, pinClasses, pinStyle } from './pin'
 import { RowMenu } from './row-menu'
 import type { HandleBind } from './sortable-rows'
@@ -109,9 +109,12 @@ function Cell<Row extends object>({
   )
 }
 
-/** Inline satır aksiyonu (D36): ⋯ ile aynı 28 px düğme; label aria'da, açıklama tooltip'te ve gizli span'da. */
+/**
+ * Inline satır aksiyonu (D36, R23): ikonluysa label aria'da ve tooltip'te, ikonsuzsa düğmenin metnidir; açıklama
+ * tooltip'te ve gizli span'da.
+ */
 function InlineAction<Row extends object>({ action: a, row, uid }: { action: RowAction<Row>; row: Row; uid: string }) {
-  const Icon = a.icon!
+  const Icon = a.icon
   const d = a.disabled?.(row)
   const reason = typeof d === 'string' ? d : null
   const descId = a.description ? `${uid}-${a.id}` : undefined
@@ -119,14 +122,17 @@ function InlineAction<Row extends object>({ action: a, row, uid }: { action: Row
     <span className="dt-row-inline-wrap">
       <button
         type="button"
-        className="dt-row-inline"
+        className={inlineClass(a)}
         disabled={!!d}
-        aria-label={a.label}
+        aria-label={Icon ? a.label : undefined}
         aria-describedby={descId}
-        data-dt-tip={reason ?? (a.description ? `${a.label} — ${a.description}` : a.label)}
+        // Etiketi görünen düğmede tooltip yalnızca yeni bilgi taşır: gerekçe ya da açıklama.
+        data-dt-tip={
+          reason ?? (Icon ? (a.description ? `${a.label} — ${a.description}` : a.label) : (a.description ?? undefined))
+        }
         onClick={() => void a.run(row)}
       >
-        <Icon size={16} aria-hidden="true" />
+        {Icon ? <Icon size={16} aria-hidden="true" /> : a.label}
       </button>
       {descId && (
         <span id={descId} className="dt-sr-only">
@@ -154,6 +160,8 @@ export interface RowExtras<Row extends object> {
     edge: boolean
     actions: Array<RowAction<Row>>
     href?: string
+    /** Sayfada menüsü olan satır var: menüsü boş satır ⋯'nın yerini hizalama için tutar. */
+    reserve: boolean
     onOpen: (event: MouseEvent) => void
   }
 }
@@ -264,7 +272,14 @@ export function Row<Row extends object>({
           {inlineActionsOf(menu.actions, row).map((a) => (
             <InlineAction key={a.id} action={a} row={row} uid={extras.uid} />
           ))}
-          <RowMenu row={row} label={extras.label} href={menu.href} actions={menu.actions} onOpen={menu.onOpen} />
+          <RowMenu
+            row={row}
+            label={extras.label}
+            href={menu.href}
+            actions={menu.actions}
+            reserve={menu.reserve}
+            onOpen={menu.onOpen}
+          />
         </div>
       )}
     </div>

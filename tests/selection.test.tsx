@@ -26,21 +26,27 @@ const columns: Array<ColumnDef<Order>> = [
   { id: 'status', header: 'Status', type: 'string' },
 ]
 
+// Birincil sütunun adresi yok: satır menüsünde yerleşik Open öğeleri çıkmaz.
+const plainColumns: Array<ColumnDef<Order>> = [
+  { id: 'number', header: 'Order no.', type: 'id', primary: true },
+  { id: 'status', header: 'Status', type: 'string' },
+]
+
 type Props = Omit<ComponentProps<typeof DataTable<Order>>, 'table'>
 
 let table!: DataTableInstance<Order>
-function Harness({ rows, props }: { rows?: Order[]; props: Props }) {
-  const t = useDataTable<Order>({ id: 'orders', columns, rows, pageSize: 5 })
+function Harness({ rows, props, cols }: { rows?: Order[]; props: Props; cols: Array<ColumnDef<Order>> }) {
+  const t = useDataTable<Order>({ id: 'orders', columns: cols, rows, pageSize: 5 })
   useEffect(() => {
     table = t
   })
   return <DataTable table={t} {...props} />
 }
 
-const mount = async (props: Props = {}, rows: Order[] | undefined = orders(12)) => {
-  const view = render(<Harness rows={rows} props={props} />)
+const mount = async (props: Props = {}, rows: Order[] | undefined = orders(12), cols = columns) => {
+  const view = render(<Harness rows={rows} props={props} cols={cols} />)
   await flush()
-  return { ...view, rerender: (p: Props, r?: Order[]) => view.rerender(<Harness rows={r} props={p} />) }
+  return { ...view, rerender: (p: Props, r?: Order[]) => view.rerender(<Harness rows={r} props={p} cols={cols} />) }
 }
 
 const box = (i: number) => document.querySelector<HTMLInputElement>(`.dt-row[data-index="${i}"] .dt-select-box`)!
@@ -277,6 +283,52 @@ describe('satır menüsü ve açma', () => {
     const items = await openMenu(1)
     expect(items.map((i) => i.textContent)).not.toContain('Edit')
     expect(items.map((i) => i.textContent)).toContain('Archive')
+  })
+
+  it("ikonsuz inline aksiyon etiketiyle ve variant'ıyla çizilir (R23)", async () => {
+    await mount({ rowActions: [{ id: 'pick', label: 'Select', inline: true, variant: 'default', run }] })
+    const pick = document.querySelector<HTMLElement>('.dt-row[data-index="0"] .dt-cell-menu button.dt-btn-primary')!
+    expect(pick.textContent).toBe('Select')
+    expect(pick.hasAttribute('aria-label')).toBe(false)
+    fireEvent.click(pick)
+    expect(run).toHaveBeenLastCalledWith(expect.objectContaining({ id: 1 }))
+    expect((await openMenu(0)).map((i) => i.textContent)).not.toContain('Select')
+  })
+
+  it("variant ikon düğmesine de uygulanır; variant'sız ikon eskisi gibi", async () => {
+    await mount({
+      rowActions: [
+        { id: 'edit', label: 'Edit', icon: PencilSimpleIcon, inline: true, run },
+        { id: 'play', label: 'Release', icon: PlayIcon, inline: true, variant: 'outline', run },
+      ],
+    })
+    const [edit, play] = document.querySelectorAll<HTMLElement>('.dt-row[data-index="0"] .dt-cell-menu button')
+    expect(edit!.className).toBe('dt-row-inline')
+    expect(play!.classList).toContain('dt-btn-icon')
+    expect(play!.getAttribute('aria-label')).toBe('Release')
+  })
+
+  it('hiçbir satırın menüsü yoksa ⋯ için yer ayrılmaz (R23)', async () => {
+    const inline: Array<RowAction<Order>> = [{ id: 'pick', label: 'Select', inline: true, run }]
+    await mount({ rowActions: inline }, orders(12), plainColumns)
+    expect(document.querySelector('.dt-row-more, .dt-row-more-space')).toBeNull()
+    // Tek yuva: düğmenin kendisi, ölçülen genişliğiyle (mockLayout her öğeyi 1000 px ölçer).
+    expect(document.querySelector<HTMLElement>('.dt-grid')!.style.getPropertyValue('--dt-menu-w')).toBe(
+      'calc(16px + 0 * var(--dt-control-h-sm) + 1000px + 0 * var(--dt-space))',
+    )
+  })
+
+  it('menüsü olan satır varsa ötekilerde ⋯ yeri hizalama için kalır', async () => {
+    const mixed: Array<RowAction<Order>> = [
+      { id: 'pick', label: 'Select', inline: true, run },
+      { id: 'archive', label: 'Archive', when: (r) => r.status === 'done', run },
+    ]
+    await mount({ rowActions: mixed }, orders(12), plainColumns)
+    expect(document.querySelector('.dt-row[data-index="0"] .dt-row-more-space')).not.toBeNull()
+    expect(document.querySelector('.dt-row[data-index="1"] .dt-row-more')).not.toBeNull()
+    expect(document.querySelector<HTMLElement>('.dt-grid')!.style.getPropertyValue('--dt-menu-w')).toBe(
+      'calc(16px + 1 * var(--dt-control-h-sm) + 1000px + 1 * var(--dt-space))',
+    )
   })
 
   it('birincil linke düz tık onRowOpen; ⌘ tık tarayıcıya kalır', async () => {

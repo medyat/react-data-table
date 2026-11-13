@@ -22,7 +22,7 @@ import { getFormat } from '../format'
 import { isPlainRowClick } from '../interaction/is-interactive'
 import { useDataTableContext } from '../provider'
 import { HeaderCell, type HeaderSort } from './header-cell'
-import { inlineActionsOf } from './inline-actions'
+import { inlineActionsOf, inlineClass } from './inline-actions'
 import { Row, type RowExtras } from './row'
 import { SkeletonRow } from './skeleton-row'
 import type { HandleBind, SortableState } from './sortable-rows'
@@ -41,13 +41,16 @@ const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)
 
 // Seçim ve ⋯ sütunları düzenin dışında: track'ler başa / sona eklenir, sabit sütun ofsetleri o kadar kayar (05 §4, §6).
 // ⋯ sütunu içeriğe göre: dolgu 8 + ⋯ + 8; sayfada hatalı satır varsa (D35) + ikon + gap; inline aksiyon başına (D36, sayfadaki
-// en kalabalık satır) + düğme + gap.
+// en geniş satır) + düğme + gap. Etiketli düğmenin genişliği ölçülür; hiçbir satırın menüsü yoksa ⋯ yuvası düşer (R23).
 const SELECT_W = 40
 const SELECT_W_PHONE = 48
 // Sıra tutamağı (R21): seçimden önce, 28 px düğme + dolgu; telefonda dokunma payı.
 const HANDLE_W = 32
 const HANDLE_W_PHONE = 44
 const MENU_PAD = 8
+// Yalnızca en geniş satırı seçmek için: asıl ölçü CSS değişkenlerinden gelir, yoğunlukla değişir.
+const SLOT_GUESS = 28
+const GAP_GUESS = 10
 
 export interface GridProps<Row extends object> {
   layout: ColumnLayoutApi<Row>
@@ -170,9 +173,43 @@ export function Grid<Row extends object>({
   /** Düzenin önündeki sütunlar: tutamak + seçim. */
   const leadW = handleW + selW
   const sortable = !!reorder && !reorder.disabled && !skeleton
-  const maxInline = rowActions.some((a) => a.inline)
-    ? rows.reduce((m, r) => Math.max(m, inlineActionsOf(rowActions, r).length), 0)
-    : 0
+  // Etiketli inline düğmelerin genişliği (R23): header'daki gizli ölçü yuvasından, aksiyon kimliğiyle.
+  const sizer = useRef<HTMLSpanElement>(null)
+  const [textW, setTextW] = useState<Record<string, number>>({})
+  const labelled = rowActions.filter((a) => a.inline && !a.icon)
+  const labelledKey = labelled.map((a) => `${a.id}\u0000${a.label}\u0000${a.variant ?? ''}`).join('\u0001')
+  useLayoutEffect(() => {
+    const el = sizer.current
+    if (!el) return
+    const measure = () => {
+      const next: Record<string, number> = {}
+      for (const c of el.children) next[(c as HTMLElement).dataset.id!] = Math.ceil(c.getBoundingClientRect().width)
+      setTextW((p) => (Object.keys(next).every((k) => p[k] === next[k]) ? p : next))
+    }
+    measure()
+    // Yoğunluk, dil ya da geç yüklenen font düğmeyi yeniden boyutlar.
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
+    for (const c of el.children) ro?.observe(c)
+    return () => ro?.disconnect()
+  }, [labelledKey])
+  // Sayfadaki en geniş inline dizilimi: ikon yuvası sayısı, etiketli düğmelerin toplamı ve düğme sayısı.
+  let inlineMax = { icons: 0, text: 0, count: 0 }
+  let inlineW = 0
+  // Menüsü olan satır yoksa ⋯'ya yer ayrılmaz; satır yokken (yükleme) ayrılır.
+  let hasMenu = !rows.length
+  for (const r of rows) {
+    const shown = rowActions.length ? inlineActionsOf(rowActions, r) : []
+    const icons = shown.filter((a) => a.icon).length
+    const text = shown.reduce((sum, a) => sum + (a.icon ? 0 : (textW[a.id] ?? 0)), 0)
+    const w = icons * SLOT_GUESS + text + shown.length * GAP_GUESS
+    if (w > inlineW) {
+      inlineW = w
+      inlineMax = { icons, text, count: shown.length }
+    }
+    hasMenu ||= !!primaryHref?.(r) || rowActions.some((a) => !shown.includes(a) && (!a.when || a.when(r)))
+  }
+  // Hiçbir şey çizilmeyen sütun da bir yuva kadardır.
+  const menuSlot = hasMenu || !inlineMax.count ? 1 : 0
   /** `rowError` sonucu mesaj listesine iner; boş metinler düşer, boş liste = hata yok. */
   const errorOf = (row: Row): string[] => {
     const e = rowError?.(row)
@@ -180,7 +217,7 @@ export function Grid<Row extends object>({
   }
   const anyError = !!rowError && rows.some((r) => errorOf(r).length > 0)
   const menuW = rowMenu
-    ? `calc(${2 * MENU_PAD}px${anyError ? ' + var(--dt-icon) - 2px + var(--dt-space)' : ''} + ${maxInline + 1} * var(--dt-control-h-sm) + ${maxInline} * var(--dt-space))`
+    ? `calc(${2 * MENU_PAD}px${anyError ? ' + var(--dt-icon) - 2px + var(--dt-space)' : ''} + ${inlineMax.icons + menuSlot} * var(--dt-control-h-sm)${inlineMax.text ? ` + ${inlineMax.text}px` : ''} + ${inlineMax.count + menuSlot - 1} * var(--dt-space))`
     : ''
   const isOpen = (row: Row) => !!expanded?.[rowId(row)]
 
@@ -352,6 +389,7 @@ export function Grid<Row extends object>({
             edge: !layout.end.length,
             actions: rowActions,
             href: primaryHref?.(row),
+            reserve: hasMenu,
             onOpen: (e) => onRowOpen?.(row, e),
           }
         : undefined,
@@ -532,7 +570,17 @@ export function Grid<Row extends object>({
               }
               style={{ right: 0 }}
               role="columnheader"
-            />
+            >
+              {labelled.length > 0 && (
+                <span ref={sizer} className="dt-row-inline-sizer" aria-hidden="true">
+                  {labelled.map((a) => (
+                    <span key={a.id} data-id={a.id} className={inlineClass(a)}>
+                      {a.label}
+                    </span>
+                  ))}
+                </span>
+              )}
+            </div>
           )}
         </div>
         <div className="dt-body" role="presentation" inert={dim || undefined} style={{ height: virtual.total }}>
