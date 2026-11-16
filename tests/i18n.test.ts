@@ -28,9 +28,13 @@ describe('dil dosyaları', () => {
     expect(Object.keys(ru)).toEqual(Object.keys(en))
     for (const k of Object.keys(en)) if (k.endsWith('.one')) expect(en).toHaveProperty(k.replace(/\.one$/, '.other'))
   })
+  // TR kayıt adını ek gerektiren yerde bilerek atar (09 · kurallar: “Ara…”, “Liste yüklenemedi”).
+  const trDropsEntity = ['toolbar.search', 'state.errorTitle']
+
   it('çeviriler aynı parametreleri taşır', () => {
     for (const [k, v] of Object.entries(en)) {
-      expect(params(tr[k]!), `tr ${k}`).toEqual(params(v))
+      const expected = trDropsEntity.includes(k) ? params(v).filter((p) => p !== 'entity') : params(v)
+      expect(params(tr[k]!), `tr ${k}`).toEqual(expected)
       expect(params(ru[k]!), `ru ${k}`).toEqual(params(v))
     }
   })
