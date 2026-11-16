@@ -62,7 +62,14 @@ export function OrdersScreen() {
     queryFn: ({ signal }) => api.listOrders(table.request, signal), // → { rows, hasMore, total? }
     placeholderData: keepPreviousData, // yükleme geçişleri için önerilir
   })
-  return <DataTable table={table} result={result} toolbarEnd={<NewOrderButton />} />
+  return (
+    <DataTable
+      table={table}
+      result={result}
+      primaryAction={{ label: 'New order', icon: PlusIcon, run: openNewOrder }}
+      actions={[{ id: 'import', label: 'Import', icon: DownloadIcon, run: openImport }]}
+    />
+  )
 }
 ```
 
@@ -167,8 +174,13 @@ açıkken yüklenir.
 
 ### Diğer
 
+- `primaryAction` ve `actions` (R25): ekranın tek birincil eylemi en sağda; ikinciller onun solunda, listedeki sıra
+  önceliktir. Yer daraldıkça ikinciller sondan başlayarak ⋯ menüsüne iner, sonra birincil yalnızca ikon kalır.
+  `menu: true` eylemi hep ⋯ içinde tutar, `checked` aç/kapa yapar (menüde işaretli, düğmede basılı). Telefonda
+  ikinciller ⋯ sayfasındadır.
+- `toolbarEnd`: araç çubuğunun sonunda serbest içerik; paket onu daraltamaz, eylem için `primaryAction` / `actions`.
 - `toolbar`: `'auto'` (varsayılan; görünümler, arama, Filter, Display, ⋯), `'minimal'` (yalnızca arama ve
-  `toolbarEnd`) ya da `false`.
+  eylemler) ya da `false`.
 - `autoRefresh={30}`: ⋯ menüsünde Auto-refresh anahtarı; açıkken footer "Live". `onPrint` verilirse ⋯ menüsünde Print.
 - `empty`: hiç kayıt yokken (filtre ve arama da yokken) gövdede gösterilecek içerik.
 - `notice`: araç çubuğu ile sütun başlıkları arasında uygulamanın şeridi (R16), ör. "Yalnızca arşivlenmiş

@@ -44,7 +44,15 @@ import { nameError } from '../core/views/model'
 import { ViewDialog, type ViewSummary } from '../core/views/view-dialog'
 import { ViewMenu } from '../core/views/view-menu'
 import type { ColumnDef } from '../types/columns'
-import type { BulkAction, DataTableResult, RowAction, RowClickMode, RowReorder } from '../types/list'
+import type {
+  BulkAction,
+  DataTableResult,
+  PrimaryAction,
+  RowAction,
+  RowClickMode,
+  RowReorder,
+  ToolbarAction,
+} from '../types/list'
 import type { FilterCondition, QueryWithoutPage } from '../types/query'
 import type { View, ViewState } from '../types/views'
 import { BulkBar } from './bulk-bar'
@@ -75,6 +83,8 @@ export function DataTable<Row extends object>({
   empty,
   toolbar = 'auto',
   toolbarEnd,
+  primaryAction,
+  actions,
   notice,
   searchPlaceholder,
   autoRefresh,
@@ -105,8 +115,15 @@ export function DataTable<Row extends object>({
   empty?: ReactNode
   /** auto: yapılandırılana göre yuvalar; minimal: yalnızca arama (3a) + `toolbarEnd`; false: araç çubuğu yok. */
   toolbar?: 'auto' | 'minimal' | false
-  /** Ekrana özgü birincil aksiyon, araç çubuğunun sonunda (ör. "New order"). */
+  /**
+   * Araç çubuğunun sonunda serbest içerik (R3). Eylem için `primaryAction` ve `actions` kullanılır: paket onları
+   * genişliğe göre daraltır, serbest içeriği daraltamaz (R25).
+   */
   toolbarEnd?: ReactNode
+  /** Ekranın tek birincil eylemi ("New order"), en sağda; yer kalmayınca yalnızca ikon (R25). */
+  primaryAction?: PrimaryAction
+  /** İkincil eylemler, sırası öncelik: sığdıkça düğme, sığmayan ⋯ menüsünde (R25). */
+  actions?: ToolbarAction[]
   /**
    * Araç çubuğu ile sütun başlıkları arasında uygulamanın şeridi (R16): listenin bağlamını anlatır
    * ("Yalnızca arşivlenmiş kayıtlar"). İçerik ve rolü uygulamanındır; paket yer ve hizayı verir.
@@ -427,7 +444,8 @@ export function DataTable<Row extends object>({
     return gone && i18n.t('sr.filterRemoved', { column: headerOf(gone.column) })
   }
 
-  // Daralma eşikleri kartın kendi genişliğinden (05 §3): ≥1024 etiketli, 640–1023 ikon, <640 telefon (Faz 7).
+  // Daralma eşikleri kartın kendi genişliğinden (05 §3): ≥1024 arama kutusu, 640–1023 arama ikonu, <640 telefon (Faz 7);
+  // eylem düğmeleri ayrıca sığdıkları kadar çizilir (R25).
   const root = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(1440)
   useLayoutEffect(() => {
@@ -719,11 +737,11 @@ export function DataTable<Row extends object>({
                   onColumns={openColumns}
                   persistent={prefs.persistent}
                   onReset={table.resetDisplay}
-                  iconOnly={size !== 'full'}
+                  iconOnly
                 />
               )
             }
-            more={
+            more={(overflow) =>
               phone
                 ? toolbar === 'auto' && (
                     <PhoneMoreSheet
@@ -736,6 +754,7 @@ export function DataTable<Row extends object>({
                       onSort={(sort) => table.setQuery({ sort })}
                       persistent={prefs.persistent}
                       onReset={table.resetDisplay}
+                      actions={overflow}
                       exportHint={exportHint}
                       onExport={runExport}
                       onRefresh={refetch && (() => refetch())}
@@ -745,8 +764,9 @@ export function DataTable<Row extends object>({
                       onAutoRefresh={setLive}
                     />
                   )
-                : moreMenu && (
+                : (moreMenu || !!actions?.length) && (
                     <MoreMenu
+                      actions={overflow}
                       exportHint={exportHint}
                       onExport={runExport}
                       onRefresh={refetch && (() => refetch())}
@@ -758,6 +778,8 @@ export function DataTable<Row extends object>({
                   )
             }
             end={toolbarEnd}
+            primary={primaryAction}
+            actions={actions}
           />
         )
       )}

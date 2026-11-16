@@ -19,7 +19,7 @@ const clips = (el: HTMLElement) => overflows(el) && getComputedStyle(el).overflo
 export const tipOf = (target: Element | null): { el: HTMLElement; text: string } | null => {
   const tipped = target?.closest<HTMLElement>('[data-dt-tip]')
   if (tipped?.dataset.dtTip) return { el: tipped, text: tipped.dataset.dtTip }
-  const content = target?.closest<HTMLElement>('.dt-cell-content, .dt-head-label')
+  const content = target?.closest<HTMLElement>('.dt-cell-content, .dt-head-label, .dt-view-name')
   if (content && (overflows(content) || [...content.querySelectorAll<HTMLElement>('*')].some(clips)))
     return { el: content, text: content.textContent?.trim() ?? '' }
   return null

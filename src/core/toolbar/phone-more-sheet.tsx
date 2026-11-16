@@ -16,6 +16,7 @@ import type { SortRule } from '../../types/query'
 import type { ColumnsDraft, PanelColumn } from '../columns/use-column-layout'
 import { useDataTableContext } from '../provider'
 import { BottomSheet } from '../ui/bottom-sheet'
+import type { ToolbarAction } from '../../types/list'
 import { DtSwitch } from '../ui/switch'
 
 const ColumnsDialog = lazy(() => import('./columns-dialog')) as unknown as typeof import('./columns-dialog').default
@@ -38,6 +39,7 @@ export function PhoneMoreSheet<Row extends object>({
   onSort,
   persistent,
   onReset,
+  actions = [],
   exportHint,
   onExport,
   onRefresh,
@@ -57,6 +59,8 @@ export function PhoneMoreSheet<Row extends object>({
   onSort: (sort: SortRule[]) => void
   persistent: boolean
   onReset: () => void
+  /** Ekranın ikincil eylemleri (R25): telefonda hepsi burada, Display'in üstünde. */
+  actions?: ToolbarAction[]
   /** Export'un altındaki satır: "100 satır dışa aktarılır"; verilmezse Export yok. */
   exportHint?: string
   onExport: (format: 'csv' | 'xlsx') => void
@@ -121,6 +125,19 @@ export function PhoneMoreSheet<Row extends object>({
       >
         {level === 'main' && (
           <>
+            {actions.map((a) =>
+              a.checked === undefined ? (
+                <button key={a.id} type="button" className="dt-bsheet-row" onClick={() => close(a.run)}>
+                  {a.label}
+                </button>
+              ) : (
+                <label key={a.id} className="dt-bsheet-row">
+                  {a.label}
+                  <DtSwitch className="dt-bsheet-end" checked={a.checked} onChange={() => close(a.run)} />
+                </label>
+              ),
+            )}
+            {actions.length > 0 && <div className="dt-bsheet-sep" />}
             <div className="dt-bsheet-label">{i18n.t('toolbar.display')}</div>
             {onDensity && (
               <button type="button" className="dt-bsheet-row" onClick={() => setLevel('density')}>

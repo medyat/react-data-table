@@ -142,3 +142,22 @@ export interface BulkAction<Row = any> {
 
 /** Satır gövdesine tıklama. Varsayılan 'none': metin seçilip kopyalanabilir, seçim ve açma yapmaz (D6). */
 export type RowClickMode = 'none' | 'open' | 'expand'
+
+/** Araç çubuğunun ikincil eylemi (R25): sığdıkça birincilin solunda düğme, sığmayınca ⋯ menüsünde. */
+export interface ToolbarAction {
+  id: string
+  label: string
+  icon?: IconComponent
+  /** Aç/kapa (ör. arşiv): menüde işaretli, düğmede basılı. */
+  checked?: boolean
+  /** Hep ⋯ menüsünde; düğme olarak çizilmez. */
+  menu?: boolean
+  run: () => void
+}
+
+/** Ekranın tek birincil eylemi (R25): ⋯'ya inmez, yer kalmayınca yalnızca ikonu (ve tooltip'i) kalır. */
+export interface PrimaryAction {
+  label: string
+  icon: IconComponent
+  run: () => void
+}

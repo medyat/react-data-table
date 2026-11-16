@@ -1,12 +1,15 @@
-// More ⋯ menüsü (05 §3): yalnızca uygulamanın verdiği eylemler ve ayarlar; Refresh `R`, Auto-refresh anahtarı.
+// More ⋯ menüsü (05 §3): üstte ekranın eylemleri (R25: düğmeye sığmayanlar ve `menu` olanlar), sonra paketin
+// yerleşikleri; Refresh `R`, Auto-refresh anahtarı.
 // Export › CSV / Excel (D46); içe aktarma bu sürümde yok (R1).
 import { Menu } from '@base-ui/react/menu'
-import { DotsThreeIcon } from '@phosphor-icons/react'
+import { CheckIcon, DotsThreeIcon } from '@phosphor-icons/react'
 import { useId } from 'react'
+import type { ToolbarAction } from '../../types/list'
 import { useDataTableContext } from '../provider'
 import { DtMenu, DtMenuItem, DtMenuSeparator } from '../ui/menu'
 
 export function MoreMenu({
+  actions = [],
   exportHint,
   onExport,
   onRefresh,
@@ -15,6 +18,7 @@ export function MoreMenu({
   autoRefreshOn,
   onAutoRefresh,
 }: {
+  actions?: ToolbarAction[]
   /** Export'un altındaki satır: "100 satır dışa aktarılır"; verilmezse Export yok. */
   exportHint?: string
   onExport: (format: 'csv' | 'xlsx') => void
@@ -41,6 +45,34 @@ export function MoreMenu({
         </button>
       }
     >
+      {actions.map((a) => {
+        const Icon = a.icon
+        const content = (
+          <>
+            {Icon && <Icon size={16} aria-hidden="true" />}
+            {a.label}
+          </>
+        )
+        return a.checked === undefined ? (
+          <DtMenuItem key={a.id} onSelect={a.run}>
+            {content}
+          </DtMenuItem>
+        ) : (
+          <Menu.CheckboxItem
+            key={a.id}
+            className="dt-menu-item"
+            checked={a.checked}
+            onCheckedChange={a.run}
+            closeOnClick
+          >
+            {content}
+            <Menu.CheckboxItemIndicator className="dt-pop-end">
+              <CheckIcon size={16} aria-hidden="true" />
+            </Menu.CheckboxItemIndicator>
+          </Menu.CheckboxItem>
+        )
+      })}
+      {actions.length > 0 && (exportHint || onPrint || onRefresh || autoRefresh) && <DtMenuSeparator />}
       {exportHint && (
         <Menu.SubmenuRoot>
           <Menu.SubmenuTrigger className="dt-menu-item" aria-label={i18n.t('sheet.export')} aria-describedby={hintId}>

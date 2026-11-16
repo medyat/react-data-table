@@ -320,6 +320,32 @@ oturunca çıkar.
 - Neden: kullanıcı ihtiyacı (Swors ürün seçme listesi): satırdaki tek eylem ikonla anlaşılmıyor, "Seç" yazan
   birincil düğme isteniyor. Vue spesifikasyonu yalnızca ikon düğmesi tanımlar. (2026-11-13)
 
+## R24 · Çoklu kişi hücresi adlarını popover'da gösterir
+
+- `user` + `multiple` hücresinde yığın (en çok 3 avatar + `+N`) bir düğmedir: üzerine gelince (300 ms) ya da tıklanınca
+  popover herkesi avatar ve adıyla, sütundaki sırayla listeler. Düğmenin `aria-label`'ı adların listesidir; avatarlar
+  `aria-hidden` kalır. `+N`'nin ayrı tooltip'i kalktı, popover herkesi zaten gösterir. Tek kişi değişmedi: avatar + ad.
+- Düğme etkileşimli öğedir: tıklaması satırı açmaz (`isPlainRowClick`).
+- Neden: Vue spesifikasyonunda görünen üç avatarın adı hiçbir yerde yok; baş harfler aynı olunca (Mehmet A. / Murat A.)
+  yığın kimin kim olduğunu söylemiyordu. Adların hücrede yan yana yazılması istenmedi (Swors cari grubu temsilcileri,
+  2026-11-16).
+
+## R25 · Araç çubuğu: sola yaslı arama, tanımlı eylemler (D43'ü değiştirir)
+
+- Arama + Filter grubu görünüm seçicinin yanındadır, ortada değil; araç çubuğu düz flex satırıdır:
+  `görünüm · [arama · Filter] · boşluk · [Display · ⋯] │ ikinciller · birincil`. D43'ün üç sütunlu ızgarası iki yana
+  eşit pay veriyordu; uygulamanın sağdaki düğmeleri payına sığmayınca sola taşıp Display ve ⋯'nın üstüne biniyordu.
+  Flex satırında öğeler üst üste binemez, yalnızca boşluk daralır.
+- Display her genişlikte yazısız ikondur, adı tooltip'tedir (D43'teki "masaüstünde etiketli" kalkar).
+- Eylemler tanımdır: `primaryAction` (tek; `label`, `icon`, `run`) ve `actions` (`ToolbarAction[]`: `checked` aç/kapa,
+  `menu` hep ⋯ içinde). Paket ne olduklarını bildiği için genişliğe göre daraltır: ikinciller listedeki sırayla
+  önceliklidir, sığmayan sondan başlayarak ⋯ menüsünün üstüne iner; hiçbiri kalmayınca birincil yalnızca ikondur.
+  Genişlikler görünmez ölçü alanından okunur (`fitActions`, R23'teki yöntem). Telefonda ikinciller ⋯ sayfasındadır.
+- `toolbarEnd` serbest içerik olarak kalır (R3) ama paket onu daraltamaz; eylem için kullanılmaz.
+- Görünüm seçici en çok ~240 px'tir; uzun ad `…` ile kesilir, kesilince tam ad tooltip'te.
+- Neden: kullanıcı ihtiyacı (Swors liste ekranları): Arşiv, "Resmi tatilleri al" ve "Yeni" düğmeleri dar kartta
+  Display ile ⋯'nın üstüne biniyordu; uygulamanın düğme grubunu paket küçültemiyordu. (2026-11-16)
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

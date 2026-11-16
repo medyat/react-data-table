@@ -1,6 +1,6 @@
 // Faz 1 kabul kriterleri: boş değerler, select tonları, date overdue, datetime relative, star tooltip, color fill,
 // boolean falseTone, +N, özel hücre bağlamı (03, T8).
-import { act, cleanup, render as rtl } from '@testing-library/react'
+import { act, cleanup, fireEvent, render as rtl, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { RemoteLabels } from '../src/core/cells/remote-labels'
 import { cellFillStyle, renderCellContent, type RenderEnv } from '../src/core/cells/render-cell'
@@ -140,6 +140,15 @@ describe('seçim tipleri', () => {
     const none = render(col('user', { options: users }), null)
     expect(none.text()).toBe('Unassigned')
     expect(none.find('.dt-avatar.is-empty')).not.toBeNull()
+  })
+  it('user çoklu: yığın adları söyleyen düğmedir, tıklanınca herkesi adıyla listeler (R24)', async () => {
+    const users = ['Ayşe K.', 'Emre T.', 'Deniz Ö.', 'Burak Y.'].map((label, i) => ({ value: `u${i}`, label }))
+    const many = render(col('user', { options: users, multiple: true }), ['u0', 'u1', 'u2', 'u3'])
+    const trigger = many.find('button.dt-avatars')!
+    expect(trigger.getAttribute('aria-label')).toBe('Ayşe K., Emre T., Deniz Ö., Burak Y.')
+    fireEvent.click(trigger)
+    const items = await screen.findAllByRole('listitem')
+    expect(items.map((li) => li.textContent)).toEqual(['AKAyşe K.', 'ETEmre T.', 'DÖDeniz Ö.', 'BYBurak Y.'])
   })
   it('ajax: etiket çözülene kadar ham, resolve sonrası önbellekte etiket ve sürüm artar', async () => {
     const labels = new RemoteLabels()

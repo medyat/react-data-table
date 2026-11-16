@@ -2,6 +2,7 @@
 
 /* Toolbar: 52 px, dolgu 10 × 12, boşluk 8 (02 · Bileşen ölçüleri). */
 .dt-toolbar {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--dt-space);
@@ -13,13 +14,15 @@
 .dt-toolbar-spacer {
   flex: 1;
 }
-/* D43: masaüstünde arama · Filter grubu tam ortada; iki yan eşit pay alır, sağ yan sağa yaslı. */
-.dt-toolbar.is-zoned:not(.is-phone) {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-}
-.dt-toolbar.is-zoned:not(.is-phone) > .dt-toolbar-spacer {
-  display: none;
+/* Eylem düğmelerinin tam genişliği burada ölçülür (R25); görünmez, düzene ve erişilebilirlik ağacına girmez. */
+.dt-toolbar-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  gap: var(--dt-space);
+  visibility: hidden;
+  pointer-events: none;
 }
 .dt-toolbar-side {
   display: flex;
@@ -28,7 +31,13 @@
   min-width: 0;
 }
 .dt-toolbar-side.is-end {
+  flex: none;
   justify-content: flex-end;
+}
+.dt-toolbar-end {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dt-space);
 }
 .dt-toolbar.is-phone .dt-toolbar-side {
   display: contents;

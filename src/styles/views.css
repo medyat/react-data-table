@@ -21,7 +21,15 @@
   background: var(--dt-surface-3);
   color: var(--dt-text-2);
 }
+/* Uzun görünüm adı araç çubuğunu itmesin (R25): ~240 px'te kesilir, tam ad tooltip'te (kesilince) ve menüde. */
+.dt-btn.has-icon.dt-view-trigger {
+  max-width: calc(240 * var(--dt-ui-fs) / 13);
+}
 .dt-view-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 600;
 }
 .dt-view-dot {

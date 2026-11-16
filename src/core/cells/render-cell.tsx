@@ -1,5 +1,6 @@
 // 23 tipin hücre içeriği (03, brief §5.1, T8). Kabuk (hizalama, kesme, yoğunluk, zemin) grid/row.tsx'te; burada yalnızca içerik.
 import { ArrowUpRightIcon, ArrowsOutSimpleIcon, CheckIcon, MinusIcon, StarIcon, XIcon } from '@phosphor-icons/react'
+import { Popover } from '@base-ui/react/popover'
 import type { CSSProperties, ReactNode } from 'react'
 import type { ColumnDef, IconComponent, OptionDef, UserOption } from '../../types/columns'
 import type { Density, Tone } from '../../types/core'
@@ -63,7 +64,7 @@ const More = ({ count, tip, pill }: { count: number; tip: string; pill?: boolean
 )
 const Mono = ({ children }: { children: string }) => <span className="dt-mono">{children}</span>
 
-export function Avatar({ user }: { user: Partial<UserOption> & { value: string | number; label: string } }) {
+export function Avatar({ user }: { user: Person }) {
   return (
     <span
       className={`dt-avatar dt-tone-${avatarTone(user.value)}`}
@@ -72,6 +73,39 @@ export function Avatar({ user }: { user: Partial<UserOption> & { value: string |
     >
       {user.avatarUrl ? '' : (user.initials ?? initialsOf(user.label))}
     </span>
+  )
+}
+
+type Person = Partial<UserOption> & { value: string | number; label: string }
+
+/**
+ * Birden çok kişi: yığın (en çok 3 + N) bir düğmedir; üzerine gelince ya da tıklanınca herkes adıyla listelenir (R24).
+ * Baş harfler aynı olabilir (Mehmet A. / Murat A.), yığın tek başına kimin kim olduğunu söylemez.
+ */
+function People({ users, label }: { users: Person[]; label: string }) {
+  return (
+    <Popover.Root>
+      <Popover.Trigger openOnHover delay={300} closeDelay={100} className="dt-user dt-avatars" aria-label={label}>
+        {users.slice(0, 3).map((u) => (
+          <Avatar key={String(u.value)} user={u} />
+        ))}
+        {users.length > 3 && <span className="dt-more dt-more-pill">+{users.length - 3}</span>}
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Positioner className="dt-positioner" align="start" sideOffset={4}>
+          <Popover.Popup className="dt-pop dt-people">
+            <ul>
+              {users.map((u) => (
+                <li key={String(u.value)}>
+                  <Avatar user={u} />
+                  <span>{u.label}</span>
+                </li>
+              ))}
+            </ul>
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
   )
 }
 
@@ -261,16 +295,7 @@ export function renderCellContent<Row extends object>(
             <span className="dt-user-name">{users[0]!.label}</span>
           </span>
         )
-      return (
-        <span className="dt-user dt-avatars">
-          {users.slice(0, 3).map((u) => (
-            <Avatar key={String(u.value)} user={u} />
-          ))}
-          {users.length > 3 && (
-            <More count={users.length - 3} tip={fmt.list(users.slice(3).map((u) => u.label))} pill />
-          )}
-        </span>
-      )
+      return <People users={users} label={fmt.list(users.map((u) => u.label))} />
     }
     case 'date':
     case 'datetime': {
