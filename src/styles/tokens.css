@@ -201,7 +201,7 @@
 
 /* Yoğunluk: bileşen kökü data-density taşır; :root varsayılanı standard. */
 :root, [data-density="standard"] {
-  --dt-row-h: 44px;
+  --dt-row-h: 48px;
   --dt-head-h: 40px;
   --dt-cell-x: 14px;
   --dt-fs: 14px;
@@ -214,7 +214,7 @@
 }
 
 [data-density="comfortable"] {
-  --dt-row-h: 56px;
+  --dt-row-h: 64px;
   --dt-head-h: 44px;
   --dt-cell-x: 16px;
   --dt-fs: 14.5px;
@@ -227,7 +227,7 @@
 }
 
 [data-density="compact"] {
-  --dt-row-h: 32px;
+  --dt-row-h: 36px;
   --dt-head-h: 32px;
   --dt-cell-x: 10px;
   --dt-fs: 12.5px;

@@ -74,6 +74,16 @@ const groups: Array<{ title: string; columns: Array<ColumnDef<Sample>>; rows: Sa
       { id: 'boolD', header: 'boolean · destructive', type: 'boolean', falseTone: 'destructive' },
       { id: 'select', header: 'select', type: 'select', options: statusOptions },
       {
+        id: 'fill',
+        header: 'select · fill',
+        type: 'select',
+        options: [
+          { value: 'shipped', label: 'Shipped', tone: { fill: '#16a34a' } },
+          { value: 'waiting', label: 'Customer message', tone: { fill: '#fde047' } },
+          { value: 'processing', label: 'Processing', tone: { fill: '#6d28d9' } },
+        ],
+      },
+      {
         id: 'multi',
         header: 'multiselect',
         type: 'multiselect',
@@ -94,6 +104,7 @@ const groups: Array<{ title: string; columns: Array<ColumnDef<Sample>>; rows: Sa
         bool: true,
         boolD: true,
         select: 'in_progress',
+        fill: 'shipped',
         multi: ['welding', 'cnc', 'paint', 'qa'],
         ajax: 'c1',
         user: 'u1',
@@ -104,6 +115,7 @@ const groups: Array<{ title: string; columns: Array<ColumnDef<Sample>>; rows: Sa
         bool: false,
         boolD: false,
         select: 'qc_hold',
+        fill: 'waiting',
         multi: ['welding'],
         ajax: 'c2',
         user: 'u4',

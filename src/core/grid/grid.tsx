@@ -33,7 +33,7 @@ const SortableRows = lazy(() => import('./sortable-rows')) as unknown as typeof 
 
 const SKELETON_ROWS = 12
 // jsdom ve ilk render: token okunamazsa standard yoğunluk.
-const FALLBACK_ROW_H = 44
+const FALLBACK_ROW_H = 48
 const FALLBACK_HEAD_H = 36
 
 // Dokunmatikte Compact → Standard (02 · Yoğunluk); satır yüksekliği buna göre.

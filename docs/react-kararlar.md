@@ -346,6 +346,43 @@ oturunca çıkar.
 - Neden: kullanıcı ihtiyacı (Swors liste ekranları): Arşiv, "Resmi tatilleri al" ve "Yeni" düğmeleri dar kartta
   Display ile ⋯'nın üstüne biniyordu; uygulamanın düğme grubunu paket küçültemiyordu. (2026-11-16)
 
+## R26 · Seçeneğin dolu hapı
+
+- `OptionDef.tone` üçüncü biçimi alır: `{ fill: '#rrggbb' }`. Hap zemini rengin kendisidir, yazı rengi okunurluğa göre
+  `--dt-fill-text-dark` ya da `--dt-fill-text-light`, iki temada aynı; nokta gösterilmez (zeminle aynı renk olurdu).
+  Hücrede ve filtre seçeneklerinde aynı hap çizilir.
+- Okunur yazı tek fonksiyondan (`fillStyle`) gelir; `color` + `display: 'fill'` hücresi de onu kullanır. Hesap WCAG göreli
+  parlaklığıdır (siyahla mı beyazla mı kontrast yüksek); eski hesap (doğrusal ağırlık, eşik 0,55) orta tonlarda (#16A34A)
+  beyaz seçip okunmayan yazı veriyordu.
+- Neden: `{ light, dark }` tonu yazıyı rengin kendisiyle, zemini onun %12'siyle çizer; kullanıcının seçtiği açık renkler
+  (sarı, açık mavi) beyaz zeminde okunmuyordu ve uygulamanın başka yerde dolu çizdiği durum filtrede soluk görünüyordu
+  (Swors sipariş durumları, 2026-11-17).
+
+## R27 · İkinci satır Standard yoğunlukta da çizilir (02 · Yoğunluk'u genişletir)
+
+- `secondary` Comfortable ve Standard'da görünür, yalnızca Compact'ta çizilmez. Standard satırı (48 px) iki satırı
+  kesmeden taşır; Compact (36 px) taşımaz (yükseklikler R28).
+- Kendi iki satırını çizen özel `cell` aynı kurala `CellContext.density` ile uyar: Compact'ta ikinci satırı bırakır.
+- Neden: varsayılan yoğunluk Standard olduğu için ikinci satır neredeyse hiç görünmüyordu; Swors sipariş listesi cari
+  adının altında ilçe/il ve sevk durumunun altında teslim tarihini gösterir (2026-11-17).
+
+## R28 · Satır yükseklikleri: 64 / 48 / 36 (02 · Yoğunluk'tan ayrılır)
+
+- `--dt-row-h` Comfortable 64 px, Standard 48 px, Compact 36 px (spesifikasyon 56 / 44 / 32). Başlık, yazı, rozet ve
+  avatar ölçüleri spesifikasyondaki gibi kalır; yalnızca satırın dikey boşluğu artar. Telefon satırı 48 px'ti, Standard'la
+  eşitlendi.
+- Değerler `scripts/tokens-from-docs.ts`'te ezilir: `tokens.css` üretilmiş dosyadır, `pnpm gen:docs` farkı korur.
+- Neden: R27 ile Standard'da da iki satır çiziliyor; 44 px'te iki satırın üstünde ve altında 4–5 px kalıyor, sıkışık
+  duruyordu (Swors sipariş listesi, 2026-11-17).
+
+## R29 · `UserName` dışa açılır
+
+- Tek kişinin avatar + ad görünümü (`user` hücresinin çizdiği) `UserName` bileşeni olarak dışa açıktır:
+  `<UserName user={{ value: id, label: ad }} />`. Avatar rengi kimlikten, baş harfler addan gelir.
+- Neden: kişi kimliğini ada çeviren bir kaynak her zaman yoktur; Swors'ta siparişi oluşturan personel de müşteri de
+  olabilir ve ikisini birden çözen bir kaynak yok. Ad satırda hazır gelir; metin kolonu özel `cell`'de bu bileşenle
+  `user` hücresiyle aynı görünür, filtresi metin araması kalır (2026-11-17).
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

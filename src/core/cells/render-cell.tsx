@@ -21,13 +21,33 @@ export interface RenderEnv extends FormatEnv {
   coarse: boolean
 }
 
-type ToneRef = Tone | { light: string; dark: string } | undefined
+type ToneRef = OptionDef['tone']
 
-const toneClass = (tone: ToneRef): string => (typeof tone === 'object' ? 'dt-tone-custom' : `dt-tone-${tone ?? 'gray'}`)
-const toneStyle = (tone: ToneRef) =>
-  typeof tone === 'object'
-    ? ({ '--dt-tone-light': tone.light, '--dt-tone-dark': tone.dark } as CSSProperties)
-    : undefined
+const toneClass = (tone: ToneRef): string =>
+  typeof tone !== 'object' ? `dt-tone-${tone ?? 'gray'}` : 'fill' in tone ? 'dt-tone-fill' : 'dt-tone-custom'
+const toneStyle = (tone: ToneRef): CSSProperties | undefined =>
+  typeof tone !== 'object'
+    ? undefined
+    : 'fill' in tone
+      ? fillStyle(tone.fill)
+      : ({ '--dt-tone-light': tone.light, '--dt-tone-dark': tone.dark } as CSSProperties)
+
+/**
+ * Dolu zemin ve üstünde daha okunur yazı rengi (WCAG göreli parlaklığı: siyahla mı beyazla mı kontrast
+ * yüksek). Renk `#rrggbb` değilse yalnızca zemin verilir.
+ */
+export function fillStyle(value: string): CSSProperties {
+  const m = /^#?([0-9a-f]{6})$/i.exec(value)
+  if (!m) return { background: value }
+  const n = parseInt(m[1]!, 16)
+  const [r, g, b] = [16, 8, 0].map((shift) => {
+    const c = ((n >> shift) & 255) / 255
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  }) as [number, number, number]
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+  const dark = (lum + 0.05) / 0.05 >= 1.05 / (lum + 0.05)
+  return { background: value, color: dark ? 'var(--dt-fill-text-dark)' : 'var(--dt-fill-text-light)' }
+}
 
 /** Avatar rengi kişiye sabit: id hash'i → 6 tondan biri (02). */
 const AVATAR_TONES: Tone[] = ['blue', 'green', 'amber', 'violet', 'pink', 'teal']
@@ -77,6 +97,19 @@ export function Avatar({ user }: { user: Person }) {
 }
 
 type Person = Partial<UserOption> & { value: string | number; label: string }
+
+/**
+ * Tek kişi: avatar ve ad. `user` hücresi bunu çizer; adı satırda hazır gelen bir metin kolonu da özel `cell`'de
+ * aynı görünümü bununla verir (R29).
+ */
+export function UserName({ user }: { user: Person }) {
+  return (
+    <span className="dt-user">
+      <Avatar user={user} />
+      <span className="dt-user-name">{user.label}</span>
+    </span>
+  )
+}
 
 /**
  * Birden çok kişi: yığın (en çok 3 + N) bir düğmedir; üzerine gelince ya da tıklanınca herkes adıyla listelenir (R24).
@@ -144,11 +177,7 @@ const Link = ({ href, external, children }: { href: string; external?: boolean; 
 /** `color` + `display: 'fill'`: hücre boyanır, yazı rengi kontrasta göre (03). */
 export function cellFillStyle<Row extends object>(def: ColumnDef<Row>, value: unknown): CSSProperties | undefined {
   if (def.type !== 'color' || def.display !== 'fill' || typeof value !== 'string') return undefined
-  const m = /^#?([0-9a-f]{6})$/i.exec(value)
-  if (!m) return { background: value }
-  const n = parseInt(m[1]!, 16)
-  const lum = (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255
-  return { background: value, color: lum > 0.55 ? 'var(--dt-fill-text-dark)' : 'var(--dt-fill-text-light)' }
+  return fillStyle(value)
 }
 
 function resolveUsers<Row extends object>(
@@ -288,13 +317,7 @@ export function renderCellContent<Row extends object>(
     case 'user': {
       const ids = (Array.isArray(value) ? value : [value]) as Array<string | number>
       const users = resolveUsers(def, ids, env)
-      if (users.length === 1)
-        return (
-          <span className="dt-user">
-            <Avatar user={users[0]!} />
-            <span className="dt-user-name">{users[0]!.label}</span>
-          </span>
-        )
+      if (users.length === 1) return <UserName user={users[0]!} />
       return <People users={users} label={fmt.list(users.map((u) => u.label))} />
     }
     case 'date':

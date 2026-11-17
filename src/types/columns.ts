@@ -37,8 +37,11 @@ export type ColumnType =
 export interface OptionDef {
   value: string | number
   label: string
-  /** Hazır ton veya tema başına açık renk. Verilmezse 'gray'. */
-  tone?: Tone | { light: string; dark: string }
+  /**
+   * Hazır ton, tema başına açık renk ya da dolu hap (`fill`: zemin bu renk, yazı okunurluğa göre siyah/beyaz,
+   * iki temada aynı). Verilmezse 'gray'.
+   */
+  tone?: Tone | { light: string; dark: string } | { fill: string }
   description?: string
 }
 
@@ -136,7 +139,7 @@ export interface BaseColumn<Row, V = unknown> {
   primary?: boolean
   /** Birincil hücre veya `id`/`ajax` tipi için kayıt linki. */
   href?: (row: Row) => string | undefined
-  /** İkinci satır (yalnızca Comfortable). */
+  /** İkinci satır (Comfortable ve Standard; Compact'ta çizilmez, R27). */
   secondary?: (row: Row) => string | null | undefined
   /** Boş değer metni. Varsayılan "—". */
   emptyText?: string

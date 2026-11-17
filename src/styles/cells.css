@@ -97,6 +97,10 @@
   --dt-tone-dot: var(--dt-tone-dark);
   --dt-tone-bg: color-mix(in srgb, var(--dt-tone-dark) 15%, transparent);
 }
+/* Dolu hap: zemin ve yazı `fillStyle`'dan satır içi gelir; nokta zeminle aynı renk olurdu, gösterilmez. */
+.dt-tone-fill .dt-badge-dot {
+  display: none;
+}
 
 .dt-badge {
   display: inline-flex;

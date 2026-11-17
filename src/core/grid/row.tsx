@@ -182,8 +182,8 @@ export function Row<Row extends object>({
   env: RenderEnv
   extras?: RowExtras<Row>
 }) {
-  // Comfortable: `secondary` görünür (02 · Yoğunluk).
-  const secondaryVisible = env.density === 'comfortable'
+  // `secondary` Compact dışında görünür: 32 px satıra iki satır sığmaz (R27, 02 · Yoğunluk'u genişletir).
+  const secondaryVisible = env.density !== 'compact'
   const sel = extras?.select
   const handle = extras?.handle
   const menu = extras?.menu

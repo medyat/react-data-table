@@ -98,6 +98,7 @@ describe('seçim tipleri', () => {
     { value: 'in_progress', label: 'In progress', tone: 'blue' as const },
     { value: 'done', label: 'Done', tone: 'green' as const },
     { value: 'custom', label: 'Custom', tone: { light: '#123456', dark: '#abcdef' } },
+    { value: 'shipped', label: 'Shipped', tone: { fill: '#16a34a' } },
   ]
   it('boolean: Yes yeşil, No nötr, falseTone kırmızı', () => {
     expect(render(col('boolean'), true).find('.dt-badge')!.classList).toContain('dt-tone-green')
@@ -116,6 +117,13 @@ describe('seçim tipleri', () => {
     const u = render(col('select', { options }), 'qc_hold')
     expect(u.find('.dt-badge')!.classList).toContain('dt-tone-gray')
     expect(u.text()).toBe('qc_hold')
+  })
+  it('select: dolu hap zemini rengin kendisi, yazı okunur olan (R26)', () => {
+    const f = render(col('select', { options }), 'shipped').find('.dt-badge')!
+    expect(f.classList).toContain('dt-tone-fill')
+    expect(f.style.background).toBe('rgb(22, 163, 74)')
+    // Orta yeşilde siyah yazının kontrastı beyazınkinden yüksek; eski formül beyaz seçiyordu.
+    expect(f.style.color).toBe('var(--dt-fill-text-dark)')
   })
   it('multiselect: 2 + N', () => {
     const m = render(col('multiselect', { options }), ['in_progress', 'done', 'custom'])

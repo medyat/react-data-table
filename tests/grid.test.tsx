@@ -97,9 +97,12 @@ describe('roller ve yapı', () => {
     expect(row.querySelector('[data-col="dueAt"]')!.textContent).toBe('Oct 18 · 3d late')
     vi.useRealTimers()
   })
-  it('ikinci satır yalnızca Comfortable', async () => {
+  it("ikinci satır Comfortable ve Standard yoğunlukta, Compact'ta yok (R27)", async () => {
+    const cpt = await mount({ density: 'compact' })
+    expect(cpt.q('.dt-secondary')).toBeNull()
+    cleanup()
     const std = await mount()
-    expect(std.q('.dt-secondary')).toBeNull()
+    expect(std.q('.dt-row[data-index="0"] .dt-secondary').textContent).toBe('GP-0')
     cleanup()
     const cmf = await mount({ density: 'comfortable' })
     expect(cmf.q('.dt').dataset.density).toBe('comfortable') // kök --dt-fs bundan çözülür
