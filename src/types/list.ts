@@ -123,6 +123,14 @@ export interface RowReorder<Row = any> {
   onMove: (move: RowMove<Row>) => void | Promise<unknown>
 }
 
+/** Toplu aksiyonun seçeneği (ör. hedef durum): `run` seçilenle çağrılır. */
+export interface BulkOption {
+  id: string
+  label: string
+  /** Etiketin solunda renk noktası (ör. durumun rengi). */
+  color?: string
+}
+
 /** Toplu aksiyon. Seçim sayfa kapsamlıdır (D19): `rows` o anda seçili, yüklü satırlardır. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Row için üst sınır; api-draft ile aynı
 export interface BulkAction<Row = any> {
@@ -137,7 +145,9 @@ export interface BulkAction<Row = any> {
   /** Yetkiye bağlı: false → bar'da ve menüde yok (D36). Duruma bağlı pasiflik için `disabled`. */
   when?: (rows: Row[]) => boolean
   disabled?: (rows: Row[]) => boolean | string
-  run: (rows: Row[]) => void | Promise<void>
+  /** Verilirse bar düğmesi bu seçeneklerin menüsünü açar, ⋯ içinde alt menü olur; `run` seçilenle çağrılır. */
+  options?: BulkOption[]
+  run: (rows: Row[], option?: BulkOption) => void | Promise<void>
 }
 
 /** Satır gövdesine tıklama. Varsayılan 'none': metin seçilip kopyalanabilir, seçim ve açma yapmaz (D6). */

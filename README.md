@@ -134,6 +134,13 @@ Birincil hücre gerçek bir `<a href>`'tir (D6): ⌘/orta tık tarayıcıya kal�
       disabled: (rows) => (rows.every(isDone) ? 'All already done' : false), // metin döndürülürse gerekçe olarak gösterilir
       run: (rows) => confirmCancel(rows),
     },
+    {
+      id: 'status',
+      label: 'Change status',
+      inBar: true,
+      options: statuses.map((s) => ({ id: String(s.id), label: s.name, color: s.color })), // düğme menü açar, ⋯ içinde alt menü
+      run: (rows, option) => openStatusDialog(rows, option!.id),
+    },
   ]}
   rowActions={[
     { id: 'edit', label: 'Edit', icon: PencilSimpleIcon, inline: true, run: (row) => edit(row) }, // satırda ikon düğmesi

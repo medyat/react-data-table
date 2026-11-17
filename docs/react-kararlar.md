@@ -383,6 +383,15 @@ oturunca çıkar.
   olabilir ve ikisini birden çözen bir kaynak yok. Ad satırda hazır gelir; metin kolonu özel `cell`'de bu bileşenle
   `user` hücresiyle aynı görünür, filtresi metin araması kalır (2026-11-17).
 
+## R30 · Toplu aksiyonun seçenekleri (05 §6'yı genişletir)
+
+- `BulkAction.options` (`{ id, label, color? }[]`) verilirse aksiyon bir seçenek ister: bar düğmesi seçeneklerin menüsünü
+  açar, ⋯ menüsünde aksiyon alt menü olur, telefonun alt sayfasında aksiyon adı başlık, seçenekler satır olur. `run(rows,
+  option)` seçilenle çağrılır; seçeneksiz aksiyonun çağrısı değişmez. `color` etiketin solunda nokta çizer.
+- Paket seçenekleri süzmez, onay sormaz: hangi seçeneğin hangi satıra uyduğu ve onay uygulamanındır (D20).
+- Neden: Swors sipariş listesinde "Durumu değiştir" hedef durumu sorar; düğmeden pencere açıp orada seçtirmek bir adım
+  fazlaydı. Başka listelerde de (atama, etiket) aynı biçim gerekir (2026-11-17).
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

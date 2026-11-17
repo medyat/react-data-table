@@ -585,6 +585,12 @@
 .dt-bulk-menu {
   min-width: calc(248 * var(--dt-ui-fs) / 13);
 }
+.dt-bulk-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
 /* Toolbar varyantı (T5-04): seçim varken toolbar'ın yerine; yükseklik aynı, altındakiler kımıldamaz. */
 .dt-bulk.is-toolbar {
   flex: none;

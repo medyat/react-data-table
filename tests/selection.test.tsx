@@ -1,6 +1,6 @@
 // Faz 4: seçim, bulk bar, satır menüsü, satır tıklaması ve birincil link, expand (05 §6–7, D6, D19, D20, D34, D36).
 import { PencilSimpleIcon, PlayIcon } from '@phosphor-icons/react'
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { useEffect, type ComponentProps } from 'react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { DataTable } from '../src/list/data-table'
@@ -193,6 +193,40 @@ describe('bulk bar', () => {
     await flush()
     expect(document.querySelector('.dt-bulk-menu .dt-menu-item > svg')).not.toBeNull()
     expect(document.querySelector('.dt-bulk-menu .dt-menu-sep')).toBeNull()
+  })
+
+  it('options: bar düğmesi seçenek menüsü açar, ⋯ içinde alt menü; run seçilenle çağrılır', async () => {
+    const pick = vi.fn()
+    const options = [
+      { id: 'done', label: 'Done', color: '#16a34a' },
+      { id: 'hold', label: 'On hold' },
+    ]
+    await mount({
+      selectable: true,
+      bulkActions: [
+        { id: 'status', label: 'Status', inBar: true, options, run: pick },
+        { id: 'tag', label: 'Tag', options, run: pick },
+      ],
+    })
+    fireEvent.click(box(0))
+    fireEvent.click(within(bar()!).getByRole('button', { name: 'Status' }))
+    await flush()
+    expect(pick).not.toHaveBeenCalled()
+    const items = [...document.querySelectorAll('.dt-bulk-menu .dt-menu-item')]
+    expect(items.map((i) => i.textContent)).toEqual(['Done', 'On hold'])
+    expect(items[0]!.querySelector<HTMLElement>('.dt-bulk-dot')!.style.background).toBe('rgb(22, 163, 74)')
+    fireEvent.click(items[1]!)
+    await flush()
+    expect(pick).toHaveBeenLastCalledWith([expect.objectContaining({ id: 1 })], options[1])
+
+    fireEvent.click(screen.getByRole('button', { name: 'More bulk actions' }))
+    await flush()
+    const trigger = screen.getByRole('menuitem', { name: 'Tag' })
+    fireEvent.click(trigger)
+    await flush()
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Done' }))
+    await flush()
+    expect(pick).toHaveBeenLastCalledWith([expect.objectContaining({ id: 1 })], options[0])
   })
 
   it('× seçimi temizler; selectionActions içeriği aksiyonların yerine', async () => {

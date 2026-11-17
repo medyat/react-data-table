@@ -1,12 +1,14 @@
 // Bulk bar (05 §6, handoff 03 §7, T5-01/03/04): [sayaç] │ aksiyonlar (en fazla 3 `inBar`) │ ⋯ (kalanlar, yıkıcı en altta) │ ×.
 // Telefonda bar'da en fazla 2 aksiyon, kalanlar "More" alt sayfasında.
 // Yüzer (varsayılan: kartın altında ortada, 64 px, düzeni kaydırmaz) ya da araç çubuğunun yerine. `run(rows)` beklenmez (D20).
-import { DotsThreeIcon, XIcon } from '@phosphor-icons/react'
+// `options` verilen aksiyon seçenek ister: bar'da düğmesi menü açar, ⋯ içinde alt menü, telefonda alt sayfada satırlar.
+import { Menu } from '@base-ui/react/menu'
+import { CaretDownIcon, DotsThreeIcon, XIcon } from '@phosphor-icons/react'
 import { Fragment, useState, type ReactNode } from 'react'
 import { useDataTableContext } from '../core/provider'
 import { BottomSheet } from '../core/ui/bottom-sheet'
 import { DtMenu, DtMenuItem, DtMenuSeparator } from '../core/ui/menu'
-import type { BulkAction } from '../types/list'
+import type { BulkAction, BulkOption } from '../types/list'
 
 export function BulkBar<Row extends object>({
   rows,
@@ -38,10 +40,17 @@ export function BulkBar<Row extends object>({
     const d = disabledOf(a)
     return typeof d === 'string' ? d : a.description
   }
-  const run = (a: BulkAction<Row>) => {
+  const run = (a: BulkAction<Row>, option?: BulkOption) => {
     setMoreOpen(false)
-    if (!disabledOf(a)) void a.run(rows)
+    if (!disabledOf(a)) void (option ? a.run(rows, option) : a.run(rows))
   }
+  const optionItems = (a: BulkAction<Row>) =>
+    a.options!.map((o) => (
+      <DtMenuItem key={o.id} onSelect={() => run(a, o)}>
+        {o.color && <span className="dt-bulk-dot" style={{ background: o.color }} aria-hidden="true" />}
+        <span className="dt-menu-text">{o.label}</span>
+      </DtMenuItem>
+    ))
   const btn = variant === 'toolbar' ? 'dt-btn has-icon' : 'dt-bulk-btn'
   const clear = (cls: string) => (
     <button
@@ -70,18 +79,33 @@ export function BulkBar<Row extends object>({
         <>
           {inBar.map((a) => {
             const Icon = a.icon
-            return (
+            const button = (
               <button
                 key={a.id}
                 type="button"
                 className={a.destructive ? `${btn} is-destructive` : btn}
                 disabled={!!disabledOf(a)}
                 data-dt-tip={tipOf(a)}
-                onClick={() => run(a)}
+                onClick={a.options ? undefined : () => run(a)}
               >
                 {Icon && <Icon size={phone ? 18 : 16} aria-hidden="true" />}
                 <span>{a.label}</span>
+                {a.options && <CaretDownIcon size={12} aria-hidden="true" />}
               </button>
+            )
+            return a.options ? (
+              <DtMenu
+                key={a.id}
+                className="dt-bulk-menu"
+                align="start"
+                side={variant === 'floating' ? 'top' : undefined}
+                offset={variant === 'floating' ? 12 : 4}
+                trigger={button}
+              >
+                {optionItems(a)}
+              </DtMenu>
+            ) : (
+              button
             )
           })}
           {rest.length > 0 && phone && (
@@ -103,18 +127,38 @@ export function BulkBar<Row extends object>({
                 return (
                   <Fragment key={a.id}>
                     {i > 0 && i === firstDestructive && <div className="dt-bsheet-sep" />}
-                    <button
-                      type="button"
-                      className={a.destructive ? 'dt-bsheet-row is-destructive' : 'dt-bsheet-row'}
-                      disabled={!!disabledOf(a)}
-                      onClick={() => run(a)}
-                    >
-                      {a.icon && <a.icon size={18} aria-hidden="true" />}
-                      <span className="dt-menu-text">
-                        <span>{a.label}</span>
-                        {tip && <span className="dt-menu-sub">{tip}</span>}
-                      </span>
-                    </button>
+                    {a.options ? (
+                      <>
+                        <div className="dt-bsheet-label">{a.label}</div>
+                        {a.options.map((o) => (
+                          <button
+                            key={o.id}
+                            type="button"
+                            className="dt-bsheet-row"
+                            disabled={!!disabledOf(a)}
+                            onClick={() => run(a, o)}
+                          >
+                            {o.color && (
+                              <span className="dt-bulk-dot" style={{ background: o.color }} aria-hidden="true" />
+                            )}
+                            <span className="dt-menu-text">{o.label}</span>
+                          </button>
+                        ))}
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        className={a.destructive ? 'dt-bsheet-row is-destructive' : 'dt-bsheet-row'}
+                        disabled={!!disabledOf(a)}
+                        onClick={() => run(a)}
+                      >
+                        {a.icon && <a.icon size={18} aria-hidden="true" />}
+                        <span className="dt-menu-text">
+                          <span>{a.label}</span>
+                          {tip && <span className="dt-menu-sub">{tip}</span>}
+                        </span>
+                      </button>
+                    )}
                   </Fragment>
                 )
               })}
@@ -141,18 +185,38 @@ export function BulkBar<Row extends object>({
                 return (
                   <Fragment key={a.id}>
                     {i > 0 && i === firstDestructive && <DtMenuSeparator />}
-                    <DtMenuItem
-                      destructive={a.destructive}
-                      twoLine={!!tip}
-                      disabled={!!disabledOf(a)}
-                      onSelect={() => run(a)}
-                    >
-                      {a.icon && <a.icon size={16} aria-hidden="true" />}
-                      <span className="dt-menu-text">
-                        <span>{a.label}</span>
-                        {tip && <span className="dt-menu-sub">{tip}</span>}
-                      </span>
-                    </DtMenuItem>
+                    {a.options ? (
+                      <Menu.SubmenuRoot>
+                        <Menu.SubmenuTrigger
+                          className={a.destructive ? 'dt-menu-item is-destructive' : 'dt-menu-item'}
+                          disabled={!!disabledOf(a)}
+                        >
+                          {a.icon && <a.icon size={16} aria-hidden="true" />}
+                          <span className="dt-menu-text">
+                            <span>{a.label}</span>
+                            {tip && <span className="dt-menu-sub">{tip}</span>}
+                          </span>
+                        </Menu.SubmenuTrigger>
+                        <Menu.Portal>
+                          <Menu.Positioner className="dt-positioner" sideOffset={4}>
+                            <Menu.Popup className="dt-menu dt-bulk-menu">{optionItems(a)}</Menu.Popup>
+                          </Menu.Positioner>
+                        </Menu.Portal>
+                      </Menu.SubmenuRoot>
+                    ) : (
+                      <DtMenuItem
+                        destructive={a.destructive}
+                        twoLine={!!tip}
+                        disabled={!!disabledOf(a)}
+                        onSelect={() => run(a)}
+                      >
+                        {a.icon && <a.icon size={16} aria-hidden="true" />}
+                        <span className="dt-menu-text">
+                          <span>{a.label}</span>
+                          {tip && <span className="dt-menu-sub">{tip}</span>}
+                        </span>
+                      </DtMenuItem>
+                    )}
                   </Fragment>
                 )
               })}
