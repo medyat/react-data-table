@@ -392,6 +392,14 @@ oturunca çıkar.
 - Neden: Swors sipariş listesinde "Durumu değiştir" hedef durumu sorar; düğmeden pencere açıp orada seçtirmek bir adım
   fazlaydı. Başka listelerde de (atama, etiket) aynı biçim gerekir (2026-11-17).
 
+## R31 · Telefonda kart çerçevesi kalır (05 §11'den ayrılır)
+
+- Telefon düzeni (`is-phone`) kartın kenarlığını, yarıçapını ve gölgesini kaldırmaz; yalnızca iç düzen değişir.
+- Neden: çerçevesiz kart ekranın kenarına dayanırsa doğru durur, ama uygulamalar listeyi iç boşluklu sayfa ya da yan
+  panel içine koyar (Swors: sayfada 16, Sheet'te 18 px). Çerçeve kalkınca tablo boşlukta asılı kalıyor, başlık satırının
+  zemini belirsiz yerde bitiyordu; yanındaki çerçeveli öğelerle de uyumsuzdu. Kenara taşırmak paketin bilemeyeceği
+  boşluğu ve 640 px eşiğinde gidip gelen bir ölçüyü gerektirirdi (2026-11-22).
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

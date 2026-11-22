@@ -2,12 +2,7 @@
    popover'ların yerini alır. Ölçüler handoff 04'ten; renk, yarıçap ve gölge token.
    R9: Base UI açık tetikleyiciyi `data-popup-open` ile işaretler (reka: data-state="open"); ikisi de seçicide. */
 
-/* Kart ekranı doldurur: çerçeve yok. */
-.dt-list.is-phone {
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-}
+/* R31: kart telefonda da çerçevesini korur; uygulama onu çoğu zaman iç boşluklu bir çerçeveye koyar. */
 
 /* Toolbar 52: dolgu 0 6 0 8, boşluk 2; sıra görünüm · boşluk · arama · Filter · ⋯ · ayırıcı · birincil (CSS order). */
 .dt-toolbar.is-phone {
