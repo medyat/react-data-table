@@ -1,7 +1,7 @@
 // 02-design-tokens.md → src/styles/tokens.css. Çalıştır: pnpm gen:docs
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { docTokens } from './docs.ts'
+import { docTokens, reactDensity } from './docs.ts'
 
 const block = (selector: string, vars: Record<string, string>): string =>
   `${selector} {\n${Object.entries(vars)
@@ -9,14 +9,7 @@ const block = (selector: string, vars: Record<string, string>): string =>
     .join('\n')}\n}\n`
 
 const { light, dark, fixed, density: spec } = docTokens()
-
-// R28: React satır yükseklikleri spesifikasyondan ayrılır; ikinci satır Standard'da ferah sığsın diye.
-const ROW_H = { comfortable: '64px', standard: '48px', compact: '36px' } as const
-const density = {
-  comfortable: { ...spec.comfortable, '--dt-row-h': ROW_H.comfortable },
-  standard: { ...spec.standard, '--dt-row-h': ROW_H.standard },
-  compact: { ...spec.compact, '--dt-row-h': ROW_H.compact },
-}
+const density = reactDensity(spec)
 
 const css =
   `/* Üretilmiş dosya: scripts/tokens-from-docs.ts ← data-table/docs/data-table/02-design-tokens.md. Elle düzenlemeyin; dokümanı değiştirip \`pnpm gen:docs\` çalıştırın. */\n\n` +

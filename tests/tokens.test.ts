@@ -2,7 +2,7 @@
 // Faz 0 kabul kriteri: 02'deki her token tokens.css'te, light ve dark; değerler tablolarla birebir.
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { docTokens, hasSpec } from '../scripts/docs.ts'
+import { docTokens, hasSpec, reactDensity } from '../scripts/docs.ts'
 
 const css = readFileSync(new URL('../src/styles/tokens.css', import.meta.url), 'utf8')
 
@@ -41,9 +41,10 @@ describe.skipIf(!hasSpec())('tokens.css ↔ 02-design-tokens.md', () => {
   it('dark: .dark sınıfı ve data-theme="dark" aynı blok', () => {
     expect(b['.dark, [data-theme="dark"]']).toEqual(doc.dark)
   })
-  it('yoğunluk blokları', () => {
-    expect(b[':root, [data-density="standard"]']).toEqual(doc.density.standard)
-    expect(b['[data-density="comfortable"]']).toEqual(doc.density.comfortable)
-    expect(b['[data-density="compact"]']).toEqual(doc.density.compact)
+  it('yoğunluk blokları: spesifikasyon, R28 satır yükseklikleriyle', () => {
+    const density = reactDensity(doc.density)
+    expect(b[':root, [data-density="standard"]']).toEqual(density.standard)
+    expect(b['[data-density="comfortable"]']).toEqual(density.comfortable)
+    expect(b['[data-density="compact"]']).toEqual(density.compact)
   })
 })

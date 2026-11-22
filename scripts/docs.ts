@@ -60,6 +60,16 @@ export interface DocTokens {
   density: Record<Density, Record<string, string>>
 }
 
+// R28: React satır yükseklikleri spesifikasyondan ayrılır; ikinci satır Standard'da ferah sığsın diye.
+const REACT_ROW_H: Record<Density, string> = { comfortable: '64px', standard: '48px', compact: '36px' }
+
+/** Spesifikasyonun yoğunluk blokları, React'in ayrıldığı değerlerle (R28); tokens.css bunu yazar, test bunu bekler. */
+export const reactDensity = (spec: DocTokens['density']): DocTokens['density'] => ({
+  comfortable: { ...spec.comfortable, '--dt-row-h': REACT_ROW_H.comfortable },
+  standard: { ...spec.standard, '--dt-row-h': REACT_ROW_H.standard },
+  compact: { ...spec.compact, '--dt-row-h': REACT_ROW_H.compact },
+})
+
 /** 02-design-tokens.md'deki tüm `--dt-*` token'ları. */
 export function docTokens(): DocTokens {
   const light: Record<string, string> = {}
