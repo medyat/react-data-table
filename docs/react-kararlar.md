@@ -400,6 +400,26 @@ oturunca çıkar.
   zemini belirsiz yerde bitiyordu; yanındaki çerçeveli öğelerle de uyumsuzdu. Kenara taşırmak paketin bilemeyeceği
   boşluğu ve 640 px eşiğinde gidip gelen bir ölçüyü gerektirirdi (2026-11-22).
 
+## R32 · Durumdaki koşul kullanılabilir sütunla sınırlıdır (04 §7'yi genişletir)
+
+- Adresten ya da görünümden gelen süzgeç ve sıralama, tablonun tanıyıp kullanılamaz bildiği sütunda atlanır: `when: false`
+  (R33), `filterable: false` (süzgeç), `sortable: false` (sıralama). Ayıklama durumun iki girişinde yapılır (görünümün
+  `resolve`'u, adresin `query`'si): istek, çipler, istemci modu ve "edited" aynı listeyi görür.
+- Tanınmayan alan olduğu gibi gider. Uygulama sütunu olmayan bir alanda da süzebilir (Swors: çek listesinin "Bizim
+  çeklerimiz" görünümü `is_ours`); tablonun dışında eklenen sabit koşullar zaten paketten geçmez.
+- Atlanan koşul geliştirmede bir kez konsola yazılır; adres değiştirilmez, sonraki değişiklikle yeniden yazılır.
+- Neden: 04 §7 kayıtlı görünümdeki olmayan sütunu sütun düzeninde atlıyordu, süzgeç ve sıralamada değil. Arayüzün izin
+  vermediği koşul linkle gelince isteğe gidiyordu: Swors'ta fiyat görmeyen kullanıcıya tutar süzgeci içeren link sunucudan
+  422 aldı, liste satır yerine hata gösterdi (2026-11-22).
+
+## R33 · Sütunun `when`'i (D34'ü sütuna genişletir)
+
+- `ColumnDef.when?: boolean`; false → sütun bu kullanıcı için yoktur: grid, Columns dialog'u, Filter, istek, dışa aktarma.
+  Durumdaki koşulu R32 ile atlanır. `hidden`'dan farkı: gizli sütun açılabilir, `when: false` sütun hiç sunulmaz.
+- Neden: yetkiye bağlı sütun (Swors'ta fiyat görmeyene tutarlar) ekranda elle listeden çıkarılıyordu; yeni tutar sütunu
+  eklenince liste unutuldu, sütun seçicide boş sütun olarak kaldı. Kural tanımın yanında durunca unutulmaz; sütun her zaman
+  tanımlı olduğu için R32 onun koşulunu da tanır (2026-11-22).
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

@@ -132,6 +132,12 @@ export interface BaseColumn<Row, V = unknown> {
   minWidth?: number
   maxWidth?: number
   hidden?: boolean
+  /**
+   * R33: false → sütun bu kullanıcı için yoktur: tabloda, Columns dialog'unda, Filter'da, istekte. Durumdaki (adres,
+   * görünüm) süzgeci ve sıralaması atlanır. Yetki içindir; satır aksiyonunun `when`'i gibi (D34). `hidden` ise gizli
+   * başlar ama açılabilir.
+   */
+  when?: boolean
   /** Gizlenemez. Birincil sütun için otomatik true. */
   alwaysVisible?: boolean
 

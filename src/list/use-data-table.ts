@@ -10,13 +10,14 @@ import type { TableState, UseDataTableOptions } from '../types/list'
 import type { FilterCondition, SortRule, TableQuery } from '../types/query'
 import type { View, ViewPatch, ViewState } from '../types/views'
 import { setSort, toggleSort } from './sort'
-import { useListTable } from './use-list-table'
+import { isFilterable, isSortable, useListTable } from './use-list-table'
 import { useViews } from './use-views'
 
 /** Hazır "Tümü" görünümünün kimliği (R19); adreste ve kişisel varsayılan tercihinde bu değerle durur. */
 const ALL_VIEW_ID = 'all'
 const PAGE_SIZES = [50, 100, 250, 500]
 const NONE: Record<string, true> = {}
+const warned = new Set<string>()
 
 /** İstenecek alanlar (R4): satır anahtarı, görünür sütunların yolu ve `fields`'i, tablonun `fields`'i; koddaki sırayla. */
 function fieldsOf<Row extends object>(
@@ -37,6 +38,26 @@ function fieldsOf<Row extends object>(
 
 export function useDataTable<Row extends object>(options: UseDataTableOptions<Row>) {
   const ctx = useDataTableContext()
+  // R33: `when: false` sütun bu kullanıcı için yoktur; tablonun geri kalanı yalnızca `columns`'u görür.
+  const columns = options.columns.filter((c) => c.when !== false)
+  const absent = new Set(options.columns.filter((c) => c.when === false).map((c) => c.id as string))
+  const defs = new Map(columns.map((c) => [c.id as string, c as ColumnDef]))
+  /**
+   * R32: adresten ya da görünümden gelen koşul, tablonun tanıyıp kullanılamaz bildiği sütunda atlanır (`when: false`,
+   * süzülemez, sıralanamaz); arayüzün izin vermediği koşul istekle de gitmez. Tanınmayan alan olduğu gibi gider:
+   * uygulama sütunu olmayan bir alanda da süzebilir.
+   */
+  const usable = <T extends { column: string }>(list: T[], allowed: (def: ColumnDef) => boolean): T[] =>
+    list.filter((item) => {
+      const def = defs.get(item.column)
+      if (def ? allowed(def) : !absent.has(item.column)) return true
+      const key = `${options.id}:${item.column}`
+      if (import.meta.env?.DEV && !warned.has(key)) {
+        warned.add(key)
+        console.warn(`[data-table] ${options.id}: "${item.column}" bu tabloda kullanılamaz; koşul atlandı (R32)`)
+      }
+      return false
+    })
   const rowKey = options.rowKey ?? 'id'
   const rowId = (row: Row) => String(readPath(row, rowKey))
   const prefs = usePreferences(options.id, ctx.preferences, {
@@ -61,13 +82,13 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
       ? defaultView(system, prefs.prefs.defaultViewId)
       : system.find((v) => v.id === source.view),
   )
-  const layout = useColumnLayout({ columns: options.columns, layout: opening?.state.columns })
+  const layout = useColumnLayout({ columns, layout: opening?.state.columns })
 
   // Genişlik değişimi hook'u yeniden çizmez (05 · Resize); "edited" için sürükleme bitince bir kez çizilir.
   useSyncExternalStore(layout.subscribeSizing, () => (layout.resizing() ? '' : JSON.stringify(layout.state().widths)))
   const resolve = (p: ViewPatch): ViewState => ({
-    filters: p.filters ?? [],
-    sort: p.sort ?? [],
+    filters: usable(p.filters ?? [], isFilterable),
+    sort: usable(p.sort ?? [], isSortable),
     columns: layout.resolve(p.columns),
   })
   const views = useViews({
@@ -82,7 +103,10 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
       prefs.set({ defaultViewId: id })
     },
     requested: source.view,
-    query: { filters: source.filters, sort: source.sort },
+    query: {
+      filters: source.filters && usable(source.filters, isFilterable),
+      sort: source.sort && usable(source.sort, isSortable),
+    },
     columns: layout.state(),
     resolve,
     apply: (view, s) => {
@@ -121,7 +145,7 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
 
   // Sütun taşımak ya da gizlemek isteği değiştirmez (R4): alanlar yalnızca yeni görünen sütunla, ya da sorgu değişince
   // yeniden kurulur. Önceki isteğin alanları render'lar arasında saklanır.
-  const visible = fieldsOf(options.columns, new Set(layout.columns.map((c) => c.id)), rowKey, options.fields)
+  const visible = fieldsOf(columns, new Set(layout.columns.map((c) => c.id)), rowKey, options.fields)
   const identity = JSON.stringify([state.search, state.filters, state.sort, state.page, state.pageSize])
   const [sent, setSent] = useState({ identity, fields: visible })
   let fields = sent.fields
@@ -143,7 +167,7 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
   const selection = selected.identity === identity ? selected.ids : NONE
 
   const client = useListTable({
-    columns: options.columns,
+    columns,
     rows: options.rows,
     rowId,
     locale: ctx.locale,
@@ -156,7 +180,7 @@ export function useDataTable<Row extends object>(options: UseDataTableOptions<Ro
 
   return {
     id: options.id,
-    columns: options.columns,
+    columns,
     entityName: options.entityName ?? { one: options.id, other: options.id },
     /** Sunucu modunda `useQuery` anahtarına ve isteğe girer (R4). */
     request,
