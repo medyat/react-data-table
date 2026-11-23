@@ -6,4 +6,5 @@ export { createLocalStoragePreferences, createLocalStorageViews } from './core/a
 export type { I18n, MessageParams } from './core/i18n'
 export { useDataTable, type DataTableInstance } from './list/use-data-table'
 export { DataTable } from './list/data-table'
+export { FormGrid } from './form-grid/form-grid'
 export { UserName } from './core/cells/render-cell'

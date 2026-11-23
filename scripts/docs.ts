@@ -133,8 +133,18 @@ export interface DocMessages {
 }
 
 // R1: sheet ve içe aktarma bu pakette yok; metinleri de taşınmaz. Telefon ⋯ › Export başlığı sheet bölümünden alınır.
+// FormGrid (R34) sheet anahtarlarını kullandıkça tek tek alır: ru elle çevrildiği için bölüm toptan açılmaz.
 const SKIPPED_SECTIONS = ['Toplu düzenleme (sheet)', 'İçe aktarma']
-const KEPT_KEYS = ['sheet.export']
+const KEPT_KEYS = [
+  'sheet.export',
+  'sheet.notANumber',
+  'sheet.notADate',
+  'sheet.notAnOption',
+  'sheet.noFormulas',
+  'sheet.required',
+  'sheet.rows',
+  'sheet.statusAria',
+]
 
 // React'in bilinçli sapmaları (Vue'ya taşınmaz; docs/react-kararlar.md · Faz 7c): anahtar → [EN, TR], dokümandakini ezer.
 const REACT_MESSAGES: Record<string, [string, string]> = {

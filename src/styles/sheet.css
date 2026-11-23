@@ -1,0 +1,293 @@
+/* Hücre motoru (FormGrid, sonra DataSheet; handoff 06 §5–6): gutter, hücre durumları, alt çubuk. Vue sheet.css'in
+   ızgara ve alt çubuk bölümleri; formül çubuğu, toolbar ve kayıt şeritleri DataSheet'le gelir. */
+
+/* Header (06 §1): zorunlu `*`, açıklama ?. */
+.dt-sheet-grid .dt-head-cell {
+  gap: 4px;
+}
+.dt-head-required {
+  color: var(--dt-r-dot);
+  font-weight: 600;
+}
+.dt-head-hint {
+  display: inline-flex;
+  flex: none;
+  color: var(--dt-text-3);
+}
+
+/* Gutter (06 §5): 56 px, --dt-surface-2 (header --dt-surface-3), satır no mono 11 sağda. */
+.dt-gutter {
+  --dt-row-bg: var(--dt-surface-2);
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 0 5px 0 4px;
+  color: var(--dt-text-3);
+  font-family: var(--dt-font-mono);
+  font-size: var(--dt-ui-fs-3xs);
+  user-select: none;
+  cursor: default;
+}
+.dt-head-cell.dt-gutter {
+  --dt-row-bg: var(--dt-surface-3);
+  justify-content: flex-end;
+  font-family: var(--dt-font);
+  font-size: var(--dt-fs-head);
+}
+.dt-gutter-no {
+  margin-left: auto;
+}
+
+/* Hücreler (06 §5). Satır hover yok (Excel); zemin hücre durumundan. */
+.dt-sheet-grid .dt-row:hover {
+  --dt-row-bg: var(--dt-surface);
+}
+.dt-sheet-grid .dt-cell[data-col] {
+  cursor: cell;
+  outline: none;
+  user-select: none;
+}
+.dt-sheet-grid .dt-cell[data-col].is-readonly {
+  --dt-row-bg: var(--dt-surface-2);
+  color: var(--dt-text-2);
+  cursor: default;
+}
+
+/* Seçimde: zemin + aralığın dış kenarlarında 1.5 px accent (inset gölgeler). */
+.dt-sheet-grid .dt-cell[data-col].is-selected {
+  --dt-row-bg: var(--dt-accent-soft);
+  --dt-sel-l: 0;
+  --dt-sel-r: 0;
+  --dt-sel-t: 0;
+  --dt-sel-b: 0;
+  box-shadow:
+    inset calc(var(--dt-sel-l) * 1px) 0 0 0 var(--dt-accent),
+    inset calc(var(--dt-sel-r) * -1px) 0 0 0 var(--dt-accent),
+    inset 0 calc(var(--dt-sel-t) * 1px) 0 0 var(--dt-accent),
+    inset 0 calc(var(--dt-sel-b) * -1px) 0 0 var(--dt-accent);
+}
+.dt-sheet-grid .dt-cell[data-col].is-edge-l {
+  --dt-sel-l: 1.5;
+}
+.dt-sheet-grid .dt-cell[data-col].is-edge-r {
+  --dt-sel-r: 1.5;
+}
+.dt-sheet-grid .dt-cell[data-col].is-edge-t {
+  --dt-sel-t: 1.5;
+}
+.dt-sheet-grid .dt-cell[data-col].is-edge-b {
+  --dt-sel-b: 1.5;
+}
+
+/* Aktif: 2 px accent iç çerçeve; düzenlenirken gölge ve üst katman. */
+.dt-sheet-grid .dt-cell[data-col].is-active {
+  --dt-row-bg: var(--dt-surface);
+  z-index: 2;
+  box-shadow: inset 0 0 0 2px var(--dt-accent);
+}
+.dt-sheet-grid .dt-cell[data-col].is-editing {
+  --dt-row-bg: var(--dt-surface);
+  z-index: 5;
+  padding: 0;
+  box-shadow:
+    inset 0 0 0 2px var(--dt-accent),
+    var(--dt-shadow-editing);
+}
+
+/* Hücre editörleri (Vue 07 §5, T11-07): hücrenin yerinde; `text` hücrenin üstüne taşan kutu. */
+.dt-sheet-grid .dt-cell[data-col].is-editing::after {
+  display: none;
+}
+.dt-sheet-grid .dt-cell[data-col].is-editing > .dt-cell-content {
+  padding: 0 var(--dt-cell-x);
+}
+.dt-cell-editor {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+.dt-cell-anchor {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+.dt-cell-editor.is-number {
+  justify-content: flex-end;
+  padding-right: var(--dt-cell-x);
+}
+.dt-cell-input {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding: 0 var(--dt-cell-x);
+  border: 0;
+  background: transparent;
+  color: var(--dt-text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+.dt-cell-input.is-right {
+  padding-right: 0;
+  text-align: right;
+}
+.dt-text-pop {
+  width: max(var(--anchor-width), calc(320 * var(--dt-ui-fs) / 13));
+  padding: 0;
+  overflow: hidden;
+}
+.dt-text-pop-input {
+  /* Portalda: ızgaranın border-box kuralı buraya ulaşmaz, %100 genişliğe boşluk eklenip sağdan taşardı. */
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  /* Dört yanda eşit boşluk. `--dt-cell-x` yoğunluğa bağlı ve ızgaranın kökünde tanımlı; kutu portalda, ona ulaşmaz. */
+  min-height: calc(5 * 1.4em + 20px);
+  padding: 10px;
+  border: 0;
+  background: var(--dt-surface);
+  color: var(--dt-text);
+  font: inherit;
+  line-height: 1.4;
+  resize: none;
+  outline: none;
+}
+.dt-cell-editor.is-date .dt-cell-input {
+  padding-right: 0;
+}
+.dt-cell-editor-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--dt-control-h-xs);
+  height: var(--dt-control-h-xs);
+  margin-right: 4px;
+  border: 0;
+  border-radius: var(--dt-radius-xs);
+  background: transparent;
+  color: var(--dt-text-3);
+  cursor: pointer;
+}
+.dt-cell-editor-btn:hover {
+  background: var(--dt-surface-3);
+  color: var(--dt-text-2);
+}
+
+/* Combobox listesi (06 §7): hücrenin altında sağa hizalı; vurgulu öğe --dt-surface-3 + ↵. */
+.dt-cell-list {
+  min-width: calc(180 * var(--dt-ui-fs) / 13);
+  padding: 4px;
+}
+.dt-cell-option {
+  min-height: 30px;
+  justify-content: space-between;
+}
+.dt-cell-option[data-highlighted] {
+  background: var(--dt-surface-3);
+}
+.dt-cell-option-enter {
+  visibility: hidden;
+}
+.dt-cell-option[data-highlighted] .dt-cell-option-enter {
+  visibility: visible;
+}
+
+/* Sabit hücreler kayan hücrelerin üstündedir: aktif (2) ve düzenlenen (5) hücre kayıp altlarına girince de. Durum
+   zeminleri koyu temada yarı saydam (`--dt-accent-soft`, `--dt-r-bg`): altına opak yüzey konur, arkası görünmez. */
+.dt-sheet-grid .dt-cell.is-pinned-start,
+.dt-sheet-grid .dt-cell.is-pinned-end {
+  z-index: 6;
+  background: linear-gradient(var(--dt-row-bg), var(--dt-row-bg)), var(--dt-surface);
+}
+
+/* FormGrid yerleşimi (form-grid.md §4): kart yok, sayfayla kayar. Başlık ve gövde ayrı kaplar, yatay konumları
+   eşit; başlık ve alt çubuk kayan atanın üstüne / altına yapışır. */
+.dt-form-grid {
+  flex: none;
+  border: 1px solid var(--dt-line);
+  border-radius: var(--dt-radius-card);
+  background: var(--dt-surface);
+}
+.dt-fg-head {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  overflow: hidden;
+  border-radius: var(--dt-radius-card) var(--dt-radius-card) 0 0;
+}
+.dt-fg-head .dt-head {
+  position: static;
+}
+/* Yapışmışken tablonun ucunda değil: köşe düz (FormGrid kökü `data-head-stuck` / `data-foot-stuck` yazar). */
+.dt-form-grid[data-head-stuck] .dt-fg-head,
+.dt-form-grid[data-foot-stuck] .dt-fg-foot {
+  border-radius: 0;
+}
+.dt-fg-body {
+  overflow: hidden;
+  overscroll-behavior-x: none;
+}
+.dt-form-grid .dt-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+/* Klavyeyle odaklanan hücre yapışkan başlığın ve alt çubuğun altında kalmaz. */
+.dt-form-grid .dt-cell[data-row] {
+  scroll-margin: var(--dt-head-h) 0 calc(var(--dt-control-h) + 12px);
+}
+.dt-fg-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  background: var(--dt-surface-2);
+  border-top: 1px solid var(--dt-line);
+  border-radius: 0 0 var(--dt-radius-card) var(--dt-radius-card);
+}
+
+/* Her zaman görünen yatay çubuk: kayan bölümün altında, 10 px. */
+.dt-hbar {
+  height: 12px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+.dt-hbar-track {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--dt-surface-3);
+}
+.dt-hbar-track.is-idle {
+  visibility: hidden;
+}
+.dt-hbar-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--dt-line-3);
+  cursor: default;
+  touch-action: none;
+}
+.dt-hbar-thumb:hover {
+  background: var(--dt-text-3);
+}
+
+/* Alt çubuk (06 §6): 36 px, dolgu 0 12, --dt-surface-2, 12.5 --dt-text-2. */
+.dt-status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 36px;
+  padding: 0 12px;
+  font-size: var(--dt-ui-fs-sm);
+  color: var(--dt-text-2);
+}
+.dt-status-rows {
+  color: var(--dt-text);
+}

@@ -1,7 +1,8 @@
 # CLAUDE.md — React Data Table paketi
 
 Bu repo `@medyat/react-data-table`'ı geliştirir: `@medyat/vue-data-table`'ın liste bileşeninin React 19
-karşılığı. Yalnızca liste; sheet bu sürümde yok.
+karşılığı. Üç bileşen (R34): `DataTable` (liste, tamam), `FormGrid` (formun içindeki satırlar,
+`docs/form-grid.md`, sıradaki iş) ve `DataSheet` (toplu kayıt, sonra).
 
 ## Her işe başlamadan önce
 

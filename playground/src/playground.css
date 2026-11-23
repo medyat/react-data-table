@@ -269,3 +269,40 @@ body {
   color: var(--dt-a-fg);
   font-size: var(--dt-ui-fs-sm);
 }
+
+/* F1 · FormGrid: form gövdesi kayar (Sheet gövdesi gibi); ızgara onunla kayar. */
+.pg-form {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pg-form-fields {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--dt-line);
+  border-radius: 10px;
+  background: var(--dt-surface);
+}
+.pg-form-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--dt-text-2);
+}
+.pg-form-log {
+  margin: 0;
+  color: var(--dt-text-2);
+  font-family: var(--dt-font-mono);
+}
+.pg-form-after {
+  flex: none;
+  height: 400px;
+  padding: 16px;
+  border: 1px dashed var(--dt-line);
+  border-radius: 10px;
+  color: var(--dt-text-3);
+}

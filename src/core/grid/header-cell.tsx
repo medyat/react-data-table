@@ -1,6 +1,6 @@
 // Header hücresi (05 §4 · Header, T4): etiket düğmesi, birim, sıralama oku, raptiye, ⋯ sütun menüsü, resize tutamacı.
 // Klavye (08 §3): ↵/Space sırala, ⇧F10 menü, ⇧←/→ ±16 px, ⌥⇧←/→ taşı. Filtrelenen sütunda huni çipi açar.
-import { ArrowUpIcon, DotsThreeIcon, FunnelIcon, PushPinIcon } from '@phosphor-icons/react'
+import { ArrowUpIcon, DotsThreeIcon, FunnelIcon, PushPinIcon, QuestionIcon } from '@phosphor-icons/react'
 import {
   useId,
   useRef,
@@ -33,6 +33,7 @@ export function HeaderCell<Row extends object>({
   filtered,
   onFilter,
   onColumns,
+  menu = true,
 }: {
   column: LayoutColumn<Row>
   layout: ColumnLayoutApi<Row>
@@ -47,6 +48,8 @@ export function HeaderCell<Row extends object>({
   onFilter?: () => void
   /** Columns dialog'unu açar; odak dönsün diye ⋯ düğmesini verir. Verilmezse menüde yok. */
   onColumns?: (from: HTMLElement | null) => void
+  /** false → ⋯ sütun menüsü yok (FormGrid: formun sütunu gizlenmez, taşınmaz). */
+  menu?: boolean
 }) {
   const { i18n } = useDataTableContext()
   const def = column.def
@@ -86,7 +89,7 @@ export function HeaderCell<Row extends object>({
       }
       return
     }
-    if ((k === 'F10' && e.shiftKey) || k === 'ContextMenu') {
+    if (menu && ((k === 'F10' && e.shiftKey) || k === 'ContextMenu')) {
       e.preventDefault()
       setMenuOpen(true)
       return
@@ -140,6 +143,7 @@ export function HeaderCell<Row extends object>({
       aria-sort={ariaSort}
       data-col={column.id}
       onContextMenu={(e) => {
+        if (!menu) return
         e.preventDefault()
         setMenuOpen(true)
       }}
@@ -167,74 +171,90 @@ export function HeaderCell<Row extends object>({
         {sort && numeric && sortMark}
         <span className="dt-head-text">{(layout.phone && def.headerShort) || def.header}</span>
         {unit && <span className="dt-head-unit">{unit}</span>}
+        {def.required && (
+          <span className="dt-head-required" aria-label={i18n.t('sheet.required')} role="img">
+            *
+          </span>
+        )}
         {sort && !numeric && sortMark}
-        {column.pinned && <PushPinIcon size={12} className="dt-head-pin" aria-hidden="true" />}
+        {/* FormGrid'de sabitleme kullanıcının değil, ızgaranın: raptiye yok. */}
+        {menu && column.pinned && <PushPinIcon size={12} className="dt-head-pin" aria-hidden="true" />}
       </button>
+      {def.hint && (
+        <span className="dt-head-hint" role="img" aria-label={def.hint} data-dt-tip={def.hint}>
+          <QuestionIcon size={14} aria-hidden="true" />
+        </span>
+      )}
       {def.description && (
         <span id={descId} className="dt-sr-only">
           {def.description}
         </span>
       )}
-      <DtMenu
-        open={menuOpen}
-        onOpenChange={setMenuOpen}
-        className="dt-col-menu"
-        finalFocus={() => {
-          const keep = !toFilter.current
-          toFilter.current = false
-          return keep
-        }}
-        trigger={
-          <button
-            ref={menuButton}
-            type="button"
-            className="dt-head-icon dt-head-menu"
-            aria-label={i18n.t('header.optionsAria', { column: def.header })}
-          >
-            <DotsThreeIcon size={16} weight="bold" aria-hidden="true" />
-          </button>
-        }
-      >
-        <DtMenuLabel>{i18n.t(typeLabelKey(def.type))}</DtMenuLabel>
-        {onSortSet && (
-          <>
-            <DtMenuItem onSelect={() => onSortSet('asc')}>{i18n.t('header.sortAsc')}</DtMenuItem>
-            <DtMenuItem onSelect={() => onSortSet('desc')}>{i18n.t('header.sortDesc')}</DtMenuItem>
-            <DtMenuItem disabled={!sort} onSelect={() => onSortSet(null)}>
-              {i18n.t('header.clearSort')}
-            </DtMenuItem>
-            <DtMenuSeparator />
-          </>
-        )}
-        {onFilter && (
-          <>
-            <DtMenuItem
-              onSelect={() => {
-                toFilter.current = true
-                onFilter()
-              }}
+      {menu && (
+        <DtMenu
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          className="dt-col-menu"
+          finalFocus={() => {
+            const keep = !toFilter.current
+            toFilter.current = false
+            return keep
+          }}
+          trigger={
+            <button
+              ref={menuButton}
+              type="button"
+              className="dt-head-icon dt-head-menu"
+              aria-label={i18n.t('header.optionsAria', { column: def.header })}
             >
-              {i18n.t('header.filterBy')}
-            </DtMenuItem>
-            <DtMenuSeparator />
-          </>
-        )}
-        <DtMenuItem onSelect={() => move(-1)}>
-          {i18n.t('header.moveLeft')}
-          <kbd className="dt-kbd">{MOVE_KBD.left}</kbd>
-        </DtMenuItem>
-        <DtMenuItem onSelect={() => move(1)}>
-          {i18n.t('header.moveRight')}
-          <kbd className="dt-kbd">{MOVE_KBD.right}</kbd>
-        </DtMenuItem>
-        <DtMenuSeparator />
-        <DtMenuItem disabled={!!column.pinned || !column.canHide} onSelect={() => layout.setVisible(column.id, false)}>
-          {i18n.t('header.hide')}
-        </DtMenuItem>
-        {onColumns && (
-          <DtMenuItem onSelect={() => onColumns(menuButton.current)}>{i18n.t('header.columnSettings')}</DtMenuItem>
-        )}
-      </DtMenu>
+              <DotsThreeIcon size={16} weight="bold" aria-hidden="true" />
+            </button>
+          }
+        >
+          <DtMenuLabel>{i18n.t(typeLabelKey(def.type))}</DtMenuLabel>
+          {onSortSet && (
+            <>
+              <DtMenuItem onSelect={() => onSortSet('asc')}>{i18n.t('header.sortAsc')}</DtMenuItem>
+              <DtMenuItem onSelect={() => onSortSet('desc')}>{i18n.t('header.sortDesc')}</DtMenuItem>
+              <DtMenuItem disabled={!sort} onSelect={() => onSortSet(null)}>
+                {i18n.t('header.clearSort')}
+              </DtMenuItem>
+              <DtMenuSeparator />
+            </>
+          )}
+          {onFilter && (
+            <>
+              <DtMenuItem
+                onSelect={() => {
+                  toFilter.current = true
+                  onFilter()
+                }}
+              >
+                {i18n.t('header.filterBy')}
+              </DtMenuItem>
+              <DtMenuSeparator />
+            </>
+          )}
+          <DtMenuItem onSelect={() => move(-1)}>
+            {i18n.t('header.moveLeft')}
+            <kbd className="dt-kbd">{MOVE_KBD.left}</kbd>
+          </DtMenuItem>
+          <DtMenuItem onSelect={() => move(1)}>
+            {i18n.t('header.moveRight')}
+            <kbd className="dt-kbd">{MOVE_KBD.right}</kbd>
+          </DtMenuItem>
+          <DtMenuSeparator />
+          <DtMenuItem
+            disabled={!!column.pinned || !column.canHide}
+            onSelect={() => layout.setVisible(column.id, false)}
+          >
+            {i18n.t('header.hide')}
+          </DtMenuItem>
+          {onColumns && (
+            <DtMenuItem onSelect={() => onColumns(menuButton.current)}>{i18n.t('header.columnSettings')}</DtMenuItem>
+          )}
+        </DtMenu>
+      )}
       <span className="dt-head-sep" aria-hidden="true" />
       <span className="dt-resize" aria-hidden="true" onMouseDown={onResizeStart} onTouchStart={onResizeStart}>
         {resizing >= 0 && <span className="dt-resize-badge">{Math.round(resizing)} px</span>}

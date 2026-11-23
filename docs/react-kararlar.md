@@ -420,6 +420,16 @@ oturunca çıkar.
   eklenince liste unutuldu, sütun seçicide boş sütun olarak kaldı. Kural tanımın yanında durunca unutulmaz; sütun her zaman
   tanımlı olduğu için R32 onun koşulunu da tanır (2026-11-22).
 
+## R34 · Üçüncü bileşen: `FormGrid` (R1'i genişletir)
+
+- Paket üç bileşen olur: `DataTable` (liste), `DataSheet` (toplu kayıt, Vue 07) ve `FormGrid` (bir formun alanı
+  olan satır dizisi: belge satırları, POS oranları). Ayrı sözleşmeler (D17); `variant` yok.
+- `FormGrid` kontrollüdür (`rows` / `onRowsChange`), kaydetmez, form kütüphanesine bağlı değildir. Sütunu
+  `DataTable`'ın `ColumnDef`'i; tür adları aynı, R1'de çıkarılan sheet alanları geri gelir. Hücre motoru `core/`'a
+  girer, DataSheet onu ikinci kullanıcı olarak alır; bu yüzden `FormGrid` önce yazılır.
+- D31'i değiştirmez: D31 salt okunur detay tablosuydu, düzenlenen satır dizisi o karar yazılırken yoktu.
+- Spesifikasyon: `docs/form-grid.md` (onaylandı, 2026-11-23).
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

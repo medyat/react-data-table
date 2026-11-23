@@ -1,4 +1,5 @@
-// api-draft.ts §2'den türetildi: sütun tanımı, özel hücre, hücre aksiyonu. Sheet'e ait alanlar yok (R1).
+// api-draft.ts §2'den türetildi: sütun tanımı, özel hücre, hücre aksiyonu. Düzenleme alanları FormGrid içindir
+// (R34); DataTable onları okumaz.
 import type { ComponentType, ReactNode } from 'react'
 import type { Density, IsoDate, Plural, Tone } from './core'
 import type { FilterOp } from './query'
@@ -76,6 +77,16 @@ export interface CellContext<Row, V = unknown> {
  * Tipin kabuğu (hizalama, kesme, boş değer, yoğunluk, hover) korunur; yalnızca içerik değişir.
  */
 export type CellRender<Row, V = unknown> = (ctx: CellContext<Row, V>) => ReactNode
+
+/** Doğrulama bağlamı (FormGrid): satır, bütün satırlar ve satırın formda yeni eklenip eklenmediği. */
+export interface ValidationContext<Row> {
+  row: Row
+  rows: readonly Row[]
+  isNew: boolean
+}
+
+/** Hata ya da uyarı metni döndürür; sorun yoksa null. */
+export type Validator<Row> = (value: unknown, ctx: ValidationContext<Row>) => string | null | undefined
 
 /** İkon bileşeni: Phosphor ikonları doğrudan verilir; paket `size`, `weight` ve `aria-hidden` geçirir. */
 export type IconComponent = ComponentType<{
@@ -160,6 +171,18 @@ export interface BaseColumn<Row, V = unknown> {
 
   cell?: CellRender<Row, V>
   actions?: Array<CellAction<Row>>
+
+  // FormGrid (R34, docs/form-grid.md §3.1). DataTable bu alanları okumaz.
+  /** Varsayılan true; fonksiyon satıra göre kilitler. */
+  editable?: boolean | ((row: Row, ctx: { isNew: boolean }) => boolean)
+  /** Başlıkta yıldız. İstemcide hata üretmez: zorunluluğu sunucu söyler. */
+  required?: boolean
+  /** Hata: hücre kırmızı, balonda mesaj. */
+  validate?: Validator<Row>
+  /** Uyarı: kaydı engellemez. */
+  warn?: Validator<Row>
+  /** Başlıkta ? ikonu ile açıklama. */
+  hint?: string
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Row için üst sınır; api-draft ile aynı

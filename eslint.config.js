@@ -11,8 +11,8 @@ const TANSTACK_PATTERN = {
   message: 'TanStack Table yalnızca use-column-layout / use-list-table içinde (01 · TanStack sınırı, D23).',
 }
 
-// 01 · Klasör yapısı: core/ list/'i bilmez. Sheet gelince buraya eklenir (R1).
-const LAYERS = { core: ['list'] }
+// 01 · Klasör yapısı: core/ bileşenleri bilmez; bileşenler birbirini bilmez (R34).
+const LAYERS = { core: ['list', 'form-grid'], list: ['form-grid'], 'form-grid': ['list'] }
 
 const restrict = (patterns) => ({ 'no-restricted-imports': ['error', { patterns }] })
 
@@ -24,7 +24,7 @@ const boundaryConfigs = Object.entries(LAYERS).flatMap(([dir, banned]) => {
   const hosts = TANSTACK_HOSTS.filter((h) => h.startsWith(`src/${dir}/`))
   return [
     { files: [`src/${dir}/**`], ignores: hosts, rules: restrict([layer, TANSTACK_PATTERN]) },
-    { files: hosts, rules: restrict([layer]) },
+    ...(hosts.length ? [{ files: hosts, rules: restrict([layer]) }] : []),
   ]
 })
 
