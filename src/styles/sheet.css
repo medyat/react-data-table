@@ -53,6 +53,85 @@
   cursor: default;
 }
 
+/* Uyarı / hata (06 §5): zemin + sağ üstte 7 px köşe üçgeni; hata 1.5 px kırmızı çerçeve. Seçim ve aktif hücre
+   kuralları aşağıda: çerçeveleri hatanınkini örter (Vue sheet.css ile aynı sıra). */
+.dt-sheet-grid .dt-cell[data-col].is-warning::after,
+.dt-sheet-grid .dt-cell[data-col].is-error::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  border-style: solid;
+  border-width: 0 7px 7px 0;
+  border-color: transparent var(--dt-a-dot) transparent transparent;
+  pointer-events: none;
+  z-index: 1;
+}
+.dt-sheet-grid .dt-cell[data-col].is-warning {
+  --dt-row-bg: var(--dt-a-bg);
+}
+.dt-sheet-grid .dt-cell[data-col].is-error {
+  --dt-row-bg: var(--dt-r-bg);
+  box-shadow: inset 0 0 0 1.5px var(--dt-r-dot);
+}
+.dt-sheet-grid .dt-cell[data-col].is-error::after {
+  border-right-color: var(--dt-r-dot);
+}
+
+/* Hata / uyarı balonu (06 §5): hücrenin üstünde (ilk satırda altında), sol kenar hizalı, 6 px ara; üzerine gelince
+   ya da hücre aktifken. Hücre başına tek düğüm, yalnız sorunlu hücrede çizilir. */
+.dt-cell-tip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  z-index: 6;
+  display: none;
+  width: max-content;
+  max-width: calc(280 * var(--dt-ui-fs) / 13);
+  padding: 7px 10px;
+  border-radius: var(--dt-radius-item);
+  background: var(--dt-error-tip-bg);
+  color: var(--dt-fill-text-light);
+  font-family: var(--dt-font);
+  font-size: var(--dt-ui-fs-xs);
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: left;
+  white-space: pre-line;
+  box-shadow: var(--dt-shadow-tip);
+  pointer-events: none;
+}
+.dt-cell-tip.is-warning {
+  background: var(--dt-tip-bg);
+  color: var(--dt-tip-fg);
+}
+.dt-cell.is-tip-below > .dt-cell-tip {
+  bottom: auto;
+  top: calc(100% + 6px);
+}
+.dt-sheet-grid .dt-cell[data-col]:hover > .dt-cell-tip,
+.dt-sheet-grid .dt-cell[data-col].is-active > .dt-cell-tip {
+  display: block;
+}
+.dt-sheet-grid .dt-cell[data-col].is-editing > .dt-cell-tip {
+  display: none;
+}
+/* Yakın seçenek önerisi ("Adet kullan"): balon tıklanabilir olur. */
+.dt-cell-tip:has(.dt-cell-tip-btn) {
+  pointer-events: auto;
+}
+.dt-cell-tip-btn {
+  display: block;
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* Seçimde: zemin + aralığın dış kenarlarında 1.5 px accent (inset gölgeler). */
 .dt-sheet-grid .dt-cell[data-col].is-selected {
   --dt-row-bg: var(--dt-accent-soft);
@@ -235,6 +314,11 @@
   top: 0;
   left: 0;
 }
+/* Satırlar ayrı katman (transform): balonu taşan satır komşusunun üstünde kalsın. */
+.dt-form-grid .dt-row:hover,
+.dt-form-grid .dt-row:has(> .dt-cell.is-active) {
+  z-index: 1;
+}
 /* Klavyeyle odaklanan hücre yapışkan başlığın ve alt çubuğun altında kalmaz. */
 .dt-form-grid .dt-cell[data-row] {
   scroll-margin: var(--dt-head-h) 0 calc(var(--dt-control-h) + 12px);
@@ -289,4 +373,49 @@
 }
 .dt-status-rows {
   color: var(--dt-text);
+}
+/* Hatalı satır işareti: gutter'da ikon, alt çubukta 7 px kare. */
+.dt-mark {
+  display: inline-flex;
+  flex: none;
+}
+.dt-mark.is-error {
+  color: var(--dt-r-dot);
+}
+.dt-status .dt-mark {
+  width: 7px;
+  height: 7px;
+  border-radius: 1.5px;
+}
+.dt-status .dt-mark.is-error {
+  background: var(--dt-r-dot);
+}
+.dt-status-errors {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dt-space-sm);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--dt-r-fg);
+  font: inherit;
+  font-weight: 500;
+  text-decoration: underline;
+  cursor: pointer;
+}
+/* Seçim özeti (06 §6): etiket soluk, değer koyu; sağa yaslı. */
+.dt-status-summary {
+  display: inline-flex;
+  gap: 14px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.dt-status-summary span {
+  color: var(--dt-text-3);
+}
+.dt-status-summary b {
+  margin-left: 4px;
+  font-weight: 500;
+  color: var(--dt-text);
+  font-variant-numeric: tabular-nums;
 }

@@ -146,7 +146,10 @@ Tek düzen; belgede de form içinde de aynı (POS tablosu için ayrı "gömülü
   ön eki olan sütuna eşler: `detail.transport.vessel_name` → Taşıma (`detail.transport`). Swors sarmalayıcısı
   RHF hatalarını (`lines.3.…`) bu biçime çevirir.
 - Hata hücreyi kırmızı yapar; mesaj hücre seçilince ya da üzerine gelince balonda. Hiçbir sütuna düşmeyen hata
-  satır başındadır (gutter).
+  satır başındadır (gutter); klavyeyle okunabilsin diye satırın ilk hücresinin balonunda da görünür ve F8 oraya iner.
+- Sunucu hatası olan hücrede istemci kuralı gösterilmez (bir hücre, bir balon). Uyarı (`warn`) sarı köşe + balondur;
+  "N hata — git" sayısına ve F8 sırasına girmez. "N hata" hücreleri değil hatalı satırları sayar (Vue ile aynı).
+- Seçenek dışı değerde yakın seçenek varsa balonda "{seçenek} kullan" düğmesi hücreye yazar (geri al'a girer).
 - `validate` / `warn` istemci kuralıdır; zorunluluk ve iş kuralları sunucudan gelir. `required` istemcide hata
   üretmez, yalnız başlığa yıldız koyar.
 
@@ -229,4 +232,6 @@ D düzenleme ve editörler · E hatalar ve alt çubuk · F ölçüm.
 - Hücre editörleri filtre editörlerinden ayrıdır (Vue 07 §5'ten sapma; Vue kodu da ayrı yazmış): filtre editörü
   operatör taşır ve gecikmeyle uygular. Ortak olan sayı ayrıştırma ve takvimdir.
 - Seçim TanStack ile değil motorun deposuyla tutulur (TanStack yalnız iki dosyada, CLAUDE.md).
+- Hatalar, F8 sırası ve seçim özeti her çizimde veriden tek geçişte hesaplanır (`core/sheet/issues.ts`); seçim özeti
+  ayrı bileşen olarak depoyu dinler, ok tuşunda ızgara yeniden çizilmez.
 - Yapışkan başlık ile yatay kaydırma aynı kapta olamaz: başlık, gövde ve alt çubuk ayrı kaplar, `scrollLeft` eşitlenir.

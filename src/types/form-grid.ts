@@ -18,6 +18,11 @@ export interface FormGridProps<Row extends object> {
   label: string
   /** Verilmezse geçici kimlik (form-grid.md §2). */
   getRowId?: (row: Row) => string
+  /**
+   * Sunucu hataları: anahtar satır sırası + alan yolu ("3.detail.delivery_term"); en uzun ön eki sütun id'si olan
+   * sütuna düşer, düşmeyen satırındır (form-grid.md §6).
+   */
+  errors?: Record<string, string | string[]>
   /** ⋯ menüsü. */
   rowActions?: Array<RowAction<Row>>
   density?: Density

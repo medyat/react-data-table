@@ -1,5 +1,6 @@
 // F1 · FormGrid: Sevk belgesi satırları formun içinde (docs/form-grid.md). Üstte yer tutucu form alanları: ızgara
-// sayfayla kayar, başlık ve alt çubuk yapışkan. "1000 × 30" ölçüm verisi.
+// sayfayla kayar, başlık ve alt çubuk yapışkan. "1000 × 30" ölçüm verisi. Hatalar (E): Miktar 0 ya da eksi istemci
+// hatası, 1000'den büyük uyarı; "Sunucu hataları" kaydetmenin döndürdüğü 422'yi taklit eder (form-grid.md §6).
 import { TrashIcon } from '@phosphor-icons/react'
 import { FormGrid, type ColumnDef, type RowAction } from '@medyat/react-data-table'
 import { useState } from 'react'
@@ -26,7 +27,15 @@ const units = [
 const base: Array<ColumnDef<Line>> = [
   { id: 'code', header: 'Ürün', type: 'string', width: 140, required: true },
   { id: 'title', header: 'Ad', type: 'string', width: 240 },
-  { id: 'qty', header: 'Miktar', type: 'decimal', width: 104, required: true },
+  {
+    id: 'qty',
+    header: 'Miktar',
+    type: 'decimal',
+    width: 104,
+    required: true,
+    validate: (v) => (v !== null && v !== '' && Number(v) <= 0 ? 'Miktar sıfırdan büyük olmalı' : null),
+    warn: (v) => (Number(v) > 1000 ? 'Miktar alışılmadık derecede yüksek' : null),
+  },
   { id: 'unit', header: 'Birim', type: 'select', options: units, width: 112 },
   { id: 'price', header: 'Birim fiyat', type: 'currency', currency: 'TRY', width: 128 },
   { id: 'vat', header: 'KDV', type: 'percentage', width: 80, hint: 'Satırın KDV oranı; boşsa üründen gelir.' },
@@ -107,6 +116,7 @@ export function F1FormGrid() {
   const [size, setSize] = useState<'small' | 'big'>('small')
   const [rows, setRows] = useState<Line[]>(sample)
   const [log, setLog] = useState('')
+  const [server, setServer] = useState(false)
   return (
     <div className="pg-form">
       <div className="pg-form-fields">
@@ -130,6 +140,9 @@ export function F1FormGrid() {
             <option value="big">1000 × 30</option>
           </select>
         </label>
+        <label>
+          <input type="checkbox" checked={server} onChange={(e) => setServer(e.target.checked)} /> Sunucu hataları
+        </label>
       </div>
       <FormGrid
         key={size}
@@ -137,6 +150,15 @@ export function F1FormGrid() {
         rows={rows}
         columns={size === 'big' ? wide : base}
         rowActions={actions}
+        errors={
+          server
+            ? {
+                '1.qty': 'Depoda yeterli stok yok (120 m var).',
+                '2.unit': 'Bu ürün yalnız adetle satılır.',
+                '3': 'Satır faturalandı; değiştirilemez.',
+              }
+            : undefined
+        }
         onRowsChange={(next, change) => {
           setRows(next)
           setLog(`${change.kind}: ${change.cells.map((c) => `${c.row + 1}.${c.column}`).join(', ')}`)

@@ -142,8 +142,16 @@ const KEPT_KEYS = [
   'sheet.notAnOption',
   'sheet.noFormulas',
   'sheet.required',
-  'sheet.rows',
   'sheet.statusAria',
+  // F1 E: hatalar ve alt çubuk.
+  'sheet.errorsGoTo.one',
+  'sheet.errorsGoTo.other',
+  'sheet.hasErrors',
+  'sheet.useOption',
+  'sheet.selectionSummary',
+  'sheet.agg.count',
+  'sheet.agg.sum',
+  'sheet.agg.avg',
 ]
 
 // React'in bilinçli sapmaları (Vue'ya taşınmaz; docs/react-kararlar.md · Faz 7c): anahtar → [EN, TR], dokümandakini ezer.
@@ -164,6 +172,8 @@ const REACT_MESSAGES: Record<string, [string, string]> = {
   'views.saveChanges': ['Save', 'Kaydet'],
   'views.saveAsMine': ['Save as view…', 'Görünüm olarak kaydet…'],
   // Varsayılan system görünümünde "Set as default" yerine "Remove default" çıkar (R6); yasaklananı söylemek iki durumda da doğru.
+  // form-grid.md §4: özet boş olmayan hücreleri sayar; "Adet" miktar sütunuyla karışıyordu.
+  'sheet.agg.count': ['Cells', 'Hücre'],
   'views.systemNote': [
     "System views can't be renamed or deleted.",
     'Sistem görünümleri yeniden adlandırılamaz ve silinemez.',
@@ -172,6 +182,11 @@ const REACT_MESSAGES: Record<string, [string, string]> = {
 
 /** Vue dokümanında olmayan, yalnızca React'te bulunan anahtarlar; dokümanda varsa REACT_MESSAGES'a girer. */
 const REACT_ONLY_MESSAGES: Record<string, [string, string]> = {
+  // FormGrid alt çubuğu (form-grid.md §4): "1 rows" yazmasın; özet Excel gibi en küçük ve en büyüğü de verir.
+  'sheet.rows.one': ['{count} row', '{count} satır'],
+  'sheet.rows.other': ['{count} rows', '{count} satır'],
+  'sheet.agg.min': ['Min', 'En küçük'],
+  'sheet.agg.max': ['Max', 'En büyük'],
   // R6: sistem görünümü olmayan ekranda varsayılandan dönmenin tek yolu.
   'views.removeDefault': ['Remove default', 'Varsayılanı kaldır'],
   // Sütun menüsünden Columns dialog'u: Display popover'ına gitmeden.

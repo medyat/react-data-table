@@ -3,6 +3,7 @@
 import { describe, expect, it } from 'vitest'
 import { createI18n } from '../src/core/i18n'
 import { mapErrors } from '../src/core/sheet/errors'
+import { collectIssues, nextError } from '../src/core/sheet/issues'
 import { summarize } from '../src/core/sheet/summary'
 import { cellIssue } from '../src/core/sheet/validate'
 import type { ColumnDef } from '../src/types'
@@ -116,5 +117,54 @@ describe('summarize', () => {
     const t0 = performance.now()
     summarize(cells)
     expect(performance.now() - t0).toBeLessThan(60)
+  })
+})
+
+describe('collectIssues · nextError (form-grid.md §6)', () => {
+  type R = { qty?: unknown; unit?: unknown }
+  const cols: ColumnDef<R>[] = [
+    { id: 'qty', type: 'decimal', header: 'Miktar', validate: (v) => (v === '0' ? 'Sıfır olamaz' : null) },
+    { id: 'unit', type: 'string', header: 'Birim', warn: (v) => (v === 'x' ? 'Emin misiniz?' : null) },
+  ]
+  const collect = (rows: R[], errors: Record<string, string>) =>
+    collectIssues({
+      rows,
+      columns: cols,
+      errors: mapErrors(errors, ['qty', 'unit']),
+      read: (i, def) => rows[i]?.[def.id as keyof R],
+      isNew: () => false,
+      i18n,
+    })
+
+  it('sunucu hatası istemci kuralından önce gelir; satır hatası ilk hücrede, uyarı sıraya girmez', () => {
+    const issues = collect([{ qty: '0' }, { qty: 'abc', unit: 'x' }, { qty: '2' }], {
+      '0.qty': 'Stok yetersiz',
+      '2': 'Satır kilitli',
+    })
+    expect(issues.cells.get(0)?.get('qty')?.message).toBe('Stok yetersiz')
+    expect(issues.cells.get(1)?.get('qty')?.message).toBe(i18n.t('sheet.notANumber'))
+    expect(issues.cells.get(1)?.get('unit')?.level).toBe('warning')
+    expect(issues.cells.get(2)?.get('qty')?.message).toBe('Satır kilitli')
+    expect(issues.rows.get(2)).toEqual(['Satır kilitli'])
+    expect(issues.order).toEqual([
+      { row: 0, col: 0 },
+      { row: 1, col: 0 },
+      { row: 2, col: 0 },
+    ])
+    expect(issues.errorRows).toBe(3)
+  })
+
+  it('F8 sonraki hataya gider, uçta başa döner; ⇧F8 tersine', () => {
+    const order = [
+      { row: 0, col: 1 },
+      { row: 3, col: 0 },
+      { row: 3, col: 2 },
+    ]
+    expect(nextError(order, null, 1)).toEqual({ row: 0, col: 1 })
+    expect(nextError(order, { row: 3, col: 0 }, 1)).toEqual({ row: 3, col: 2 })
+    expect(nextError(order, { row: 3, col: 2 }, 1)).toEqual({ row: 0, col: 1 })
+    expect(nextError(order, { row: 3, col: 0 }, -1)).toEqual({ row: 0, col: 1 })
+    expect(nextError(order, { row: 0, col: 0 }, -1)).toEqual({ row: 3, col: 2 })
+    expect(nextError([], { row: 0, col: 0 }, 1)).toBeNull()
   })
 })

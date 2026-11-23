@@ -1,6 +1,7 @@
 // FormGrid (R34, docs/form-grid.md): formun içindeki satırları Excel gibi düzenleyen ızgara. Veri uygulamanın;
 // seçim, düzenleme ve geri al hücre motorunda (core/sheet). Izgara kendi içinde dikey kaymaz, sayfayla kayar;
 // başlık ve alt çubuk yapışkan, yatay kaydırma kendi çizdiğimiz çubukla (§4).
+import { WarningCircleIcon } from '@phosphor-icons/react'
 import {
   useLayoutEffect,
   useRef,
@@ -13,22 +14,29 @@ import {
 } from 'react'
 import type { ColumnDef } from '../types/columns'
 import type { FormGridProps } from '../types/form-grid'
+import { decimalPlaces } from '../core/cells/format'
 import { RemoteLabels } from '../core/cells/remote-labels'
 import { cellFillStyle, renderCellContent, type RenderEnv } from '../core/cells/render-cell'
 import { alignOf, isNumericType } from '../core/cells/specs'
 import { useColumnLayout, type LayoutColumn } from '../core/columns/use-column-layout'
-import { getFormat } from '../core/format'
+import { getFormat, type Format } from '../core/format'
 import { HeaderCell } from '../core/grid/header-cell'
 import { pinClasses, pinStyle } from '../core/grid/pin'
 import { RowMenu } from '../core/grid/row-menu'
 import { withFill } from '../core/grid/row'
+import { DelegatedTooltip } from '../core/grid/tooltip'
+import type { I18n } from '../core/i18n'
 import { mac } from '../core/interaction/kbd'
 import { useDataTableContext } from '../core/provider'
 import { CellEditor } from '../core/sheet/cell-editor'
 import { ScrollBar, useHorizontalScroll } from '../core/sheet/h-scroll'
+import { mapErrors } from '../core/sheet/errors'
+import { collectIssues, nextError } from '../core/sheet/issues'
 import { applyIntent, keyIntent } from '../core/sheet/keyboard'
 import { CELL, createSheetStore, type SheetStore } from '../core/sheet/store'
+import { summarize } from '../core/sheet/summary'
 import { scrollParent, usePageRows } from '../core/sheet/use-page-rows'
+import type { Issue } from '../core/sheet/validate'
 
 // Satır no sütunu (handoff 06 §5): 56 px; ⋯ sütunu dolgu 8 + düğme + 8.
 const GUTTER_W = 56
@@ -43,6 +51,7 @@ function GridCell<Row extends object>({
   colIndex,
   row,
   env,
+  issue,
   onPicked,
 }: {
   store: SheetStore<Row>
@@ -51,6 +60,7 @@ function GridCell<Row extends object>({
   colIndex: number
   row: Row | undefined
   env: RenderEnv
+  issue: Issue | undefined
   /** Listeden / takvimden seçim onaylandı: odak portaldaydı, aktif hücreye döner. */
   onPicked: () => void
 }) {
@@ -71,8 +81,12 @@ function GridCell<Row extends object>({
     state & CELL.bottom && 'is-edge-b',
     state & CELL.left && 'is-edge-l',
     state & CELL.right && 'is-edge-r',
+    issue && `is-${issue.level}`,
+    // İlk satırın balonu yapışkan başlığın altında kalmasın.
+    issue && index === 0 && 'is-tip-below',
     ...pinClasses(col),
   ]
+  const tipId = issue ? `dt-fg-tip-${store.rowId(index)}-${colIndex}` : undefined
   const style: CSSProperties = { ...pinStyle(col), ...(row ? cellFillStyle(def, value) : undefined) }
   const edit = state & CELL.editing ? store.editing() : null
   return (
@@ -82,6 +96,8 @@ function GridCell<Row extends object>({
       role="gridcell"
       aria-selected={state & (CELL.selected | CELL.active) ? true : undefined}
       aria-readonly={editable ? undefined : true}
+      aria-invalid={issue?.level === 'error' ? true : undefined}
+      aria-describedby={tipId}
       tabIndex={state & CELL.active ? 0 : -1}
       data-row={index}
       data-col={colIndex}
@@ -103,6 +119,21 @@ function GridCell<Row extends object>({
       ) : (
         row && <span className="dt-cell-content">{renderCellContent(def, row, value, env)}</span>
       )}
+      {issue && (
+        <span id={tipId} className={`dt-cell-tip is-${issue.level}`} role="tooltip">
+          {issue.message}
+          {issue.suggest && editable && (
+            <button
+              type="button"
+              className="dt-cell-tip-btn"
+              tabIndex={-1}
+              onClick={() => store.set({ row: index, col: colIndex }, issue.suggest!.value)}
+            >
+              {env.i18n.t('sheet.useOption', { option: issue.suggest.label })}
+            </button>
+          )}
+        </span>
+      )}
     </div>
   )
 }
@@ -113,6 +144,7 @@ export function FormGrid<Row extends object>({
   columns,
   label,
   getRowId,
+  errors,
   rowActions = [],
   density = 'compact',
 }: FormGridProps<Row>) {
@@ -127,7 +159,20 @@ export function FormGrid<Row extends object>({
     layout: { pinned: { left: columns[0] ? [columns[0].id as string] : [], right: [] } },
   })
   const shown = layout.columns
-  store.sync({ rows, columns: shown.map((c) => c.def as ColumnDef<Row>), onRowsChange, getRowId })
+  const defs = shown.map((c) => c.def as ColumnDef<Row>)
+  store.sync({ rows, columns: defs, onRowsChange, getRowId })
+  // Her çizimde veriden: 1000 × 30'da tek geçiş, hücre başına tip denetimi (form-grid.md §5–6).
+  const issues = collectIssues({
+    rows,
+    columns: defs,
+    errors: mapErrors(
+      errors ?? {},
+      defs.map((d) => d.id),
+    ),
+    read: store.read,
+    isNew: store.isNew,
+    i18n: ctx.i18n,
+  })
 
   const [labels] = useState(() => new RemoteLabels())
   const labelsVersion = useSyncExternalStore(labels.subscribe, labels.getVersion)
@@ -258,6 +303,14 @@ export function FormGrid<Row extends object>({
       if (a) root.current?.querySelector<HTMLElement>(`.dt-cell[data-row="${a.row}"][data-col="${a.col}"]`)?.focus()
     })
 
+  // F8 / ⇧F8 ve alt çubuktaki "hata — git": sıradaki hatalı hücre aktif olur, odak onu izler (kaydırarak).
+  const goToError = (dir: 1 | -1) => {
+    const to = nextError(issues.order, store.active(), dir)
+    if (!to) return
+    store.focus(to)
+    focusActive()
+  }
+
   const posOf = (target: EventTarget | null) => {
     const cell = (target as HTMLElement | null)?.closest<HTMLElement>('.dt-cell[data-row][data-col]')
     return cell ? { row: Number(cell.dataset.row), col: Number(cell.dataset.col) } : null
@@ -308,6 +361,11 @@ export function FormGrid<Row extends object>({
     const def = ed ? (shown[ed.pos.col]?.def as ColumnDef<Row> | undefined) : undefined
     const intent = keyIntent(e, { editing: !!ed, multiline: def?.type === 'text', mac })
     if (!intent) return
+    if (intent.type === 'error') {
+      e.preventDefault()
+      goToError(intent.dir)
+      return
+    }
     const pageSize = Math.max(1, Math.floor((window.innerHeight - metrics.head - metrics.foot) / (metrics.row + 1)) - 1)
     if (applyIntent(store, intent, { pageSize })) e.preventDefault()
   }
@@ -315,6 +373,10 @@ export function FormGrid<Row extends object>({
   const rowEl = (index: number, start: number) => {
     const row = store.rows()[index]
     const blank = !row
+    const rowIssues = issues.cells.get(index)
+    const rowError = issues.rows.get(index)?.join('\n')
+    let hasError = !!rowError
+    for (const i of rowIssues?.values() ?? []) if (i.level === 'error') hasError = true
     return (
       <div
         key={blank ? '__blank' : (store.rowId(index) ?? index)}
@@ -323,7 +385,16 @@ export function FormGrid<Row extends object>({
         aria-rowindex={index + 2}
         style={{ transform: `translateY(${start}px)` }}
       >
-        <div className="dt-cell dt-gutter is-pinned-start" style={{ left: 0 }} role="rowheader">
+        <div className="dt-cell dt-gutter is-pinned-start" style={{ left: 0 }} role="rowheader" data-dt-tip={rowError}>
+          {hasError && (
+            <WarningCircleIcon
+              size={13}
+              weight="fill"
+              className="dt-mark is-error"
+              role="img"
+              aria-label={ctx.i18n.t('sheet.hasErrors')}
+            />
+          )}
           {!blank && <span className="dt-gutter-no">{index + 1}</span>}
         </div>
         {withFill(shown, (col, c) => (
@@ -335,6 +406,7 @@ export function FormGrid<Row extends object>({
             colIndex={c}
             row={row}
             env={env}
+            issue={rowIssues?.get(col.id)}
             onPicked={focusActive}
           />
         ))}
@@ -393,8 +465,78 @@ export function FormGrid<Row extends object>({
         <ScrollBar metrics={hs.metrics} onScroll={hs.scrollTo} />
         <div className="dt-status" role="status" aria-label={ctx.i18n.t('sheet.statusAria')}>
           <span className="dt-status-rows">{ctx.i18n.t('sheet.rows', { count: rows.length })}</span>
+          {issues.errorRows > 0 && (
+            <button type="button" className="dt-status-errors" onClick={() => goToError(1)}>
+              <span className="dt-mark is-error" aria-hidden="true" />
+              {ctx.i18n.t('sheet.errorsGoTo', { count: issues.errorRows })}
+            </button>
+          )}
+          <SelectionSummary store={store} columns={defs} fmt={env.fmt} i18n={ctx.i18n} />
         </div>
       </div>
+      <DelegatedTooltip root={root} />
     </div>
+  )
+}
+
+/**
+ * Alt çubuğun seçim özeti (form-grid.md §4): iki ve daha çok hücre seçiliyken. Seçimi kendisi dinler; ok tuşunda
+ * ızgara yeniden çizilmez. Değerler veriden, sayılar seçimdeki sütunların en çok hanesiyle biçimlenir.
+ */
+function SelectionSummary<Row extends object>({
+  store,
+  columns,
+  fmt,
+  i18n,
+}: {
+  store: SheetStore<Row>
+  columns: ReadonlyArray<ColumnDef<Row>>
+  fmt: Format
+  i18n: I18n
+}) {
+  const key = useSyncExternalStore(store.subscribe, () => {
+    const r = store.range()
+    return r && (r.bottom > r.top || r.right > r.left) ? `${r.top}:${r.bottom}:${r.left}:${r.right}` : ''
+  })
+  if (!key) return null
+  const [top, bottom, left, right] = key.split(':').map(Number) as [number, number, number, number]
+  const cells: Array<readonly [unknown, boolean]> = []
+  let dp = 0
+  for (let c = left; c <= right; c++) {
+    const def = columns[c]
+    if (!def) continue
+    const numeric = isNumericType(def.type)
+    if (numeric) dp = Math.max(dp, decimalPlaces(def as ColumnDef))
+    for (let r = top; r <= Math.min(bottom, store.rows().length - 1); r++) cells.push([store.read(r, def), numeric])
+  }
+  const s = summarize(cells)
+  const num = (v: string) => fmt.decimal(v, dp)
+  return (
+    <span className="dt-status-summary" aria-label={i18n.t('sheet.selectionSummary')}>
+      <span>
+        {i18n.t('sheet.agg.count')}
+        <b>{fmt.int(s.count)}</b>
+      </span>
+      {s.numbers && (
+        <>
+          <span>
+            {i18n.t('sheet.agg.sum')}
+            <b>{num(s.numbers.sum)}</b>
+          </span>
+          <span>
+            {i18n.t('sheet.agg.avg')}
+            <b>{fmt.decimal(s.numbers.average, Math.max(dp, 2))}</b>
+          </span>
+          <span>
+            {i18n.t('sheet.agg.min')}
+            <b>{num(s.numbers.min)}</b>
+          </span>
+          <span>
+            {i18n.t('sheet.agg.max')}
+            <b>{num(s.numbers.max)}</b>
+          </span>
+        </>
+      )}
+    </span>
   )
 }

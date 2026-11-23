@@ -379,6 +379,10 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
       editing = null
       emit()
     },
+    /** Tek hücreye yazar (balondaki yakın seçenek önerisi); tek geri al adımı. */
+    set(pos: CellPos, value: unknown) {
+      if (canEdit(pos.row, pos.col)) write([{ ...pos, value }], 'edit')
+    },
     /** Space: boolean hücresini çevirir. */
     toggle() {
       if (!active || !canEdit(active.row, active.col)) return
