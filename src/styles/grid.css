@@ -162,6 +162,12 @@
   position: sticky;
   z-index: 1;
 }
+/* Durum zeminleri koyu temada yarı saydam (hata `--dt-r-bg`, seçim): sabit hücrenin altına opak yüzey konur,
+   kayan hücreler arkasından görünmez. */
+.dt-cell.is-pinned-start,
+.dt-cell.is-pinned-end {
+  background: linear-gradient(var(--dt-row-bg), var(--dt-row-bg)), var(--dt-surface);
+}
 .dt-head-cell.is-pinned-start,
 .dt-head-cell.is-pinned-end {
   z-index: 4;

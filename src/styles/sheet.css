@@ -196,12 +196,11 @@
   visibility: visible;
 }
 
-/* Sabit hücreler kayan hücrelerin üstündedir: aktif (2) ve düzenlenen (5) hücre kayıp altlarına girince de. Durum
-   zeminleri koyu temada yarı saydam (`--dt-accent-soft`, `--dt-r-bg`): altına opak yüzey konur, arkası görünmez. */
+/* Sabit hücreler kayan hücrelerin üstündedir: aktif (2) ve düzenlenen (5) hücre kayıp altlarına girince de. Opak
+   yüzey grid.css'teki ortak kuraldan. */
 .dt-sheet-grid .dt-cell.is-pinned-start,
 .dt-sheet-grid .dt-cell.is-pinned-end {
   z-index: 6;
-  background: linear-gradient(var(--dt-row-bg), var(--dt-row-bg)), var(--dt-surface);
 }
 
 /* FormGrid yerleşimi (form-grid.md §4): kart yok, sayfayla kayar. Başlık ve gövde ayrı kaplar, yatay konumları
