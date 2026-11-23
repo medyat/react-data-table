@@ -129,6 +129,8 @@
   color: var(--dt-tone-dot);
 }
 .dt-badge-label {
+  /* Rozetin line-height'ı 1: kesen kutu yazı boyu kadar kalırsa ç, ş, g gibi harflerin alt çıkıntısı kırpılır. */
+  line-height: 1.34;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
