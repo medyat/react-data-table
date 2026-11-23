@@ -224,6 +224,10 @@ Her faz playground'da bir senaryo sayfası ve `pnpm check` ile biter. Swors'ta i
 **Hız bütçesi** (1000 × 30, Chrome'da Playwright ile; jsdom süresi yalnız algoritma için): ok tuşundan çizime
 < 16 ms, hücre onayından çizime < 50 ms, ilk çizim < 300 ms.
 
+Ölçüm `e2e/form-grid-perf.spec.ts`: olaydan DOM'un güncellenip yerleşimin bittiği ana kadar (boyama hariç), ortanca
+bütçeyle karşılaştırılır. 2026-11-24, Apple Silicon, Chrome: ilk çizim ~110 ms (en kötü ~250), ok tuşu ~0,3 ms (yalnız
+iki hücre yeniden çizilir), hücre onayı ~22 ms (en kötü ~73; onay bütün satırların sorunlarını yeniden hesaplar).
+
 F1 adımları: A saf katman (tipler, ayrıştırma, hata eşleme, seçim özeti, doğrulama) · B depo ve klavye · C iskelet ·
 D düzenleme ve editörler · E hatalar ve alt çubuk · F ölçüm.
 
