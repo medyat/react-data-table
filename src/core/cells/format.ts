@@ -1,4 +1,5 @@
 // Tipin varsayılan metni (03): `formatted` olarak özel hücreye verilir, tooltip ve dışa aktarma da bunu kullanır.
+import { isDecimalValue } from '../format/decimal'
 import type { ColumnDef, OptionDef } from '../../types/columns'
 import { toDate, type Format } from '../format'
 import type { I18n } from '../i18n'
@@ -34,9 +35,12 @@ export function currencyCode<Row extends object>(def: Extract<ColumnDef<Row>, { 
 /** Sayı sütununun gösterdiği ondalık; filtre girişi de bu kadar kabul eder (0 ise tam sayı). */
 export function decimalPlaces(def: ColumnDef): number {
   if (def.type === 'percentage') return def.decimalPlaces ?? 0
-  if (def.type === 'float' || def.type === 'currency') return def.decimalPlaces ?? 2
+  if (def.type === 'decimal' || def.type === 'currency') return def.decimalPlaces ?? 2
   return 0
 }
+
+/** Ondalık metin olduğu gibi biçimlenir (float'a çevrilmez, R35); öteki değer sayıya. */
+export const decimalOf = (v: unknown): number | string => (typeof v === 'string' && isDecimalValue(v) ? v : Number(v))
 
 export function formatCell<Row extends object>(def: ColumnDef<Row>, row: Row, value: unknown, env: FormatEnv): string {
   if (isEmptyValue(value)) return def.emptyText ?? '—'
@@ -44,14 +48,14 @@ export function formatCell<Row extends object>(def: ColumnDef<Row>, row: Row, va
   switch (def.type) {
     case 'int':
       return fmt.int(Number(value))
-    case 'float':
-      return fmt.decimal(Number(value), decimalPlaces(def))
+    case 'decimal':
+      return fmt.decimal(decimalOf(value), decimalPlaces(def))
     case 'percentage':
-      return fmt.percent(Number(value), decimalPlaces(def))
+      return fmt.percent(decimalOf(value), decimalPlaces(def))
     case 'star':
       return i18n.t('cell.rating', { value: Number(value), max: def.max ?? 5 })
     case 'currency':
-      return `${fmt.decimal(Number(value), decimalPlaces(def))} ${currencyCode(def, row)}`
+      return `${fmt.decimal(decimalOf(value), decimalPlaces(def))} ${currencyCode(def, row)}`
     case 'url':
       return urlHost(String(value))
     case 'boolean':
@@ -91,11 +95,11 @@ export function formatCell<Row extends object>(def: ColumnDef<Row>, row: Row, va
 }
 
 export function formatArrayItem(
-  itemType: 'string' | 'int' | 'float' | 'id' | undefined,
+  itemType: 'string' | 'int' | 'decimal' | 'id' | undefined,
   v: unknown,
   fmt: Format,
 ): string {
   if (itemType === 'int') return fmt.int(Number(v))
-  if (itemType === 'float') return fmt.decimal(Number(v))
+  if (itemType === 'decimal') return fmt.decimal(decimalOf(v))
   return String(v)
 }

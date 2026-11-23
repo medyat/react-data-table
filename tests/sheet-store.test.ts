@@ -14,7 +14,7 @@ interface Line {
 }
 const columns: Array<ColumnDef<Line>> = [
   { id: 'code', header: 'Ürün', type: 'string', editable: (_r, { isNew }) => isNew },
-  { id: 'qty', header: 'Miktar', type: 'float' },
+  { id: 'qty', header: 'Miktar', type: 'decimal' },
   { id: 'unit', header: 'Birim', type: 'select', options: [{ value: 'pcs', label: 'Adet' }] },
   { id: 'done', header: 'Tamam', type: 'boolean' },
   { id: 'detail.term', header: 'Teslim', type: 'string' },

@@ -18,15 +18,15 @@ const groups: Array<{ title: string; columns: Array<ColumnDef<Sample>>; rows: Sa
     title: 'Number · 5 types',
     columns: [
       { id: 'int', header: 'int', type: 'int' },
-      { id: 'float', header: 'float', type: 'float' },
+      { id: 'decimal', header: 'decimal', type: 'decimal' },
       { id: 'pct', header: 'percentage', type: 'percentage' },
       { id: 'bar', header: 'percentage · bar', type: 'percentage', display: 'bar' },
       { id: 'star', header: 'star', type: 'star' },
       { id: 'cur', header: 'currency', type: 'currency', currency: 'TRY' },
     ],
     rows: [
-      { id: 1, int: 12400, float: 1284.5, pct: 68, bar: 68, star: 4, cur: 412800 },
-      { id: 2, int: -320, float: 0, pct: 100, bar: 12, star: 1, cur: -12450 },
+      { id: 1, int: 12400, decimal: '1284.50', pct: 68, bar: 68, star: 4, cur: 412800 },
+      { id: 2, int: -320, decimal: '0.00', pct: 100, bar: 12, star: 1, cur: -12450 },
       { id: 3 },
     ],
   },

@@ -20,7 +20,7 @@ interface Company {
 const columns: Array<ColumnDef<Company>> = [
   { id: 'title', header: 'Title', type: 'string', primary: true },
   { id: 'city', header: 'City', type: 'string', sortable: false },
-  { id: 'risk', header: 'Risk', type: 'float', when: false },
+  { id: 'risk', header: 'Risk', type: 'decimal', when: false },
   { id: 'note', header: 'Note', type: 'string', filterable: false },
 ]
 

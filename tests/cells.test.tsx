@@ -45,7 +45,7 @@ describe('boş değer', () => {
   })
   it('emptyText ezilir; 0 gerçek değerdir', () => {
     expect(render(col('int', { emptyText: 'n/a' }), null).text()).toBe('n/a')
-    expect(render(col('float'), 0).text()).toBe('0.00')
+    expect(render(col('decimal'), 0).text()).toBe('0.00')
   })
 })
 

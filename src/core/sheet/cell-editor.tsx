@@ -2,6 +2,7 @@
 // olarak yazılır. Enter / Tab / Esc'i ızgara yönetir; açık liste ya da takvimdeyken tuş önce onlara gider (ızgara
 // `aria-expanded` ve `defaultPrevented`'a bakar). Listeden ya da takvimden seçmek onaylar. Portallı içerik
 // `dt-sheet-layer` taşır: oradaki tık ızgara dışı sayılmaz.
+import { isDecimalType, isDecimalValue } from '../format/decimal'
 import { Combobox } from '@base-ui/react/combobox'
 import { Popover } from '@base-ui/react/popover'
 import { CalendarBlankIcon } from '@phosphor-icons/react'
@@ -38,9 +39,14 @@ function useParseEnv(): ParseEnv {
   }
 }
 
-/** Editörün ilk metni; sayı yerel ondalıkla ("1200.5" tr'de 12005 okunurdu). */
+/**
+ * Editörün ilk metni: sayı ve ondalık metin yerel ondalıkla. Sunucunun metninde `.` her zaman ondalıktır; tahmin eden
+ * temizleyiciye verilseydi "123.456" binlik sayılıp 123456 okunurdu.
+ */
 function initialText(def: ColumnDef, value: unknown, locale: string): string {
   if (typeof value === 'number' && TYPE_SPECS[def.type].numeric) return plainNumber(locale, value)
+  if (isDecimalType(def.type) && isDecimalValue(value))
+    return String(value).replace('.', plainNumber(locale, 0.5).replace(/\d/g, ''))
   return inputText(def, value)
 }
 
@@ -63,7 +69,7 @@ function InputCell<Row extends object>({ def, row, text: start, value, onDraft }
   const env = useParseEnv()
   const numeric = TYPE_SPECS[def.type].numeric
   const clean = (t: string) => (numeric ? cleanNumber(env.locale, t, decimalPlaces(def) === 0) : t)
-  const [text, setText] = useState(() => clean(start ?? initialText(def, value, env.locale)))
+  const [text, setText] = useState(() => start ?? initialText(def, value, env.locale))
   const el = useRef<HTMLInputElement & HTMLTextAreaElement>(null)
   const change = (t: string) => {
     setText(t)

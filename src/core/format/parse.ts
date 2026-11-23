@@ -1,4 +1,5 @@
 // Yerel ayara göre sayı okuma (03 · Yapıştırma): "12.400", "12,400", "1.284,50", "68%" — iki ayırıcı varsa sondaki ondalıktır.
+import { decimalText } from './decimal'
 const seps = new Map<string, { group: string; decimal: string }>()
 function sepsOf(locale: string) {
   let s = seps.get(locale)
@@ -13,7 +14,8 @@ function sepsOf(locale: string) {
   return s
 }
 
-export function parseNumber(locale: string, text: string): number | null {
+/** Yazılan sayıyı `.` ayırıcılı, gruplamasız metne çevirir; float'a hiç girmez. Çözülemezse null. */
+function normalize(locale: string, text: string): string | null {
   let s = text.replace(/[\s%\u00a0A-Za-z₺€$£]/g, '').replace('−', '-')
   if (s === '' || s === '-') return null
   const comma = s.lastIndexOf(',')
@@ -21,8 +23,18 @@ export function parseNumber(locale: string, text: string): number | null {
   const decimal = comma >= 0 && dot >= 0 ? (comma > dot ? ',' : '.') : sepsOf(locale).decimal
   s = s.split(decimal === ',' ? '.' : ',').join('')
   if (decimal === ',') s = s.replace(',', '.')
-  const n = Number(s)
-  return Number.isFinite(n) ? n : null
+  return /^-?(\d+\.?\d*|\.\d+)$/.test(s) ? s : null
+}
+
+export function parseNumber(locale: string, text: string): number | null {
+  const s = normalize(locale, text)
+  return s === null ? null : Number(s)
+}
+
+/** Ondalık metin (R35): "2,5" → "2.5", "0,1" → "0.1", 15 haneden uzun değer hane kaybetmez. */
+export function parseDecimal(locale: string, text: string): string | null {
+  const s = normalize(locale, text)
+  return s === null ? null : decimalText(s)
 }
 
 /**

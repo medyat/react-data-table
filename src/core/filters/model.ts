@@ -16,7 +16,7 @@ const CASED: FilterOp[] = ['contains', 'eq', 'neq', 'starts_with', ...EMPTY]
 /** Tipe göre operatör listesi (03, brief §6.5); `filter.operators` alt küme seçebilir. */
 export const OPERATORS: Record<ColumnType, FilterOp[]> = {
   int: NUMBER,
-  float: NUMBER,
+  decimal: NUMBER,
   percentage: ['eq', 'gt', 'gte', 'lt', 'lte', 'between', ...EMPTY],
   star: ['gte', 'lte', 'eq', ...EMPTY],
   currency: NUMBER,
@@ -42,7 +42,7 @@ export const OPERATORS: Record<ColumnType, FilterOp[]> = {
 
 const DEFAULT_OP: Partial<Record<ColumnType, FilterOp>> = {
   int: 'between',
-  float: 'between',
+  decimal: 'between',
   percentage: 'between',
   currency: 'between',
   star: 'gte',
@@ -67,7 +67,7 @@ export function shapeOf(op: FilterOp, type: ColumnType): Shape {
   if (op === 'before' || op === 'after' || type === 'date' || type === 'datetime') return 'date'
   if (type === 'boolean') return 'boolean'
   if (op === 'gt' || op === 'gte' || op === 'lt' || op === 'lte') return 'number'
-  if (type === 'int' || type === 'float' || type === 'percentage' || type === 'currency' || type === 'star')
+  if (type === 'int' || type === 'decimal' || type === 'percentage' || type === 'currency' || type === 'star')
     return 'number'
   return 'text'
 }

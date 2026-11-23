@@ -1,5 +1,6 @@
 // Intl biçimlendiricileri: locale + seçenek anahtarıyla önbellekli (01: hücre başına oluşturmak 10k satırda 134 ms, önbellekli 3,5 ms).
 // Kurallar 09 · Biçimlendirme: gerçek eksi işareti U+2212, yüzde Intl ile (tr: %68), para = sayı + ayrı ISO kodu.
+import { toDecimal } from './decimal'
 import type { IsoDate } from '../../types/core'
 
 export const MINUS = '−'
@@ -66,9 +67,11 @@ export function createFormat(locale: string) {
     locale,
     int: (n: number): string => minus(intFmt.format(n)),
     /** Her zaman `dp` hane (noktalar hizalanır). */
-    decimal: (n: number, dp = 2): string => minus(decimalFmt(dp).format(n)),
+    // Ondalık metin Intl'e olduğu gibi verilir: tarayıcı metni tam okur, float'a çevirmez (R35).
+    decimal: (n: number | string, dp = 2): string => minus(decimalFmt(dp).format(n as number | `${number}`)),
     /** 68 → "68%" (tr: "%68"). */
-    percent: (n: number, dp = 0): string => minus(percentFmt(dp).format(n / 100)),
+    percent: (n: number | string, dp = 0): string =>
+      minus(percentFmt(dp).format(typeof n === 'string' ? (toDecimal(n).div(100).toFixed() as `${number}`) : n / 100)),
     /** Çip özetleri: 250000 → "250K" (tr: "250 B"). */
     compact: (n: number): string => minus(nf({ notation: 'compact', maximumFractionDigits: 0 }).format(n)),
     /** "Oct 24"; başka yılsa "Mar 3, 2025". */

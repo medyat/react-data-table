@@ -9,7 +9,7 @@ const tr = createFormat('tr')
 const today = new Date(2026, 9, 21) // 21 Ekim 2026 (brief örnekleri)
 
 describe('sayılar (09 tablosu)', () => {
-  it('int / float / yüzde / kısa sayı', () => {
+  it('int / decimal / yüzde / kısa sayı', () => {
     expect(en.int(12400)).toBe('12,400')
     expect(tr.int(12400)).toBe('12.400')
     expect(en.decimal(1284.5)).toBe('1,284.50')
@@ -23,6 +23,15 @@ describe('sayılar (09 tablosu)', () => {
     expect(en.int(-320)).toBe(`${MINUS}320`)
     expect(tr.decimal(-12450)).toBe(`${MINUS}12.450,00`)
     expect(en.int(-320)).not.toContain('-')
+  })
+})
+
+describe('ondalık metin (backend gibi: float yok)', () => {
+  it('metin olduğu gibi biçimlenir; 15 haneden uzun değer hane kaybetmez', () => {
+    expect(en.decimal('12345678901234567.89')).toBe('12,345,678,901,234,567.89')
+    expect(tr.decimal('1200.0000')).toBe('1.200,00')
+    expect(tr.decimal('-0.125', 2)).toBe(`${MINUS}0,13`)
+    expect(tr.percent('18.5', 1)).toBe('%18,5')
   })
 })
 

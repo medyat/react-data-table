@@ -2,6 +2,7 @@
 // durur; hücre `cellState` ile yalnız kendi bayrağını okur, ok tuşunda yalnız değişen hücreler yeniden çizilir.
 // Veri uygulamanındır: her yazma yeni satır dizisiyle `onRowsChange`'e gider, depo yalnız kimlik ve geçmiş tutar.
 // Satırların sonunda her zaman bir boş satır vardır (dizin = rows.length); ona yazmak satırı doğurur (`kind: 'edit'`).
+import { sameDecimal } from '../format/decimal'
 import type { ColumnDef } from '../../types/columns'
 import { isEmptyValue } from '../cells/format'
 import { readPath } from '../columns/read-path'
@@ -44,7 +45,7 @@ const INLINE = new Set([
   'uppercase',
   'lowercase',
   'int',
-  'float',
+  'decimal',
   'percentage',
   'currency',
   'select',
@@ -66,7 +67,9 @@ interface Step {
 const HISTORY = 100
 
 /** Boş değerler (null / undefined / '' / []) birbirine eşittir. */
-const same = (a: unknown, b: unknown): boolean => (isEmptyValue(a) && isEmptyValue(b)) || Object.is(a, b)
+// Ondalıkta değere bakılır ("120.0000" = "120"): F2 + Enter değişiklik saymaz (R35).
+const same = (a: unknown, b: unknown): boolean =>
+  (isEmptyValue(a) && isEmptyValue(b)) || Object.is(a, b) || sameDecimal(a, b)
 
 function writePath<Row extends object>(row: Row, path: string, value: unknown): Row {
   const keys = path.split('.')

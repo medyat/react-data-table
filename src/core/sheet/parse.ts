@@ -5,7 +5,8 @@ import type { ColumnDef, OptionDef } from '../../types/columns'
 import { optionLabel } from '../cells/format'
 import { TYPE_SPECS } from '../cells/specs'
 import { isoDay } from '../filters/model'
-import { parseNumber } from '../format/parse'
+import { isDecimalType } from '../format/decimal'
+import { parseDecimal, parseNumber } from '../format/parse'
 
 export interface ParseEnv {
   locale: string
@@ -64,7 +65,8 @@ export function parseInput(def: ColumnDef, text: string, env: ParseEnv): unknown
   if (TYPE_SPECS[def.type].numeric || def.type === 'star') {
     // Formül yok (Vue 07 §2): "=" ile başlayan giriş sayı sütununda hata olarak kalır.
     if (s.startsWith('=')) return s
-    return parseNumber(env.locale, s) ?? s
+    // Ondalık türler metin olarak çözümlenir (R35); int ve star sayı kalır.
+    return (isDecimalType(def.type) ? parseDecimal(env.locale, s) : parseNumber(env.locale, s)) ?? s
   }
   switch (def.type) {
     case 'date':

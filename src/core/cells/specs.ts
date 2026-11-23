@@ -49,7 +49,7 @@ const badge = (width: number): TypeSpec => ({
 
 export const TYPE_SPECS: Record<ColumnType, TypeSpec> = {
   int: num(112),
-  float: num(112),
+  decimal: num(112),
   percentage: num(112),
   star: { ...txt(112, false), skeleton: 'text' },
   currency: num(148),
@@ -90,7 +90,7 @@ export function alignOf(def: ColumnDef): 'left' | 'right' | 'center' {
 /** Sütun menüsü başlığı (05 §4): tipin 09 `type.*` anahtarı. */
 const TYPE_LABEL: Record<ColumnType, string> = {
   int: 'number',
-  float: 'number',
+  decimal: 'number',
   percentage: 'percentage',
   star: 'rating',
   currency: 'currency',

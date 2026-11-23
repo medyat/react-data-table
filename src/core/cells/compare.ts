@@ -1,5 +1,6 @@
 // Tipe göre sıralama karşılaştırıcısı (04 §6): boş değer "en büyük" (artanda sonda, azalanda başta — PostgreSQL varsayılanı).
 // Liste (useListTable) ve sheet (yerel sıralama, 07 §10) aynı kuralı kullanır.
+import { isDecimalType, isDecimalValue, toDecimal } from '../format/decimal'
 import type { ColumnDef } from '../../types/columns'
 import { getFormat } from '../format'
 import { TYPE_SPECS } from './specs'
@@ -16,6 +17,10 @@ export function comparator(def: ColumnDef, locale: string): (a: unknown, b: unkn
     return null
   }
   const spec = TYPE_SPECS[def.type]
+  // Ondalık metin değeriyle karşılaştırılır (R35); 15 haneden uzun değer de doğru sıralanır.
+  if (isDecimalType(def.type))
+    return (a, b) =>
+      empty(a, b) ?? (isDecimalValue(a) && isDecimalValue(b) ? toDecimal(a).cmp(toDecimal(b)) : Number(a) - Number(b))
   if (spec.numeric || def.type === 'boolean' || def.type === 'star') {
     return (a, b) => empty(a, b) ?? Number(a) - Number(b)
   }

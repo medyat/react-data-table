@@ -6,6 +6,7 @@ import type { ColumnDef, IconComponent, OptionDef, UserOption } from '../../type
 import type { Density, Tone } from '../../types/core'
 import {
   currencyCode,
+  decimalOf,
   decimalPlaces,
   formatArrayItem,
   formatCell,
@@ -233,7 +234,7 @@ export function renderCellContent<Row extends object>(
   const { fmt, i18n } = env
   switch (def.type) {
     case 'int':
-    case 'float':
+    case 'decimal':
     case 'string':
     case 'uppercase':
     case 'lowercase':
@@ -246,7 +247,7 @@ export function renderCellContent<Row extends object>(
     case 'currency':
       return (
         <>
-          {fmt.decimal(Number(value), decimalPlaces(def))}
+          {fmt.decimal(decimalOf(value), decimalPlaces(def))}
           <span className="dt-ccy">{currencyCode(def, row)}</span>
         </>
       )

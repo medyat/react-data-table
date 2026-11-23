@@ -26,7 +26,7 @@ const units = [
 const base: Array<ColumnDef<Line>> = [
   { id: 'code', header: 'Ürün', type: 'string', width: 140, required: true },
   { id: 'title', header: 'Ad', type: 'string', width: 240 },
-  { id: 'qty', header: 'Miktar', type: 'float', width: 104, required: true },
+  { id: 'qty', header: 'Miktar', type: 'decimal', width: 104, required: true },
   { id: 'unit', header: 'Birim', type: 'select', options: units, width: 112 },
   { id: 'price', header: 'Birim fiyat', type: 'currency', currency: 'TRY', width: 128 },
   { id: 'vat', header: 'KDV', type: 'percentage', width: 80, hint: 'Satırın KDV oranı; boşsa üründen gelir.' },
@@ -88,7 +88,7 @@ const wide: Array<ColumnDef<Line>> = [
   ...Array.from({ length: 21 }, (_, i): ColumnDef<Line> => ({
     id: `x${i}`,
     header: `Ek ${i + 1}`,
-    type: 'float',
+    type: 'decimal',
     width: 96,
   })),
 ]

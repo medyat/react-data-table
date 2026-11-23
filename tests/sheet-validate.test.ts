@@ -27,13 +27,20 @@ const unit: ColumnDef<Line> = {
 
 describe('cellIssue', () => {
   it('tip hatası önce: sayı değil, formül, tarih değil, seçenek değil (yakın öneriyle)', () => {
-    const qty: ColumnDef<Line> = { id: 'qty', header: 'Miktar', type: 'float', validate: () => 'kural' }
+    const qty: ColumnDef<Line> = { id: 'qty', header: 'Miktar', type: 'decimal', validate: () => 'kural' }
     expect(cellIssue(qty, 'abc', ctx, i18n)).toEqual({ level: 'error', message: 'Sayı girin', suggest: undefined })
     expect(cellIssue(qty, '=1+1', ctx, i18n)?.message).toBe('Formül desteklenmiyor')
     expect(cellIssue({ id: 'd', header: 'D', type: 'date' }, '31.02', ctx, i18n)?.message).toBe('Tarih girin')
     const issue = cellIssue(unit, 'Adt', ctx, i18n)
     expect(issue?.message).toBe('“Adt” bir seçenek değil')
     expect(issue?.suggest?.value).toBe('pcs')
+  })
+  it('sunucunun ondalık metni ve sayı geçerli; ondalık olmayan metin hata', () => {
+    const qty: ColumnDef<Line> = { id: 'qty', header: 'Miktar', type: 'decimal' }
+    expect(cellIssue(qty, '1200.0000', ctx, i18n)).toBeNull()
+    expect(cellIssue(qty, '-0.5', ctx, i18n)).toBeNull()
+    expect(cellIssue(qty, 12, ctx, i18n)).toBeNull()
+    expect(cellIssue(qty, '1.200,00', ctx, i18n)?.message).toBe('Sayı girin')
   })
   it('boş değer tip hatası değildir; validate hatası warn uyarısından önce gelir', () => {
     const gtip: ColumnDef<Line> = {
@@ -79,20 +86,33 @@ describe('mapErrors', () => {
 })
 
 describe('summarize', () => {
-  it('Hücre boş olmayanları sayar; sayılar yalnız sayılardan', () => {
-    expect(summarize([10, null, '', 'Adet', 2.5, -4])).toEqual({
-      count: 4,
-      numbers: { sum: 8.5, average: 8.5 / 3, min: -4, max: 10 },
-    })
+  it('Hücre boş olmayanları sayar; sayılar yalnız sayı sütunundan, ondalık metin tam toplanır', () => {
+    expect(
+      summarize([
+        [10, true],
+        [null, true],
+        ['', false],
+        ['Adet', false],
+        ['12', false],
+        ['0.1', true],
+        ['0.2', true],
+        [-4, true],
+      ]),
+    ).toEqual({ count: 6, numbers: { sum: '6.3', average: '1.575', min: '-4', max: '10' } })
   })
   it('sayı yoksa numbers null; 0 bir değerdir', () => {
-    expect(summarize(['a', null]).numbers).toBeNull()
-    expect(summarize([0])).toEqual({ count: 1, numbers: { sum: 0, average: 0, min: 0, max: 0 } })
+    expect(
+      summarize([
+        ['a', false],
+        [null, true],
+      ]).numbers,
+    ).toBeNull()
+    expect(summarize([['0.00', true]])).toEqual({ count: 1, numbers: { sum: '0', average: '0', min: '0', max: '0' } })
   })
   it('30 bin hücre algoritma olarak hızlı', () => {
-    const values = Array.from({ length: 30_000 }, (_, i) => (i % 3 ? i : null))
+    const cells = Array.from({ length: 30_000 }, (_, i): [unknown, boolean] => [i % 3 ? String(i / 4) : null, true])
     const t0 = performance.now()
-    summarize(values)
-    expect(performance.now() - t0).toBeLessThan(20)
+    summarize(cells)
+    expect(performance.now() - t0).toBeLessThan(60)
   })
 })

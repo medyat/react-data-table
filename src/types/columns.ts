@@ -8,7 +8,7 @@ import type { FilterOp } from './query'
 export type ColumnType =
   // sayı
   | 'int'
-  | 'float'
+  | 'decimal'
   | 'percentage'
   | 'star'
   | 'currency'
@@ -188,10 +188,11 @@ export interface BaseColumn<Row, V = unknown> {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Row için üst sınır; api-draft ile aynı
 export type ColumnDef<Row = any> =
   | (BaseColumn<Row, number | null> & { type: 'int' })
-  | (BaseColumn<Row, number | null> & { type: 'float'; decimalPlaces?: number })
-  | (BaseColumn<Row, number | null> & { type: 'percentage'; display?: 'text' | 'bar'; decimalPlaces?: number })
+  // Ondalık türlerin değeri sunucudaki gibi ondalık metindir ("1200.0000"); sayı da okunur, yazılan metindir (R35).
+  | (BaseColumn<Row, string | number | null> & { type: 'decimal'; decimalPlaces?: number })
+  | (BaseColumn<Row, string | number | null> & { type: 'percentage'; display?: 'text' | 'bar'; decimalPlaces?: number })
   | (BaseColumn<Row, number | null> & { type: 'star'; max?: number })
-  | (BaseColumn<Row, number | null> & {
+  | (BaseColumn<Row, string | number | null> & {
       type: 'currency'
       /** Sabit ISO kodu veya satırdan okuma. */
       currency: string | ((row: Row) => string)
@@ -224,4 +225,4 @@ export type ColumnDef<Row = any> =
       overdue?: boolean | ((row: Row) => boolean)
     })
   | (BaseColumn<Row, unknown> & { type: 'object'; summary?: (value: unknown, row: Row) => string })
-  | (BaseColumn<Row, unknown[] | null> & { type: 'array'; itemType?: 'string' | 'int' | 'float' | 'id' })
+  | (BaseColumn<Row, unknown[] | null> & { type: 'array'; itemType?: 'string' | 'int' | 'decimal' | 'id' })

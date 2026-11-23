@@ -24,7 +24,7 @@ import type { ColumnType, IconComponent } from '../../types/columns'
 
 export const TYPE_ICONS: Record<ColumnType, IconComponent> = {
   int: HashIcon,
-  float: HashIcon,
+  decimal: HashIcon,
   percentage: PercentIcon,
   star: StarIcon,
   currency: CreditCardIcon,

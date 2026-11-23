@@ -15,7 +15,7 @@ interface Line {
 }
 const columns: Array<ColumnDef<Line>> = [
   { id: 'code', header: 'Ürün', type: 'string', required: true, editable: (_r, { isNew }) => isNew },
-  { id: 'qty', header: 'Miktar', type: 'float', hint: 'Satırın miktarı' },
+  { id: 'qty', header: 'Miktar', type: 'decimal', hint: 'Satırın miktarı' },
   { id: 'gift', header: 'Promosyon', type: 'boolean' },
 ]
 const initial: Line[] = [
@@ -119,14 +119,14 @@ describe('seçim ve klavye', () => {
 // D adımı: düzenleme ve editörler (form-grid.md §8, Vue 07 §5).
 interface Item {
   code: string | null
-  qty: number | null
+  qty: string | number | null
   unit: string | null
   gift: boolean | null
   note?: string | null
 }
 const editColumns: Array<ColumnDef<Item>> = [
   { id: 'code', header: 'Ürün', type: 'string' },
-  { id: 'qty', header: 'Miktar', type: 'float' },
+  { id: 'qty', header: 'Miktar', type: 'decimal' },
   {
     id: 'unit',
     header: 'Birim',
@@ -139,8 +139,8 @@ const editColumns: Array<ColumnDef<Item>> = [
   { id: 'gift', header: 'Promosyon', type: 'boolean' },
   { id: 'note', header: 'Not', type: 'text' },
 ]
-function EditHarness({ onChange }: { onChange: (rows: Item[], c: FormGridChange) => void }) {
-  const [rows, setRows] = useState<Item[]>([{ code: 'A', qty: 1200.5, unit: 'pc', gift: false }])
+function EditHarness({ onChange, initial }: { onChange: (rows: Item[], c: FormGridChange) => void; initial?: Item[] }) {
+  const [rows, setRows] = useState<Item[]>(initial ?? [{ code: 'A', qty: 1200.5, unit: 'pc', gift: false }])
   return (
     <DataTableProvider locale="tr-TR">
       <input aria-label="Dışarıdaki alan" />
@@ -158,9 +158,9 @@ function EditHarness({ onChange }: { onChange: (rows: Item[], c: FormGridChange)
 }
 const editor = () =>
   document.querySelector<HTMLInputElement>('.dt-form-grid .is-editing input, .dt-form-grid .is-editing textarea')
-async function openGrid() {
+async function openGrid(initial?: Item[]) {
   const onChange = vi.fn()
-  render(<EditHarness onChange={onChange} />)
+  render(<EditHarness onChange={onChange} initial={initial} />)
   await flush()
   return onChange
 }
@@ -175,7 +175,7 @@ describe('düzenleme', () => {
     fireEvent.change(editor()!, { target: { value: '2,5' } })
     fireEvent.keyDown(editor()!, { key: 'Enter' })
     await flush()
-    expect(onChange.mock.lastCall?.[0][0].qty).toBe(2.5)
+    expect(onChange.mock.lastCall?.[0][0].qty).toBe('2.5')
     expect(editor()).toBeNull()
     expect(cell(1, 1).classList.contains('is-active')).toBe(true)
     expect(document.activeElement).toBe(cell(1, 1))
@@ -191,6 +191,21 @@ describe('düzenleme', () => {
     expect(onChange).not.toHaveBeenCalled()
     expect(editor()).toBeNull()
     expect(document.activeElement).toBe(cell(0, 1))
+  })
+  it('ondalık metin: F2 noktayı ondalık okur (tr "123.456" → "123,456"); değişmeden Enter yazmaz; yazılan metin olarak gider', async () => {
+    const onChange = await openGrid([{ code: 'A', qty: '123.456', unit: 'pc', gift: false }])
+    fireEvent.pointerDown(cell(0, 1), { button: 0 })
+    fireEvent.keyDown(cell(0, 1), { key: 'F2' })
+    expect(editor()?.value).toBe('123,456')
+    fireEvent.keyDown(editor()!, { key: 'Enter' })
+    await flush()
+    expect(onChange).not.toHaveBeenCalled()
+    fireEvent.keyDown(cell(1, 1), { key: 'ArrowUp' })
+    fireEvent.keyDown(cell(0, 1), { key: 'F2' })
+    fireEvent.change(editor()!, { target: { value: '0,1' } })
+    fireEvent.keyDown(editor()!, { key: 'Enter' })
+    await flush()
+    expect(onChange.mock.lastCall?.[0][0].qty).toBe('0.1')
   })
   it('sayı kutusu harfi ve ikinci ayırıcıyı almaz: görünen değer yazılandır', async () => {
     await openGrid()

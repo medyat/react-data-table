@@ -430,6 +430,18 @@ oturunca çıkar.
 - D31'i değiştirmez: D31 salt okunur detay tablosuydu, düzenlenen satır dizisi o karar yazılırken yoktu.
 - Spesifikasyon: `docs/form-grid.md` (onaylandı, 2026-11-23).
 
+## R35 · `float` yerine `decimal`; ondalık metin olarak taşınır (03'ü değiştirir)
+
+- Tür `float`'ın adı `decimal` olur; değer tam ondalıktır, float değil. Eski ad kalmaz (tek kullanıcı Swors).
+- `decimal`, `currency` ve `percentage` değeri sunucudaki gibi ondalık metindir (`"1200.0000"`, `.` ayırıcı, gruplama
+  ve üs yok). Paket sayıyı da okur ama yazdığı her zaman metindir; bu değerleri float'a çevirip hesap yapmaz.
+  `int` ve `star` sayı kalır.
+- Gösterim metni `Intl.NumberFormat`'a olduğu gibi verir (tarayıcı metni tam okur). Toplam, ortalama ve sıralama
+  `decimal.js` ile. Eşitlik değere bakar: `"120.0000"` = `"120"`, F2 + Enter değişiklik sayılmaz.
+- Paket kolonun ölçeğini bilmez: yazdığı metin kanoniktir (`"2.5"`), sabit ölçek sunucunun işi.
+- Neden: Swors'ta ondalık backend'de tam (brick/math), telde metin; Laraql da 0.5'te `decimal` / `percentage`'ı metin
+  gönderir. Paketin float'a çevirmesi "123.456"yı binlik sanmak gibi hatalara ve 15 haneden sonra kayba yol açıyordu.
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

@@ -19,17 +19,21 @@ const unit: ColumnDef = {
 
 describe('parseInput', () => {
   it('sayılar yerel ayara göre; yüzde; boş → null; çözülemeyen ham metin', () => {
-    expect(parseInput(price, '2240', env)).toBe(2240)
-    expect(parseInput(price, '2.240,00', env)).toBe(2240)
-    expect(parseInput(price, '2,240.00', env)).toBe(2240)
-    expect(parseInput(price, '2,5', tr)).toBe(2.5)
-    expect(parseInput(price, '2.5', env)).toBe(2.5)
+    expect(parseInput(price, '2240', env)).toBe('2240')
+    expect(parseInput(price, '2.240,00', env)).toBe('2240')
+    expect(parseInput(price, '2,240.00', env)).toBe('2240')
+    expect(parseInput(price, '2,5', tr)).toBe('2.5')
+    expect(parseInput(price, '2.5', env)).toBe('2.5')
+    // Ondalık float'tan geçmez: 0,1 + gösterim hatası yok, uzun değer hane kaybetmez; int sayı kalır.
+    expect(parseInput(price, '0,1', tr)).toBe('0.1')
+    expect(parseInput(price, '12345678901234567,89', tr)).toBe('12345678901234567.89')
+    expect(parseInput({ id: 'n', header: 'N', type: 'int' }, '1.234', tr)).toBe(1234)
     expect(parseInput(price, '  ', env)).toBeNull()
     expect(parseInput(price, 'abc', env)).toBe('abc')
     expect(parseInput(price, '=1+1', env)).toBe('=1+1')
     const pct: ColumnDef = { id: 'vat', header: 'VAT', type: 'percentage' }
-    expect(parseInput(pct, '%20', tr)).toBe(20)
-    expect(parseInput(pct, '20%', env)).toBe(20)
+    expect(parseInput(pct, '%20', tr)).toBe('20')
+    expect(parseInput(pct, '20%', env)).toBe('20')
   })
   it('tarihler: "24.10", "24.10.2026", "+7d", "today"/"bugün", ISO; geçersiz gün ham kalır', () => {
     expect(parseDateInput('24.10', env)).toBe('2026-10-24')

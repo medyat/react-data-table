@@ -1,27 +1,34 @@
 // Alt çubuğun seçim özeti (form-grid.md §4): Hücre = boş olmayan hücre sayısı; Toplam, Ortalama, En küçük, En büyük
-// yalnız sayılardan (Excel gibi). Değerler veriden gelir, DOM'dan değil.
+// yalnız sayı sütunlarından (Excel gibi; "12" yazılı metin sayı değildir). Değerler veriden gelir, DOM'dan değil.
+// Ondalık metin tam toplanır (R35): 0.1 + 0.2 = 0.3; sonuç metindir, gösterim yerel ayarla biçimler.
+import Decimal from 'decimal.js'
 import { isEmptyValue } from '../cells/format'
+import { isDecimalValue } from '../format/decimal'
 
 export interface SelectionSummary {
   count: number
   /** Seçimde sayı yoksa null. */
-  numbers: { sum: number; average: number; min: number; max: number } | null
+  numbers: { sum: string; average: string; min: string; max: string } | null
 }
 
-export function summarize(values: Iterable<unknown>): SelectionSummary {
+/** `cells`: [değer, sayı sütunu mu]. */
+export function summarize(cells: Iterable<readonly [unknown, boolean]>): SelectionSummary {
   let count = 0
-  let n = 0
-  let sum = 0
-  let min = Infinity
-  let max = -Infinity
-  for (const v of values) {
+  const nums: Decimal[] = []
+  for (const [v, numeric] of cells) {
     if (isEmptyValue(v)) continue
     count++
-    if (typeof v !== 'number' || !Number.isFinite(v)) continue
-    n++
-    sum += v
-    if (v < min) min = v
-    if (v > max) max = v
+    if (numeric && isDecimalValue(v)) nums.push(new Decimal(v))
   }
-  return { count, numbers: n ? { sum, average: sum / n, min, max } : null }
+  if (!nums.length) return { count, numbers: null }
+  const sum = Decimal.sum(...nums)
+  return {
+    count,
+    numbers: {
+      sum: sum.toFixed(),
+      average: sum.div(nums.length).toFixed(),
+      min: Decimal.min(...nums).toFixed(),
+      max: Decimal.max(...nums).toFixed(),
+    },
+  }
 }

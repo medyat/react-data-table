@@ -1,5 +1,6 @@
 // Hücre doğrulaması (Vue 07 §5): tip → validate → warn; ilk sorun kazanır. `required` istemcide hata üretmez,
 // zorunluluğu sunucu söyler (form-grid.md §6).
+import { isDecimalType, isDecimalValue } from '../format/decimal'
 import type { ColumnDef, OptionDef, ValidationContext } from '../../types/columns'
 import { isEmptyValue } from '../cells/format'
 import { TYPE_SPECS } from '../cells/specs'
@@ -42,7 +43,8 @@ export function typeIssue(def: ColumnDef, value: unknown, i18n: I18n): Issue | n
   if (isEmptyValue(value)) return null
   const error = (message: string, suggest?: OptionDef): Issue => ({ level: 'error', message, suggest })
   const { t } = i18n
-  if ((TYPE_SPECS[def.type].numeric || def.type === 'star') && typeof value !== 'number')
+  const number = isDecimalType(def.type) ? isDecimalValue(value) : typeof value === 'number'
+  if ((TYPE_SPECS[def.type].numeric || def.type === 'star') && !number)
     return error(
       typeof value === 'string' && value.trim().startsWith('=') ? t('sheet.noFormulas') : t('sheet.notANumber'),
     )

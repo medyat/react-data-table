@@ -62,7 +62,7 @@ yeni tür uydurulmaz. Panolardaki sütunlar şöyle eşlendi:
 |---|---|
 | Ad, GTİP | `string` (GTİP `validate` ile 12 rakam) |
 | Açıklama, Not | `text` |
-| Miktar, Stok, Faturalanan | `float` |
+| Miktar, Stok, Faturalanan | `decimal` (R35) |
 | Bloke (gün) | `int` + `unit` |
 | İndirim / KDV / vergi / komisyon oranı | `percentage` (18 saklanır, bölünmez) |
 | Birim fiyat, tutarlar, Sigorta, Navlun, FOB | `currency` (`currency: row => belgenin birimi`) |
@@ -174,6 +174,8 @@ Vue 08'in sheet klavyesi geçerli; farklar:
 - `select` ve `date` editöründe liste / takvim açıkken Enter ve Esc önce ona gider; listeden ya da takvimden seçmek
   hücreyi onaylar (Enter ile seçilince alt hücreye de iner; Vue'da ikinci Enter gerekiyordu). Tab her zaman onaylar.
   ⌥↓ takvimi açar.
+- Ondalık türler (`decimal`, `currency`, `percentage`) metin yazar (R35): "2,5" → `"2.5"`. F2 sunucunun metnini noktayı
+  ondalık sayarak açar (tr `"123.456"` → `123,456`); değeri değişmeden Enter yazmaz.
 - Sayı editörü yazılanı temizler: harf ve ikinci ondalık ayırıcı yazılmaz, görünen değer yazılandır (filtre sayı
   editörüyle aynı `cleanNumber`). F2 sayıyı yerel ondalıkla açar (tr `1200,5`).
 - `text` hücrenin altında açılan kutuda yazılır (en az 320 px, satırların üstüne taşmaz); hücre ilk satırı gösterir.
@@ -208,7 +210,7 @@ Swors'ta sipariş ve teklif satırları da `FormGrid` kullanmaz: önce kayıt a�
 
 | Faz | Kapsam |
 |---|---|
-| F1 | Çekirdek motor `core/`'da: seçim, klavye, yazınca düzenleme, geri al; `string`, `text`, `float`, `int`, `percentage`, `currency`, `select`, `date`, `boolean`; hatalar (§6); alt çubuk; 1000×30 ölçümü |
+| F1 | Çekirdek motor `core/`'da: seçim, klavye, yazınca düzenleme, geri al; `string`, `text`, `decimal`, `int`, `percentage`, `currency`, `select`, `date`, `boolean`; hatalar (§6); alt çubuk; 1000×30 ölçümü |
 | F2 | `ajax` (satır bağlamıyla), `newRow`, `maxRows`, `onChange`, `required(row)`, `optionEnabled(…, rows)`, `placeholder`, `send: false` |
 | F3 | Pano: kopyala, yapıştır (Excel), ⌘D doldurma; sağ tık menüsü; arama (§8.1) |
 | F4 | Satır penceresi, pencere düzenleyici, hücre aksiyonu genişlemesi (§3.3), telefon |

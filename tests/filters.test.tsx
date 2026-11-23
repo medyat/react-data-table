@@ -205,12 +205,12 @@ describe('değer ve operatör', () => {
       return [shown, applied]
     }
     expect(await typed({ id: 'qty', header: 'Qty', type: 'percentage' })).toEqual(['18', [18, null]])
-    expect(await typed({ id: 'qty', header: 'Qty', type: 'float', decimalPlaces: 0 })).toEqual(['18', [18, null]])
+    expect(await typed({ id: 'qty', header: 'Qty', type: 'decimal', decimalPlaces: 0 })).toEqual(['18', [18, null]])
     expect(await typed({ id: 'qty', header: 'Qty', type: 'percentage', decimalPlaces: 1 })).toEqual([
       '18.5',
       [18.5, null],
     ])
-    expect(await typed({ id: 'qty', header: 'Qty', type: 'float' })).toEqual(['18.5', [18.5, null]])
+    expect(await typed({ id: 'qty', header: 'Qty', type: 'decimal' })).toEqual(['18.5', [18.5, null]])
   })
   it('Clear değeri siler, çip yerinde ve açık kalır; metin 250 ms sonra ve Enter ile uygulanır, Enter kapatır', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
