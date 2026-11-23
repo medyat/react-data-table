@@ -306,3 +306,26 @@ body {
   border-radius: 10px;
   color: var(--dt-text-3);
 }
+/* F1 · Ürün listesinin özel seçeneği (ajax `Item`). */
+.pg-product {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 16px;
+  min-width: 280px;
+}
+.pg-product > span {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+.pg-product small {
+  color: var(--dt-text-3);
+}
+.pg-product b {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.pg-product b.is-empty {
+  color: var(--dt-text-3);
+}

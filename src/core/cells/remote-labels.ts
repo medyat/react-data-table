@@ -6,6 +6,10 @@ export class RemoteLabels {
   private readonly cache = new Map<string, Map<string | number, OptionDef>>()
   private readonly pending = new Map<string, { remote: RemoteOptions; ids: Set<string | number> }>()
   private readonly inFlight = new Map<string, Set<string | number>>()
+  // `resolve`'un döndürmediği id'ler (silinmiş kayıt, başka kaynaktan kod): yeniden sorulmaz. Sorulsaydı her çözüm
+  // ızgarayı yeniden çizer, çizim aynı id'yi yine sorardı; tıklama gibi ayrık olaydan sonra bu döngü eşzamanlı
+  // dönüp sekmeyi kilitliyordu. Aramadan gelen seçenek önbelleğe yazılınca yine bulunur (önbellek önce bakılır).
+  private readonly missing = new Map<string, Set<string | number>>()
   private scheduled = false
   private readonly listeners = new Set<() => void>()
   /** Her çözümde artar. */
@@ -19,7 +23,7 @@ export class RemoteLabels {
 
   option(columnId: string, remote: RemoteOptions | undefined, id: string | number): OptionDef | undefined {
     const hit = this.cache.get(columnId)?.get(id)
-    if (hit || !remote) return hit
+    if (hit || !remote || this.missing.get(columnId)?.has(id)) return hit
     if (!this.inFlight.get(columnId)?.has(id)) {
       let p = this.pending.get(columnId)
       if (!p) this.pending.set(columnId, (p = { remote, ids: new Set() }))
@@ -35,6 +39,7 @@ export class RemoteLabels {
 
   /** Testler ve uygulama için: dış kaynaktan gelen etiketleri doğrudan yaz. */
   seed(columnId: string, options: OptionDef[]) {
+    if (!options.length) return
     let m = this.cache.get(columnId)
     if (!m) this.cache.set(columnId, (m = new Map()))
     for (const o of options) m.set(o.value, o)
@@ -55,7 +60,13 @@ export class RemoteLabels {
         batch.forEach((id) => flight.add(id))
         remote
           .resolve(batch, { signal: new AbortController().signal })
-          .then((options) => this.seed(columnId, options))
+          .then((options) => {
+            const found = new Set(options.map((o) => o.value))
+            let miss = this.missing.get(columnId)
+            if (!miss) this.missing.set(columnId, (miss = new Set()))
+            for (const id of batch) if (!found.has(id)) miss.add(id)
+            this.seed(columnId, options)
+          })
           .catch(() => {
             /* ham değer görünür kalır; yeniden deneme uygulamanın (D18) */
           })

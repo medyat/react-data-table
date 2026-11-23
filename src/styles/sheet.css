@@ -271,6 +271,26 @@
 .dt-cell-option-enter {
   visibility: hidden;
 }
+/* `optionEnabled` kapattığı seçenek: görünür ama seçilemez. */
+.dt-cell-option[data-disabled] {
+  opacity: 0.45;
+  cursor: default;
+}
+/* `ajax` seçeneği: ad, altında soluk açıklama (kod, birim). */
+.dt-cell-option-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.dt-cell-option-desc {
+  color: var(--dt-text-3);
+  font-size: var(--dt-ui-fs-xs);
+}
+/* `placeholder`: başka yerden gelen değer, hücrenin değeri değil. */
+.dt-cell-placeholder {
+  color: var(--dt-text-3);
+  font-style: italic;
+}
 .dt-cell-option[data-highlighted] .dt-cell-option-enter {
   visibility: visible;
 }

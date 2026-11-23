@@ -5,11 +5,14 @@
 import { isDecimalType, isDecimalValue } from '../format/decimal'
 import { Combobox } from '@base-ui/react/combobox'
 import { Popover } from '@base-ui/react/popover'
+import type { BaseUIEvent } from '@base-ui/react/types'
 import { CalendarBlankIcon } from '@phosphor-icons/react'
-import { lazy, Suspense, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { ColumnDef, OptionDef } from '../../types/columns'
-import { decimalPlaces } from '../cells/format'
+import { decimalPlaces, isEmptyValue } from '../cells/format'
+import type { RemoteLabels } from '../cells/remote-labels'
 import { Badge } from '../cells/render-cell'
+import { useDelay } from '../interaction/use-delay'
 import { TYPE_SPECS } from '../cells/specs'
 import { cleanNumber, plainNumber } from '../format/parse'
 import { useDataTableContext } from '../provider'
@@ -20,6 +23,10 @@ const DateEditor = lazy(() => import('../editors/date-editor'))
 export interface CellEditorProps<Row extends object> {
   def: ColumnDef<Row>
   row: Row | undefined
+  /** Bütün satırlar (`optionEnabled`). */
+  rows: readonly Row[]
+  /** `ajax` etiketleri: hücrenin gösterdiği ad ve aramanın döndürdüğü seçenekler (`onChange`'e gider). */
+  labels: RemoteLabels
   /** Açılıştaki metin: yazarak açılışta yazılan harf, kaydırmayla yeniden çizilince son yazılan. */
   text: string | undefined
   value: unknown
@@ -50,6 +57,15 @@ function initialText(def: ColumnDef, value: unknown, locale: string): string {
   return inputText(def, value)
 }
 
+/**
+ * `select` / `ajax` hücresinde liste düzenlemeyle kendiliğinden açılır, ikisi tek şeydir: Esc listeyi kapatmakla
+ * kalmaz, düzenlemeyi iptal eder (Excel gibi; Vue 07 §5'teki iki Esc'ten sapma, form-grid.md §8). Base UI Esc'i
+ * kendisi işleyip yayılımı durdurur; onun işleyicisi atlanır, tuş ızgaraya gider.
+ */
+const escapeToGrid = (e: BaseUIEvent<KeyboardEvent<HTMLInputElement>>) => {
+  if (e.key === 'Escape') e.preventBaseUIHandler()
+}
+
 /** Odak editöre, imleç sonda (F2 ve yazarak açılış aynı: yazılan harften sonra devam edilir). */
 function focusEnd(el: HTMLInputElement | HTMLTextAreaElement | null) {
   if (!el) return
@@ -60,6 +76,7 @@ function focusEnd(el: HTMLInputElement | HTMLTextAreaElement | null) {
 export function CellEditor<Row extends object>(props: CellEditorProps<Row>) {
   const { def } = props
   if (def.type === 'select') return <OptionCell {...props} options={def.options} />
+  if (def.type === 'ajax') return <AjaxCell {...props} />
   if (def.type === 'date') return <DateCell {...props} />
   if (def.type === 'text') return <TextCell {...props} />
   return <InputCell {...props} />
@@ -109,6 +126,8 @@ function InputCell<Row extends object>({ def, row, text: start, value, onDraft }
 
 function OptionCell<Row extends object>({
   def,
+  row,
+  rows,
   text: start,
   value,
   options,
@@ -151,13 +170,24 @@ function OptionCell<Row extends object>({
       filter={null}
       autoHighlight
     >
-      <Combobox.Input ref={input} className="dt-cell-input" aria-label={def.header} autoComplete="off" />
+      <Combobox.Input
+        ref={input}
+        className="dt-cell-input"
+        aria-label={def.header}
+        autoComplete="off"
+        onKeyDown={escapeToGrid}
+      />
       <Combobox.Portal>
         <Combobox.Positioner className="dt-positioner" align="end" sideOffset={2} anchor={input}>
           <Combobox.Popup className="dt-pop dt-cell-list dt-sheet-layer" aria-label={def.header}>
             <Combobox.List>
               {shown.map((o) => (
-                <Combobox.Item key={String(o.value)} value={o.value} className="dt-pop-item dt-cell-option">
+                <Combobox.Item
+                  key={String(o.value)}
+                  value={o.value}
+                  className="dt-pop-item dt-cell-option"
+                  disabled={!!def.optionEnabled && !def.optionEnabled(o, row ?? ({} as Row), rows)}
+                >
                   <Badge tone={o.tone} label={o.label} />
                   <kbd className="dt-kbd dt-cell-option-enter" aria-hidden="true">
                     ↵
@@ -166,6 +196,102 @@ function OptionCell<Row extends object>({
               ))}
             </Combobox.List>
             {shown.length === 0 && <div className="dt-options-empty">{i18n.t('remote.noResults')}</div>}
+          </Combobox.Popup>
+        </Combobox.Positioner>
+      </Combobox.Portal>
+    </Combobox.Root>
+  )
+}
+
+/**
+ * Sunucuda aranan seçenek (form-grid.md §3.2): yazdıkça 250 ms sonra arar, aramaya satırı da verir. Yazılan metin
+ * değer değildir; listeden seçilene kadar hücre eski değerini korur (Enter listede bir şey yoksa değişiklik yapmaz).
+ */
+// shortcut: yalnız ilk sayfa (varsayılan 20) gösterilir, aşağı kaydırınca devamı yüklenmez; arama daraltır. Uzun listede
+// "devamı" gerekince options-editor'daki sayfalama buraya taşınır.
+function AjaxCell<Row extends object>({ def, row, labels, text: start, value, onPick }: CellEditorProps<Row>) {
+  const { i18n } = useDataTableContext()
+  const { remote, Item } = def as Extract<ColumnDef<Row>, { type: 'ajax' }>
+  const labelOf = (v: unknown) => (isEmptyValue(v) ? '' : labels.label(def.id, remote, v as string | number))
+  const [text, setText] = useState(() => start ?? labelOf(value))
+  const [found, setFound] = useState<OptionDef[] | null>(null)
+  const [open, setOpen] = useState(true)
+  const input = useRef<HTMLInputElement>(null)
+  const ctl = useRef<AbortController | null>(null)
+  const delay = useDelay(250)
+  const load = (q: string) => {
+    ctl.current?.abort()
+    const c = new AbortController()
+    ctl.current = c
+    remote
+      .search(q, 1, { signal: c.signal, row })
+      .then((res) => {
+        if (c.signal.aborted) return
+        labels.seed(def.id, res.items)
+        setFound(res.items)
+      })
+      // Hata uygulamanındır (D18); liste boş kalır.
+      .catch(() => !c.signal.aborted && setFound([]))
+  }
+  useLayoutEffect(() => focusEnd(input.current), [])
+  useEffect(() => {
+    load(start ?? '')
+    return () => ctl.current?.abort()
+    // Açılışta bir kez; sonrası yazdıkça.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  const items = found ?? []
+  return (
+    <Combobox.Root<unknown>
+      open={open}
+      onOpenChange={setOpen}
+      value={value ?? null}
+      onValueChange={(v, details) => {
+        if (v === null || v === undefined) return
+        onPick(v, details.event instanceof globalThis.KeyboardEvent)
+      }}
+      inputValue={text}
+      onInputValueChange={(t, details) => {
+        if (details.reason !== 'input-change') return
+        setText(t)
+        setOpen(true)
+        setFound(null)
+        delay.run(() => load(t))
+      }}
+      items={items.map((o) => o.value)}
+      itemToStringLabel={labelOf}
+      filter={null}
+      autoHighlight
+    >
+      <Combobox.Input
+        ref={input}
+        className="dt-cell-input"
+        aria-label={def.header}
+        autoComplete="off"
+        onKeyDown={escapeToGrid}
+      />
+      <Combobox.Portal>
+        <Combobox.Positioner className="dt-positioner" align="start" sideOffset={2} anchor={input}>
+          <Combobox.Popup className="dt-pop dt-cell-list dt-sheet-layer" aria-label={def.header}>
+            <Combobox.List>
+              {items.map((o) => (
+                <Combobox.Item key={String(o.value)} value={o.value} className="dt-pop-item dt-cell-option">
+                  {Item ? (
+                    <Item option={o} search={text} />
+                  ) : (
+                    <span className="dt-cell-option-label">
+                      {o.label}
+                      {o.description && <span className="dt-cell-option-desc">{o.description}</span>}
+                    </span>
+                  )}
+                  <kbd className="dt-kbd dt-cell-option-enter" aria-hidden="true">
+                    ↵
+                  </kbd>
+                </Combobox.Item>
+              ))}
+            </Combobox.List>
+            {found === null && <div className="dt-options-empty">{i18n.t('remote.searching')}</div>}
+            {found?.length === 0 && <div className="dt-options-empty">{i18n.t('remote.noResults')}</div>}
           </Combobox.Popup>
         </Combobox.Positioner>
       </Combobox.Portal>

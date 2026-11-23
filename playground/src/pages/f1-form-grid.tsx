@@ -1,8 +1,11 @@
 // F1 · FormGrid: Sevk belgesi satırları formun içinde (docs/form-grid.md). Üstte yer tutucu form alanları: ızgara
 // sayfayla kayar, başlık ve alt çubuk yapışkan. "1000 × 30" ölçüm verisi. Hatalar (E): Miktar 0 ya da eksi istemci
 // hatası, 1000'den büyük uyarı; "Sunucu hataları" kaydetmenin döndürdüğü 422'yi taklit eder (form-grid.md §6).
+// F2: Ürün sunucuda aranır (300 ms yapay gecikme), seçilince Ad ve Birim dolar (`onChange`); yeni satır KDV %20 ve
+// Adet ile başlar (`newRow`); boş Teslim belgenin tarihini soluk gösterir (`placeholder`), Promosyonlu satırda zorunlu;
+// Metre tek satırda seçilebilir (`optionEnabled`); "En çok 6 satır" `maxRows`.
 import { TrashIcon } from '@phosphor-icons/react'
-import { FormGrid, type ColumnDef, type RowAction } from '@medyat/react-data-table'
+import { FormGrid, type ColumnDef, type OptionDef, type RowAction } from '@medyat/react-data-table'
 import { useState } from 'react'
 
 interface Line {
@@ -24,8 +27,72 @@ const units = [
   { value: 'kg', label: 'Kilogram' },
 ]
 
+type Product = OptionDef & { unit: string; category: string; stock: number }
+const catalog: Product[] = (
+  [
+    ['RAY-AL', 'Korniş ray, alüminyum', 'm', 'Ray', 420],
+    ['RAY-CL', 'Korniş ray, çelik', 'm', 'Ray', 0],
+    ['KUM-LN', 'Lina tül kumaş, beyaz', 'm', 'Kumaş', 1280],
+    ['KUM-BL', 'Blackout kumaş, gri', 'm', 'Kumaş', 96],
+    ['SMF-RTS', 'Somfy motor RTS, 10 Nm', 'pcs', 'Motor', 14],
+    ['SMF-IO', 'Somfy motor io, 6 Nm', 'pcs', 'Motor', 3],
+    ['VDA-6', 'Vida, 6 mm', 'pcs', 'Bağlantı', 5400],
+    ['DBL-8', 'Dübel, 8 mm', 'pcs', 'Bağlantı', 2200],
+    ['KRS-50', 'Kurşun şerit', 'kg', 'Aksesuar', 38],
+  ] as const
+).map(([value, label, unit, category, stock]) => ({ value, label, unit, category, stock }))
+const unitShort: Record<string, string> = { m: 'm', pcs: 'ad', kg: 'kg' }
+
+// Liste seçeneği: ad ve kod solda, kategori ve stok sağda (stoksuz soluk).
+function ProductItem({ option }: { option: OptionDef; search: string }) {
+  const p = option as Product
+  return (
+    <span className="pg-product">
+      <span>
+        {p.label}
+        <small>
+          {p.value} · {p.category}
+        </small>
+      </span>
+      <b className={p.stock ? undefined : 'is-empty'}>
+        {p.stock.toLocaleString('tr-TR')} {unitShort[p.unit]}
+      </b>
+    </span>
+  )
+}
+const wait = (ms: number, signal: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    const t = setTimeout(resolve, ms)
+    signal.addEventListener('abort', () => {
+      clearTimeout(t)
+      reject(signal.reason)
+    })
+  })
+
 const base: Array<ColumnDef<Line>> = [
-  { id: 'code', header: 'Ürün', type: 'string', width: 140, required: true },
+  {
+    id: 'code',
+    header: 'Ürün',
+    type: 'ajax',
+    width: 140,
+    required: true,
+    remote: {
+      async search(q, _page, { signal }) {
+        await wait(300, signal)
+        const n = q.toLocaleLowerCase('tr')
+        const items = catalog.filter((p) => `${p.value} ${p.label}`.toLocaleLowerCase('tr').includes(n))
+        return { items, hasMore: false }
+      },
+      resolve: async (values) => catalog.filter((p) => values.includes(p.value)),
+    },
+    Item: ProductItem,
+    // Hücre yalnız kodu gösterir (kod + ad uzun); ad Ad sütununa yazılır.
+    cell: ({ value }) => (value as string | null) ?? '',
+    onChange: (_row, _value, { option }) => {
+      const p = option as Product | undefined
+      return { title: p?.label ?? null, unit: p?.unit ?? null }
+    },
+  },
   { id: 'title', header: 'Ad', type: 'string', width: 240 },
   {
     id: 'qty',
@@ -36,10 +103,24 @@ const base: Array<ColumnDef<Line>> = [
     validate: (v) => (v !== null && v !== '' && Number(v) <= 0 ? 'Miktar sıfırdan büyük olmalı' : null),
     warn: (v) => (Number(v) > 1000 ? 'Miktar alışılmadık derecede yüksek' : null),
   },
-  { id: 'unit', header: 'Birim', type: 'select', options: units, width: 112 },
+  {
+    id: 'unit',
+    header: 'Birim',
+    type: 'select',
+    options: units,
+    width: 112,
+    optionEnabled: (o, row, rows) => o.value !== 'm' || !rows.some((r) => r !== row && r.unit === 'm'),
+  },
   { id: 'price', header: 'Birim fiyat', type: 'currency', currency: 'TRY', width: 128 },
   { id: 'vat', header: 'KDV', type: 'percentage', width: 80, hint: 'Satırın KDV oranı; boşsa üründen gelir.' },
-  { id: 'date', header: 'Teslim', type: 'date', width: 128 },
+  {
+    id: 'date',
+    header: 'Teslim',
+    type: 'date',
+    width: 128,
+    placeholder: () => '1 Ara',
+    required: (row) => row.gift === true,
+  },
   { id: 'gift', header: 'Promosyon', type: 'boolean', width: 104 },
   { id: 'note', header: 'Açıklama', type: 'text', width: 260 },
 ]
@@ -117,6 +198,7 @@ export function F1FormGrid() {
   const [rows, setRows] = useState<Line[]>(sample)
   const [log, setLog] = useState('')
   const [server, setServer] = useState(false)
+  const [limit, setLimit] = useState(false)
   return (
     <div className="pg-form">
       <div className="pg-form-fields">
@@ -143,6 +225,9 @@ export function F1FormGrid() {
         <label>
           <input type="checkbox" checked={server} onChange={(e) => setServer(e.target.checked)} /> Sunucu hataları
         </label>
+        <label>
+          <input type="checkbox" checked={limit} onChange={(e) => setLimit(e.target.checked)} /> En çok 6 satır
+        </label>
       </div>
       <FormGrid
         key={size}
@@ -150,6 +235,8 @@ export function F1FormGrid() {
         rows={rows}
         columns={size === 'big' ? wide : base}
         rowActions={actions}
+        newRow={() => ({ vat: 20, unit: 'pcs' })}
+        maxRows={limit ? 6 : undefined}
         errors={
           server
             ? {

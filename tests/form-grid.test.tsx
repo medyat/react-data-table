@@ -235,6 +235,19 @@ describe('düzenleme', () => {
     await flush()
     expect(onChange.mock.lastCall?.[0][0].unit).toBe('m')
   })
+  it('seçenek: liste açıkken tek Esc düzenlemeyi iptal eder, odak hücreye döner (Excel gibi; Vue 07 §5 iki Esc)', async () => {
+    const onChange = await openGrid()
+    fireEvent.pointerDown(cell(0, 2), { button: 0 })
+    fireEvent.keyDown(cell(0, 2), { key: 'F2' })
+    fireEvent.change(editor()!, { target: { value: 'met' } })
+    expect(editor()?.getAttribute('aria-expanded')).toBe('true')
+    fireEvent.keyDown(editor()!, { key: 'Escape' })
+    await flush()
+    expect(editor()).toBeNull()
+    expect(document.querySelector('.dt-cell-list')).toBeNull()
+    expect(document.activeElement).toBe(cell(0, 2))
+    expect(onChange).not.toHaveBeenCalled()
+  })
   it('çift tık düzenler; boolean hücresinde çevirir', async () => {
     const onChange = await openGrid()
     fireEvent.doubleClick(cell(0, 0))
@@ -275,5 +288,114 @@ describe('düzenleme', () => {
     await flush()
     expect(onChange.mock.lastCall?.[0][0].code).toBe('B')
     expect(document.activeElement).toBe(outside)
+  })
+})
+
+// F2: sunucuda aranan seçenek ve aynı satıra yazma (form-grid.md §3.2).
+describe('ajax hücresi', () => {
+  it('Item verilince liste seçeneği onunla çizilir; aramanın ek alanları ve yazılan metin gelir', async () => {
+    type Product = { value: string; label: string; stock: number; category: string }
+    const products: Product[] = [{ value: 'VDA-6', label: 'Vida, 6 mm', stock: 120, category: 'Bağlantı' }]
+    const cols: Array<ColumnDef<{ product: string | null }>> = [
+      {
+        id: 'product',
+        header: 'Ürün',
+        type: 'ajax',
+        remote: { search: async () => ({ items: products, hasMore: false }), resolve: async () => products },
+        Item: ({ option, search }) => {
+          const p = option as Product
+          return (
+            <span data-testid="item">
+              {p.label} · {p.category} · {p.stock} · {search}
+            </span>
+          )
+        },
+      },
+    ]
+    render(
+      <DataTableProvider locale="tr-TR">
+        <FormGrid label="Satırlar" rows={[]} columns={cols} onRowsChange={() => {}} />
+      </DataTableProvider>,
+    )
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.keyDown(cell(0, 0), { key: 'v' })
+    await flush()
+    expect((await screen.findByTestId('item')).textContent).toBe('Vida, 6 mm · Bağlantı · 120 · v')
+  })
+
+  type Line = { product: string | null; title: string | null; qty: string | null }
+  const items = [
+    { value: 'VDA-6', label: 'Vida, 6 mm' },
+    { value: 'DBL-8', label: 'Dübel, 8 mm' },
+  ]
+  it('yazdıkça satırla arar; listeden seçmek onChange ile aynı adımda yazar; yazılan metin değer olmaz', async () => {
+    const search = vi.fn(async (q: string) => ({
+      items: items.filter((i) => i.label.toLowerCase().includes(q.toLowerCase())),
+      hasMore: false,
+    }))
+    const cols: Array<ColumnDef<Line>> = [
+      {
+        id: 'product',
+        header: 'Ürün',
+        type: 'ajax',
+        remote: { search, resolve: async (v) => items.filter((i) => v.includes(i.value)) },
+        onChange: (_row, _v, { option }) => ({ title: option?.label ?? null }),
+      },
+      { id: 'title', header: 'Ad', type: 'string' },
+      { id: 'qty', header: 'Miktar', type: 'decimal' },
+    ]
+    const onChange = vi.fn()
+    function Harness() {
+      const [rows, setRows] = useState<Line[]>([{ product: 'VDA-6', title: 'Vida, 6 mm', qty: '1' }])
+      return (
+        <DataTableProvider locale="tr-TR">
+          <FormGrid
+            label="Satırlar"
+            rows={rows}
+            columns={cols}
+            onRowsChange={(next, change) => {
+              setRows(next)
+              onChange(next, change)
+            }}
+          />
+        </DataTableProvider>
+      )
+    }
+    render(<Harness />)
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.keyDown(cell(0, 0), { key: 'd' })
+    await flush()
+    expect(search).toHaveBeenLastCalledWith(
+      'd',
+      1,
+      expect.objectContaining({ row: expect.objectContaining({ product: 'VDA-6' }) }),
+    )
+    // Seçmeden çıkış: yazılan "d" değer değildir, hücre değişmez.
+    fireEvent.keyDown(editor()!, { key: 'Escape' })
+    await flush()
+    expect(editor()).toBeNull()
+    expect(onChange).not.toHaveBeenCalled()
+    fireEvent.keyDown(cell(0, 0), { key: 'F2' })
+    expect(editor()?.value).toBe('Vida, 6 mm')
+    fireEvent.change(editor()!, { target: { value: 'dübel' } })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 300))
+    })
+    await flush()
+    fireEvent.click(await screen.findByRole('option', { name: /Dübel/ }))
+    await flush()
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange.mock.lastCall).toEqual([
+      [{ product: 'DBL-8', title: 'Dübel, 8 mm', qty: '1' }],
+      {
+        kind: 'edit',
+        cells: [
+          { row: 0, column: 'product' },
+          { row: 0, column: 'title' },
+        ],
+      },
+    ])
   })
 })

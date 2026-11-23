@@ -3,7 +3,7 @@
 // Veri uygulamanındır: her yazma yeni satır dizisiyle `onRowsChange`'e gider, depo yalnız kimlik ve geçmiş tutar.
 // Satırların sonunda her zaman bir boş satır vardır (dizin = rows.length); ona yazmak satırı doğurur (`kind: 'edit'`).
 import { sameDecimal } from '../format/decimal'
-import type { ColumnDef } from '../../types/columns'
+import type { ColumnDef, OptionDef } from '../../types/columns'
 import { isEmptyValue } from '../cells/format'
 import { readPath } from '../columns/read-path'
 
@@ -25,6 +25,12 @@ export interface SheetStoreOptions<Row extends object> {
   onRowsChange: (rows: Row[], change: SheetChange) => void
   /** Verilmezse satır nesnesine geçici kimlik (WeakMap); yazılan yeni nesne eskisinin kimliğini alır. */
   getRowId?: (row: Row) => string
+  /** Boş satıra ilk yazımda satırın öbür alanları. */
+  newRow?: (rows: readonly Row[]) => Partial<Row>
+  /** Dolunca boş satır yok. */
+  maxRows?: number
+  /** `onChange`'e verilecek seçenek: `select`'te sütunun listesi, `ajax`'ta etiket önbelleği. */
+  optionOf?: (def: ColumnDef<Row>, value: unknown) => OptionDef | undefined
 }
 
 /** `cellState` bayrakları: hücre bunlarla çizilir (kenarlar seçim aralığının çerçevesi). */
@@ -38,8 +44,9 @@ export const CELL = {
   left: 64,
 } as const
 
-// F1'de hücrede düzenlenen türler; ötekiler kendi fazında gelir (ajax F2, object/array pencere F4).
+// Hücrede düzenlenen türler; object/array pencereyle (F4).
 const INLINE = new Set([
+  'ajax',
   'string',
   'text',
   'uppercase',
@@ -60,8 +67,8 @@ interface Patch {
 }
 interface Step {
   patches: Patch[]
-  /** Bu adımda doğan satırlar: geri alınınca kalkar, yinelenince boş olarak geri gelir. */
-  added: string[]
+  /** Bu adımda doğan satırlar: geri alınınca kalkar, yinelenince `newRow`'un verdiğiyle geri gelir. */
+  added: Array<{ id: string; base: object }>
 }
 
 const HISTORY = 100
@@ -123,7 +130,8 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
   const emit = () => {
     for (const l of listeners) l()
   }
-  const rowCount = () => rows.length + 1
+  const full = () => o.maxRows !== undefined && rows.length >= o.maxRows
+  const rowCount = () => rows.length + (full() ? 0 : 1)
   const colCount = () => o.columns.length
   const clampPos = (p: CellPos): CellPos => ({
     row: Math.min(Math.max(p.row, 0), rowCount() - 1),
@@ -164,24 +172,34 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
   ) => {
     const next = [...rows]
     const patches: Patch[] = []
-    const added: string[] = []
+    const added: Step['added'] = []
     const changed: SheetChange['cells'] = []
+    const put = (index: number, path: string, value: unknown) => {
+      const row = next[index]!
+      const id = idOf(row)
+      const updated = writePath(row, path, value)
+      if (!o.getRowId) tempIds.set(updated, id)
+      next[index] = updated
+      patches.push({ id, col: path, before: readPath(row, path), after: value })
+      changed.push({ row: index, column: path })
+    }
     for (const c of cells) {
       const def = o.columns[c.col]
       if (!def) continue
       let row = next[c.row]
       if (!row) {
         if (c.row !== next.length || isEmptyValue(c.value)) continue
-        row = {} as Row
-        added.push(idOf(row))
+        if (o.maxRows !== undefined && next.length >= o.maxRows) continue
+        // Doğan satır `newRow`'un alanlarıyla başlar; onlar patch değil satırın tabanıdır (geri al satırı kaldırır).
+        const base = { ...o.newRow?.(next) }
+        row = base as Row
+        added.push({ id: idOf(row), base })
+        next.push(row)
       } else if (same(readPath(row, def.id), c.value)) continue
-      const id = idOf(row)
-      const before = readPath(row, def.id)
-      const updated = writePath(row, def.id, c.value)
-      if (!o.getRowId) tempIds.set(updated, id)
-      next[c.row] = updated
-      patches.push({ id, col: def.id, before, after: c.value })
-      changed.push({ row: c.row, column: def.id })
+      put(c.row, def.id, c.value)
+      const extra = def.onChange?.(next[c.row]!, c.value, { option: o.optionOf?.(def, c.value), rows: next })
+      for (const [path, value] of Object.entries(extra ?? {}))
+        if (!same(readPath(next[c.row], path), value)) put(c.row, path, value)
     }
     if (!patches.length) return false
     rows = next
@@ -202,9 +220,9 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
     let next = [...rows]
     const at = new Map(next.map((r, i) => [idOf(r), i]))
     if (dir === 'redo')
-      for (const id of step.added) {
+      for (const { id, base } of step.added) {
         if (at.has(id)) continue
-        const row = {} as Row
+        const row = { ...base } as Row
         if (!o.getRowId) tempIds.set(row, id)
         at.set(id, next.push(row) - 1)
       }
@@ -219,10 +237,12 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
       if (!o.getRowId) tempIds.set(updated, p.id)
       next[i] = updated
       changed.push({ row: i, column: p.col })
-      first ??= { row: i, col: colIndex(p.col) }
+      // `onChange`'in yazdığı alanın sütunu olmayabilir: odak ilk sütunlu hücreye.
+      const col = colIndex(p.col)
+      if (col >= 0) first ??= { row: i, col }
     }
     if (dir === 'undo' && step.added.length) {
-      const drop = new Set(step.added)
+      const drop = new Set(step.added.map((a) => a.id))
       next = next.filter((r) => !drop.has(idOf(r)))
     }
     rows = next
@@ -364,7 +384,9 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
       if (!active || !canEdit(active.row, active.col)) return false
       const def = o.columns[active.col]!
       if (def.type === 'boolean') return false
-      editing = { pos: active, draft: seed === undefined ? read(active.row, def) : seed, text: seed }
+      // `ajax`'ta yazılan harf aramadır, değer değil: listeden seçilene kadar taslak eski değerdir.
+      const draft = seed === undefined || def.type === 'ajax' ? read(active.row, def) : seed
+      editing = { pos: active, draft, text: seed }
       anchor = null
       emit()
       return true

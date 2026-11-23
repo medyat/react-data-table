@@ -1,7 +1,7 @@
 // Faz 1 kabul kriterleri: boş değerler, select tonları, date overdue, datetime relative, star tooltip, color fill,
 // boolean falseTone, +N, özel hücre bağlamı (03, T8).
 import { act, cleanup, fireEvent, render as rtl, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RemoteLabels } from '../src/core/cells/remote-labels'
 import { cellFillStyle, renderCellContent, type RenderEnv } from '../src/core/cells/render-cell'
 import { getFormat } from '../src/core/format'
@@ -194,6 +194,22 @@ describe('seçim tipleri', () => {
     expect(changes).toBe(1)
     expect(labels.getVersion()).toBe(1)
     expect(render(def, 42, { id: 1 }, { ...env, labels }).text()).toBe('Customer 42')
+  })
+})
+
+describe('ajax etiketi bulunamayınca', () => {
+  it('resolve bulamadığı id bir kez sorulur; ham değer kalır, sürüm artmaz (yeniden çizim döngüsü yok)', async () => {
+    const labels = new RemoteLabels()
+    const resolve = vi.fn(async () => [])
+    const remote = { search: async () => ({ items: [], hasMore: false }), resolve }
+    let changes = 0
+    labels.subscribe(() => changes++)
+    expect(labels.label('v', remote, 'P-0001')).toBe('P-0001')
+    await act(() => new Promise((r) => setTimeout(r, 0)))
+    expect(labels.label('v', remote, 'P-0001')).toBe('P-0001')
+    await act(() => new Promise((r) => setTimeout(r, 0)))
+    expect(resolve).toHaveBeenCalledTimes(1)
+    expect(changes).toBe(0)
   })
 })
 

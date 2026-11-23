@@ -171,7 +171,7 @@ export function HeaderCell<Row extends object>({
         {sort && numeric && sortMark}
         <span className="dt-head-text">{(layout.phone && def.headerShort) || def.header}</span>
         {unit && <span className="dt-head-unit">{unit}</span>}
-        {def.required && (
+        {def.required === true && (
           <span className="dt-head-required" aria-label={i18n.t('sheet.required')} role="img">
             *
           </span>

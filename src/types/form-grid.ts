@@ -23,6 +23,10 @@ export interface FormGridProps<Row extends object> {
    * sütuna düşer, düşmeyen satırındır (form-grid.md §6).
    */
   errors?: Record<string, string | string[]>
+  /** Boş satıra ilk değer yazılınca satırın öbür alanları (form-grid.md §5); yazılan hücre bunu ezer. */
+  newRow?: (rows: readonly Row[]) => Partial<Row>
+  /** Satır sınırı: dolunca alttaki boş satır kaybolur. */
+  maxRows?: number
   /** ⋯ menüsü. */
   rowActions?: Array<RowAction<Row>>
   density?: Density

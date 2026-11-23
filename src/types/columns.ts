@@ -53,9 +53,12 @@ export interface UserOption extends OptionDef {
 }
 
 /** `ajax` ve `user` sütunlarının seçenek kaynağı (sütunun kendi verisi; metin filtresi önerisi değildir). */
-export interface RemoteOptions<O extends OptionDef = OptionDef> {
-  /** Yazdıkça arama. Varsayılan sayfa boyutu 20. */
-  search: (q: string, page: number, ctx: { signal: AbortSignal }) => Promise<{ items: O[]; hasMore: boolean }>
+export interface RemoteOptions<O extends OptionDef = OptionDef, Row = unknown> {
+  /**
+   * Yazdıkça arama. Varsayılan sayfa boyutu 20. FormGrid hücresinde `row` düzenlenen satırdır (boş satırda yok):
+   * Konum satırdaki ürünün raflarını ister (form-grid.md §3.2). Liste filtresinde `row` yoktur.
+   */
+  search(q: string, page: number, ctx: { signal: AbortSignal; row?: Row }): Promise<{ items: O[]; hasMore: boolean }>
   /** Kayıtlı filtre değerlerinin, yapıştırılan değerlerin ve hücre değerlerinin etiketlerini çözer. */
   resolve: (values: Array<string | number>, ctx: { signal: AbortSignal }) => Promise<O[]>
   pageSize?: number
@@ -175,8 +178,21 @@ export interface BaseColumn<Row, V = unknown> {
   // FormGrid (R34, docs/form-grid.md §3.1). DataTable bu alanları okumaz.
   /** Varsayılan true; fonksiyon satıra göre kilitler. */
   editable?: boolean | ((row: Row, ctx: { isNew: boolean }) => boolean)
-  /** Başlıkta yıldız. İstemcide hata üretmez: zorunluluğu sunucu söyler. */
-  required?: boolean
+  /**
+   * Başlıkta yıldız. İstemcide hata üretmez: zorunluluğu sunucu söyler. Fonksiyon satıra göre zorunlu kılar
+   * (çıkış konumu yalnız stok takipli satırda): başlık yıldız taşımaz, hücre `aria-required` taşır.
+   */
+  required?: boolean | ((row: Row) => boolean)
+  /** Boş hücrede soluk yazılan, başka yerden gelen değer; hücrenin değeri olmaz (talebin İhtiyaç tarihi). */
+  placeholder?: (row: Row) => string | null | undefined
+  /**
+   * Hücreye yazılınca aynı satıra yazılacak öbür alanlar (Ürün seçilince Ad ve Birim). `row` yazılmış haliyle gelir;
+   * `option` seçilen seçenektir (`ajax`'ta aramanın döndürdüğü nesnenin kendisi, ek alanlarıyla). Yazılanlar aynı
+   * geri al adımına girer; onların `onChange`'i çağrılmaz.
+   */
+  onChange?: (row: Row, value: unknown, ctx: { option?: OptionDef; rows: readonly Row[] }) => Partial<Row> | void
+  /** `select`'te seçeneği kapatır: liste soluk gösterir, seçilemez (taksit her satırda bir kez). */
+  optionEnabled?: (option: OptionDef, row: Row, rows: readonly Row[]) => boolean
   /** Hata: hücre kırmızı, balonda mesaj. */
   validate?: Validator<Row>
   /** Uyarı: kaydı engellemez. */
@@ -220,7 +236,15 @@ export type ColumnDef<Row = any> =
       type: 'multiselect'
       options: OptionDef[]
     })
-  | (BaseColumn<Row, string | number | null> & { type: 'ajax'; remote: RemoteOptions })
+  | (BaseColumn<Row, string | number | null> & {
+      type: 'ajax'
+      remote: RemoteOptions<OptionDef, Row>
+      /**
+       * FormGrid listesinde seçeneğin içeriği (Swors `SourcePicker`'ın `Item`'ı gibi): `option` aramanın döndürdüğü
+       * nesnedir, ek alanlarıyla (stok, kategori); `search` yazılan metin (vurgulamak için). Verilmezse ad + açıklama.
+       */
+      Item?: ComponentType<{ option: OptionDef; search: string }>
+    })
   | (BaseColumn<Row, string | number | Array<string | number> | null> & {
       type: 'user'
       remote?: RemoteOptions<UserOption>

@@ -14,7 +14,7 @@ import {
 } from 'react'
 import type { ColumnDef } from '../types/columns'
 import type { FormGridProps } from '../types/form-grid'
-import { decimalPlaces } from '../core/cells/format'
+import { decimalPlaces, isEmptyValue } from '../core/cells/format'
 import { RemoteLabels } from '../core/cells/remote-labels'
 import { cellFillStyle, renderCellContent, type RenderEnv } from '../core/cells/render-cell'
 import { alignOf, isNumericType } from '../core/cells/specs'
@@ -96,6 +96,7 @@ function GridCell<Row extends object>({
       role="gridcell"
       aria-selected={state & (CELL.selected | CELL.active) ? true : undefined}
       aria-readonly={editable ? undefined : true}
+      aria-required={row && typeof def.required === 'function' && def.required(row) ? true : undefined}
       aria-invalid={issue?.level === 'error' ? true : undefined}
       aria-describedby={tipId}
       tabIndex={state & CELL.active ? 0 : -1}
@@ -106,6 +107,8 @@ function GridCell<Row extends object>({
         <CellEditor
           def={def}
           row={row}
+          rows={store.rows()}
+          labels={env.labels}
           text={edit.text}
           value={edit.draft}
           onDraft={(v, text) => store.setDraft(v, text)}
@@ -117,7 +120,7 @@ function GridCell<Row extends object>({
           }}
         />
       ) : (
-        row && <span className="dt-cell-content">{renderCellContent(def, row, value, env)}</span>
+        row && <span className="dt-cell-content">{content(def, row, value, env)}</span>
       )}
       {issue && (
         <span id={tipId} className={`dt-cell-tip is-${issue.level}`} role="tooltip">
@@ -145,6 +148,8 @@ export function FormGrid<Row extends object>({
   label,
   getRowId,
   errors,
+  newRow,
+  maxRows,
   rowActions = [],
   density = 'compact',
 }: FormGridProps<Row>) {
@@ -160,7 +165,20 @@ export function FormGrid<Row extends object>({
   })
   const shown = layout.columns
   const defs = shown.map((c) => c.def as ColumnDef<Row>)
-  store.sync({ rows, columns: defs, onRowsChange, getRowId })
+  const [labels] = useState(() => new RemoteLabels())
+  store.sync({
+    rows,
+    columns: defs,
+    onRowsChange,
+    getRowId,
+    newRow,
+    maxRows,
+    optionOf: (def, value) => {
+      if (isEmptyValue(value)) return undefined
+      if (def.type === 'select') return def.options.find((o) => String(o.value) === String(value))
+      if (def.type === 'ajax') return labels.option(def.id, def.remote, value as string | number)
+    },
+  })
   // Her çizimde veriden: 1000 × 30'da tek geçiş, hücre başına tip denetimi (form-grid.md §5–6).
   const issues = collectIssues({
     rows,
@@ -174,7 +192,6 @@ export function FormGrid<Row extends object>({
     i18n: ctx.i18n,
   })
 
-  const [labels] = useState(() => new RemoteLabels())
   const labelsVersion = useSyncExternalStore(labels.subscribe, labels.getVersion)
   const env: RenderEnv & { labelsVersion: number } = {
     fmt: getFormat(ctx.locale),
@@ -351,10 +368,11 @@ export function FormGrid<Row extends object>({
     // Yalnız hücrenin kendisinde: ⋯ düğmesi ve başlık kendi tuşlarını kullanır.
     if (!posOf(e.target) && !store.editing()) return
     const ed = store.editing()
-    // Açık liste / takvim Enter ve Esc'i önce kendisi kullanır; ikinci Esc düzenlemeyi iptal eder (Vue 07 §5). Tab her
-    // zaman onaylar.
+    // Açık liste / takvim Enter'ı önce kendisi kullanır; Tab her zaman onaylar. Hücre listesinde (combobox) Esc
+    // düzenlemeyi iptal eder (form-grid.md §8); takvim kullanıcının açtığı katmandır, Esc önce onu kapatır.
     const target = e.target as HTMLElement
-    const widget = e.defaultPrevented || target.getAttribute('aria-expanded') === 'true'
+    const list = e.key === 'Escape' && target.getAttribute('role') === 'combobox'
+    const widget = e.defaultPrevented || (!list && target.getAttribute('aria-expanded') === 'true')
     if (ed && widget && e.key !== 'Tab') return
     // Portaldaki içerik React ağacında ızgaranın altında: takvimin tuşları ızgaraya ait değil, uzun metin kutusununki ait.
     if (!root.current?.contains(target) && !target.closest('.dt-text-pop')) return
@@ -477,6 +495,12 @@ export function FormGrid<Row extends object>({
       <DelegatedTooltip root={root} />
     </div>
   )
+}
+
+/** Boş hücrede `placeholder` soluk yazılır; değer değildir (form-grid.md §3.2). */
+function content<Row extends object>(def: ColumnDef<Row>, row: Row, value: unknown, env: RenderEnv) {
+  const hint = isEmptyValue(value) ? def.placeholder?.(row) : null
+  return hint ? <span className="dt-cell-placeholder">{hint}</span> : renderCellContent(def, row, value, env)
 }
 
 /**

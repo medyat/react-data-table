@@ -96,12 +96,19 @@ Her biri bir panodan çıktı; pano yoksa alan da yok.
 |---|---|---|
 | `required` | `boolean \| (row) => boolean` | Vue'da yalnız `boolean`. Çıkış konumu yalnız Stok takipli satırda zorunlu (S1a). Fonksiyonsa header yıldız taşımaz. |
 | `optionEnabled` | `rows` üçüncü parametre | Taksit her satırda bir kez (G1a). |
-| `remote.search` | `ctx.row` eklenir | Konum seçicisi satırdaki ürünün stoklu raflarını ister (1h, S1a). |
+| `remote.search` | `ctx.row` eklenir | Konum seçicisi satırdaki ürünün stoklu raflarını ister (1h, S1a). Boş satırda `row` yok. |
 | `placeholder` | `(row) => string \| null` | Boş hücrede başka yerden gelen değer soluk yazılır, değer olmaz: talebin İhtiyaç tarihi (T1a). |
-| `onChange` | `(row, value) => Partial<Row> \| void` | Aynı satıra yazma: tek çekimde Taksitle aktarım kapanır (G1a), Ürün seçilince Ad ve Birim dolar (1b). Yazılanlar aynı geri al adımına girer. |
+| `onChange` | `(row, value, { option, rows }) => Partial<Row> \| void` | Aynı satıra yazma: tek çekimde Taksitle aktarım kapanır (G1a), Ürün seçilince Ad ve Birim dolar (1b). `option` seçilen seçenektir; `ajax`'ta aramanın döndürdüğü nesne, ek alanlarıyla (ürünün birimi). Yazılanlar aynı geri al adımına girer; onların `onChange`'i çağrılmaz. |
 | `group` | `string \| string[]` | İç içe başlık: İndirim → Oran \| Tutar, ek vergiler grup → vergi → Oran \| Tutar, İhracat (F1a, F1b, F3a). Grup başlığı rengi yalnız başlık hücresinde. |
 | `display` (`boolean`) | `'text' \| 'switch'` | POS'ta anahtar görünümü (G1a). |
-| `send` | `false` | Gösterilir, düzenlenmez, satır değerine yazılmaz: seçimle gelen Stok (T1a). |
+
+Seçimle gelen ama satır değerine girmeyen bilgi (talebin Stok sütunu, T1a) `accessor`'lı sütundur: `accessor`'lı sütun
+düzenlenmez ve ızgara ona yazmaz. Taslaktaki `send: false` bu yüzden eklenmedi (F2).
+
+`ajax` hücresi: yazılan metin aramadır, değer değil; listeden seçilene kadar hücre eski değerini korur. Liste ilk
+sayfayı gösterir (arama daraltır); kaydırınca devamı yüklenmez. Seçeneğin içeriği varsayılan olarak ad + açıklamadır; `Item`
+(`ComponentType<{ option, search }>`, Swors `SourcePicker`'ın adı ve biçimi) stok, kategori gibi alanları çizer:
+`option` aramanın döndürdüğü nesnedir. Liste içeriğe göre genişler, `wide` gerekmez.
 
 Vue'daki "aynı satırda başka hücre değişince kilit ve doğrulama yeniden değerlendirilir" kuralı kalır; `onChange`
 ondan farklıdır: kilit değeri silmez, `onChange` değer yazar.
@@ -174,9 +181,12 @@ Vue 08'in sheet klavyesi geçerli; farklar:
   (Excel). Izgara olayı işlediği için tarayıcının kendi işi çalışmaz. ⌥ + yön ızgara tuşu değil.
 - F2 hücreyi düzenler; pencere türünde pencereyi açar. Yazmaya başlamak düzenler.
 - Enter düzenlemede onaylayıp alt hücreye iner, düzenleme yokken yalnız alt hücreye geçer.
-- `select` ve `date` editöründe liste / takvim açıkken Enter ve Esc önce ona gider; listeden ya da takvimden seçmek
+- `select`, `ajax` ve `date` editöründe liste / takvim açıkken Enter önce ona gider; listeden ya da takvimden seçmek
   hücreyi onaylar (Enter ile seçilince alt hücreye de iner; Vue'da ikinci Enter gerekiyordu). Tab her zaman onaylar.
   ⌥↓ takvimi açar.
+- Esc `select` / `ajax` hücresinde liste açıkken de düzenlemeyi tek basışta iptal eder (Excel gibi). Vue 07 §5'te ilk
+  Esc listeyi kapatıp editörde bırakıyordu; hücrede liste düzenlemeyle kendiliğinden açılır, listesiz kalan editörün
+  işi yok. Takvim kullanıcının açtığı katmandır: Esc önce onu kapatır, yazılan tarih kalır.
 - Ondalık türler (`decimal`, `currency`, `percentage`) metin yazar (R35): "2,5" → `"2.5"`. F2 sunucunun metnini noktayı
   ondalık sayarak açar (tr `"123.456"` → `123,456`); değeri değişmeden Enter yazmaz.
 - Sayı editörü yazılanı temizler: harf ve ikinci ondalık ayırıcı yazılmaz, görünen değer yazılandır (filtre sayı
@@ -214,7 +224,7 @@ Swors'ta sipariş ve teklif satırları da `FormGrid` kullanmaz: önce kayıt a�
 | Faz | Kapsam |
 |---|---|
 | F1 | Çekirdek motor `core/`'da: seçim, klavye, yazınca düzenleme, geri al; `string`, `text`, `decimal`, `int`, `percentage`, `currency`, `select`, `date`, `boolean`; hatalar (§6); alt çubuk; 1000×30 ölçümü |
-| F2 | `ajax` (satır bağlamıyla), `newRow`, `maxRows`, `onChange`, `required(row)`, `optionEnabled(…, rows)`, `placeholder`, `send: false` |
+| F2 | `ajax` (satır bağlamıyla), `newRow`, `maxRows`, `onChange`, `required(row)`, `optionEnabled(…, rows)`, `placeholder` |
 | F3 | Pano: kopyala, yapıştır (Excel), ⌘D doldurma; sağ tık menüsü; arama (§8.1) |
 | F4 | Satır penceresi, pencere düzenleyici, hücre aksiyonu genişlemesi (§3.3), telefon |
 | F5 | İç içe başlık (`group`); liste tablosu da kullanır |

@@ -360,3 +360,93 @@ describe('satır kimliği', () => {
     expect(rows()[0]!.qty).toBe(1)
   })
 })
+
+describe('F2: newRow, maxRows, onChange, ajax', () => {
+  type P = { product: number | null; title: string | null; unit: string | null; qty: string | null }
+  const products = [{ value: 7, label: 'Vida', unit: 'pcs' }]
+  const cols: Array<ColumnDef<P>> = [
+    {
+      id: 'product',
+      header: 'Ürün',
+      type: 'ajax',
+      remote: { search: async () => ({ items: products, hasMore: false }), resolve: async () => products },
+      onChange: (_row, _value, { option }) => ({
+        title: option?.label ?? null,
+        unit: (option as { unit?: string })?.unit,
+      }),
+    },
+    { id: 'title', header: 'Ad', type: 'string' },
+    { id: 'unit', header: 'Birim', type: 'string' },
+    { id: 'qty', header: 'Miktar', type: 'decimal' },
+  ]
+  function make(opts: { maxRows?: number } = {}) {
+    let rows: P[] = []
+    const changes: SheetChange[] = []
+    const base = {
+      columns: cols,
+      newRow: () => ({ qty: '1' }),
+      optionOf: (def: ColumnDef<P>, v: unknown) =>
+        def.id === 'product' ? products.find((p) => p.value === v) : undefined,
+      onRowsChange: (next: P[], change: SheetChange) => {
+        rows = next
+        changes.push(change)
+      },
+      ...opts,
+    }
+    const store = createSheetStore<P>({ ...base, rows })
+    const render = () => store.sync({ ...base, rows })
+    return { store, rows: () => rows, changes, render }
+  }
+
+  it('boş satıra yazınca newRow tabanı + onChange aynı adımda; tek geri al hepsini kaldırır, yinele geri getirir', () => {
+    const { store, rows, changes, render } = make()
+    store.set({ row: 0, col: 0 }, 7)
+    render()
+    expect(rows()).toEqual([{ qty: '1', product: 7, title: 'Vida', unit: 'pcs' }])
+    expect(changes.at(-1)!.cells.map((c) => c.column)).toEqual(['product', 'title', 'unit'])
+    store.undo()
+    render()
+    expect(rows()).toEqual([])
+    store.redo()
+    render()
+    expect(rows()).toEqual([{ qty: '1', product: 7, title: 'Vida', unit: 'pcs' }])
+  })
+
+  it('onChange var olan satırda yalnız farklı alanları yazar; geri al öncekine döner', () => {
+    const { store, rows, render } = make()
+    store.set({ row: 0, col: 0 }, 7)
+    render()
+    store.set({ row: 0, col: 1 }, 'Özel ad')
+    render()
+    store.set({ row: 0, col: 0 }, null)
+    render()
+    expect(rows()[0]).toMatchObject({ product: null, title: null, unit: undefined })
+    store.undo()
+    render()
+    expect(rows()[0]).toMatchObject({ product: 7, title: 'Özel ad', unit: 'pcs' })
+  })
+
+  it('maxRows dolunca boş satır yok, fazlası yazılmaz', () => {
+    const { store, rows, render } = make({ maxRows: 1 })
+    expect(store.rowCount()).toBe(1)
+    store.set({ row: 0, col: 3 }, '5')
+    render()
+    expect(store.rowCount()).toBe(1)
+    store.set({ row: 1, col: 3 }, '6')
+    render()
+    expect(rows()).toHaveLength(1)
+  })
+
+  it('ajax hücresinde yazarak açılış değeri değiştirmez (yazılan arama metnidir)', () => {
+    const { store, rows, render } = make()
+    store.set({ row: 0, col: 0 }, 7)
+    render()
+    store.focus({ row: 0, col: 0 })
+    store.startEdit('v')
+    expect(store.editing()?.draft).toBe(7)
+    expect(store.editing()?.text).toBe('v')
+    store.commit()
+    render()
+    expect(rows()[0]!.product).toBe(7)
+  })
+})
