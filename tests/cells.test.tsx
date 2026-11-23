@@ -59,6 +59,28 @@ describe('sayı tipleri', () => {
     expect(b.find('.dt-bar-fill')!.style.width).toBe('68%')
     expect(b.find('.dt-bar-label')!.textContent).toBe('68%')
   })
+  it('signDisplay: exceptZero artıya + yazar, never işareti yazmaz; varsayılan yalnız eksi', () => {
+    expect(render(col('decimal', { signDisplay: 'exceptZero' }), '12.5').text()).toBe('+12.50')
+    expect(render(col('decimal', { signDisplay: 'exceptZero' }), '0.00').text()).toBe('0.00')
+    expect(render(col('decimal', { signDisplay: 'exceptZero' }), '-3').text()).toBe('−3.00')
+    expect(render(col('currency', { currency: 'TRY', signDisplay: 'never' }), '-1200.5').text()).toBe('1,200.50TRY')
+    expect(render(col('int', { signDisplay: 'never' }), -4).text()).toBe('4')
+    expect(render(col('percentage', { signDisplay: 'exceptZero' }), '18').text()).toBe('+18%')
+    expect(render(col('decimal'), '12.5').text()).toBe('12.50')
+  })
+  it('signTone: istenen işaret boyanır, verilmeyen boyanmaz; "-0.00" eksi değildir', () => {
+    const tone = { negative: 'destructive', zero: 'muted' }
+    expect(render(col('decimal', { signTone: tone }), '-2').find('.dt-sign-negative')).not.toBeNull()
+    expect(render(col('decimal', { signTone: tone }), '-0.00').find('.dt-sign-zero')).not.toBeNull()
+    expect(render(col('decimal', { signTone: tone }), '5').find('[class*="dt-sign-"]')).toBeNull()
+    expect(render(col('int', { signTone: { positive: 'success' } }), 3).find('.dt-sign-positive')).not.toBeNull()
+    expect(render(col('decimal'), '-2').find('[class*="dt-sign-"]')).toBeNull()
+  })
+  it('satır bazında unit hücrede sayının yanında yazılır', () => {
+    const w = render(col('decimal', { unit: (r: R) => (r.id === 1 ? 'm' : 'pcs') }), '486.5')
+    expect(w.text()).toBe('486.50m')
+    expect(w.find('.dt-unit')!.textContent).toBe('m')
+  })
   it('star: dolu sayısı ve tooltip "4 of 5"', () => {
     const w = render(col('star'), 4)
     expect(w.find('.dt-stars')!.getAttribute('aria-label')).toBe('4 of 5')

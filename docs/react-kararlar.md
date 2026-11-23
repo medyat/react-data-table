@@ -442,6 +442,18 @@ oturunca çıkar.
 - Neden: Swors'ta ondalık backend'de tam (brick/math), telde metin; Laraql da 0.5'te `decimal` / `percentage`'ı metin
   gönderir. Paketin float'a çevirmesi "123.456"yı binlik sanmak gibi hatalara ve 15 haneden sonra kayba yol açıyordu.
 
+## R36 · Sayı sütununda işaret: `signDisplay`, `signTone`; satır bazında birim hücrede (03'ü genişletir)
+
+- `int`, `decimal`, `currency`, `percentage` iki isteğe bağlı alan alır; verilmezse bugünkü gibi (yalnız eksi, renk yok).
+- `signDisplay`: Intl'in adı ve değerleri, `'auto' | 'exceptZero' | 'never'`. `exceptZero` artıya + yazar (stok girişi),
+  `never` işareti yazmaz (yön B/A gibi başka yerde söyleniyorsa). Yalnız ekranındır: pano ve CSV işareti her zaman yazar,
+  Excel değeri tipli sayıdır; kopyalanan geri yapıştırılınca aynı değer olmalı. Sıralama ve filtre gerçek değere bakar.
+- `signTone`: `{ negative?: 'destructive', positive?: 'success', zero?: 'muted' }`; yalnız verilen işaret boyanır. Değer
+  serbest renk değil anlam adıdır, tema token'larına bağlanır (`boolean`'ın `falseTone`'u gibi). İşaret `decimal.js` ile
+  okunur: "-0.00" sıfırdır. Her zaman boyamak seçilmedi: kredi kartında fazla ödeme gibi eksinin hata olmadığı yerler var.
+- `unit` fonksiyonu (satır bazında birim) artık hücrede sayının yanına soluk yazılır (`.dt-unit`); tip bunu söylüyordu ama
+  çizilmiyordu, uygulama birimi yazmak için hücreyi elle kuruyordu.
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

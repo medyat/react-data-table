@@ -31,6 +31,32 @@ const groups: Array<{ title: string; columns: Array<ColumnDef<Sample>>; rows: Sa
     ],
   },
   {
+    title: 'Number · sign (R36)',
+    columns: [
+      {
+        id: 'stock',
+        header: 'stock',
+        type: 'decimal',
+        unit: () => 'm',
+        signTone: { negative: 'destructive', zero: 'muted' },
+      },
+      {
+        id: 'move',
+        header: 'movement',
+        type: 'decimal',
+        unit: () => 'pcs',
+        signDisplay: 'exceptZero',
+        signTone: { positive: 'success' },
+      },
+      { id: 'cur', header: 'balance · never', type: 'currency', currency: 'TRY', signDisplay: 'never' },
+    ],
+    rows: [
+      { id: 1, stock: '486.5000', move: '12.0000', cur: '-412800.00' },
+      { id: 2, stock: '-20.0000', move: '-4.0000', cur: '12450.00' },
+      { id: 3, stock: '0.0000', move: '0.0000', cur: '0.00' },
+    ],
+  },
+  {
     title: 'Text · 9 types',
     columns: [
       { id: 'string', header: 'string', type: 'string' },

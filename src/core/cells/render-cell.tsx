@@ -1,8 +1,9 @@
 // 23 tipin hücre içeriği (03, brief §5.1, T8). Kabuk (hizalama, kesme, yoğunluk, zemin) grid/row.tsx'te; burada yalnızca içerik.
+import { decimalSign } from '../format/decimal'
 import { ArrowUpRightIcon, ArrowsOutSimpleIcon, CheckIcon, MinusIcon, StarIcon, XIcon } from '@phosphor-icons/react'
 import { Popover } from '@base-ui/react/popover'
 import type { CSSProperties, ReactNode } from 'react'
-import type { ColumnDef, IconComponent, OptionDef, UserOption } from '../../types/columns'
+import type { ColumnDef, IconComponent, NumberSign, OptionDef, UserOption } from '../../types/columns'
 import type { Density, Tone } from '../../types/core'
 import {
   currencyCode,
@@ -175,6 +176,27 @@ const Link = ({ href, external, children }: { href: string; external?: boolean; 
   </a>
 )
 
+const SIGN_CLASS = { [-1]: 'negative', 0: 'zero', 1: 'positive' } as const
+
+/** Sayı hücresi: istenen işaret boyanır (R36), satır bazında birim sayının yanına yazılır. */
+function signed<Row extends object>(
+  def: Extract<ColumnDef<Row>, NumberSign>,
+  row: Row,
+  value: unknown,
+  content: ReactNode,
+): ReactNode {
+  const unit = typeof def.unit === 'function' ? def.unit(row) : ''
+  const sign = def.signTone ? decimalSign(value) : null
+  const tone = sign === null ? undefined : def.signTone?.[SIGN_CLASS[sign]]
+  if (!unit && !tone) return content
+  return (
+    <span className={tone && `dt-sign-${SIGN_CLASS[sign!]}`}>
+      {content}
+      {unit && <span className="dt-unit">{unit}</span>}
+    </span>
+  )
+}
+
 /** `color` + `display: 'fill'`: hücre boyanır, yazı rengi kontrasta göre (03). */
 export function cellFillStyle<Row extends object>(def: ColumnDef<Row>, value: unknown): CSSProperties | undefined {
   if (def.type !== 'color' || def.display !== 'fill' || typeof value !== 'string') return undefined
@@ -235,21 +257,25 @@ export function renderCellContent<Row extends object>(
   switch (def.type) {
     case 'int':
     case 'decimal':
+      return signed(def, row, value, formatted)
     case 'string':
     case 'uppercase':
     case 'lowercase':
     case 'email':
       return formatted
     case 'percentage':
-      return def.display === 'bar' ? <Bar pct={Number(value)} label={formatted} /> : formatted
+      return signed(def, row, value, def.display === 'bar' ? <Bar pct={Number(value)} label={formatted} /> : formatted)
     case 'star':
       return <Stars value={Number(value)} max={def.max ?? 5} label={formatted} />
     case 'currency':
-      return (
+      return signed(
+        def,
+        row,
+        value,
         <>
-          {fmt.decimal(decimalOf(value), decimalPlaces(def))}
+          {fmt.decimal(decimalOf(value), decimalPlaces(def), def.signDisplay)}
           <span className="dt-ccy">{currencyCode(def, row)}</span>
-        </>
+        </>,
       )
     case 'phone':
       return env.coarse ? <Link href={`tel:${formatted}`}>{formatted}</Link> : formatted

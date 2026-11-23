@@ -47,15 +47,15 @@ export function formatCell<Row extends object>(def: ColumnDef<Row>, row: Row, va
   const { fmt, i18n } = env
   switch (def.type) {
     case 'int':
-      return fmt.int(Number(value))
+      return fmt.int(Number(value), def.signDisplay)
     case 'decimal':
-      return fmt.decimal(decimalOf(value), decimalPlaces(def))
+      return fmt.decimal(decimalOf(value), decimalPlaces(def), def.signDisplay)
     case 'percentage':
-      return fmt.percent(decimalOf(value), decimalPlaces(def))
+      return fmt.percent(decimalOf(value), decimalPlaces(def), def.signDisplay)
     case 'star':
       return i18n.t('cell.rating', { value: Number(value), max: def.max ?? 5 })
     case 'currency':
-      return `${fmt.decimal(decimalOf(value), decimalPlaces(def))} ${currencyCode(def, row)}`
+      return `${fmt.decimal(decimalOf(value), decimalPlaces(def), def.signDisplay)} ${currencyCode(def, row)}`
     case 'url':
       return urlHost(String(value))
     case 'boolean':

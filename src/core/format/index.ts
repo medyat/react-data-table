@@ -5,6 +5,9 @@ import type { IsoDate } from '../../types/core'
 
 export const MINUS = '−'
 
+/** `ColumnDef`'in `signDisplay`'i; Intl'in değerleri. */
+export type SignDisplay = 'auto' | 'exceptZero' | 'never'
+
 const cache = new Map<string, unknown>()
 function cached<T>(kind: string, locale: string, options: object | undefined, make: () => T): T {
   const key = `${kind}|${locale}|${options ? JSON.stringify(options) : ''}`
@@ -35,17 +38,22 @@ export function createFormat(locale: string) {
   const df = (o: Intl.DateTimeFormatOptions) => cached('d', locale, o, () => new Intl.DateTimeFormat(locale, o))
   const minus = (s: string) => (s.includes('-') ? s.replace(/-/g, MINUS) : s)
   // Sıcak yol (hücre başına): JSON anahtarı üretmeden, hane sayısına göre küçük haritalar.
-  const intFmt = nf({ maximumFractionDigits: 0 })
-  const byDp = (make: (dp: number) => Intl.NumberFormat) => {
-    const m = new Map<number, Intl.NumberFormat>()
-    return (dp: number) => {
-      let f = m.get(dp)
-      if (!f) m.set(dp, (f = make(dp)))
+  const byDp = (make: (dp: number, sign: SignDisplay) => Intl.NumberFormat) => {
+    const m = new Map<string, Intl.NumberFormat>()
+    return (dp: number, sign: SignDisplay) => {
+      const key = `${dp}${sign}`
+      let f = m.get(key)
+      if (!f) m.set(key, (f = make(dp, sign)))
       return f
     }
   }
-  const decimalFmt = byDp((dp) => nf({ minimumFractionDigits: dp, maximumFractionDigits: dp }))
-  const percentFmt = byDp((dp) => nf({ style: 'percent', minimumFractionDigits: dp, maximumFractionDigits: dp }))
+  const intFmt = byDp((_, signDisplay) => nf({ maximumFractionDigits: 0, signDisplay }))
+  const decimalFmt = byDp((dp, signDisplay) =>
+    nf({ minimumFractionDigits: dp, maximumFractionDigits: dp, signDisplay }),
+  )
+  const percentFmt = byDp((dp, signDisplay) =>
+    nf({ style: 'percent', minimumFractionDigits: dp, maximumFractionDigits: dp, signDisplay }),
+  )
 
   const relativeFormat = (style: 'long' | 'short') =>
     cached('r', locale, { style }, () => new Intl.RelativeTimeFormat(locale, { numeric: 'auto', style }))
@@ -65,13 +73,16 @@ export function createFormat(locale: string) {
 
   return {
     locale,
-    int: (n: number): string => minus(intFmt.format(n)),
+    int: (n: number, sign: SignDisplay = 'auto'): string => minus(intFmt(0, sign).format(n)),
     /** Her zaman `dp` hane (noktalar hizalanır). */
     // Ondalık metin Intl'e olduğu gibi verilir: tarayıcı metni tam okur, float'a çevirmez (R35).
-    decimal: (n: number | string, dp = 2): string => minus(decimalFmt(dp).format(n as number | `${number}`)),
+    decimal: (n: number | string, dp = 2, sign: SignDisplay = 'auto'): string =>
+      minus(decimalFmt(dp, sign).format(n as number | `${number}`)),
     /** 68 → "68%" (tr: "%68"). */
-    percent: (n: number | string, dp = 0): string =>
-      minus(percentFmt(dp).format(typeof n === 'string' ? (toDecimal(n).div(100).toFixed() as `${number}`) : n / 100)),
+    percent: (n: number | string, dp = 0, sign: SignDisplay = 'auto'): string =>
+      minus(
+        percentFmt(dp, sign).format(typeof n === 'string' ? (toDecimal(n).div(100).toFixed() as `${number}`) : n / 100),
+      ),
     /** Çip özetleri: 250000 → "250K" (tr: "250 B"). */
     compact: (n: number): string => minus(nf({ notation: 'compact', maximumFractionDigits: 0 }).format(n)),
     /** "Oct 24"; başka yılsa "Mar 3, 2025". */

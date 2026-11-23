@@ -11,6 +11,21 @@
   letter-spacing: -0.01em;
 }
 
+.dt-unit {
+  margin-left: 4px;
+  font-size: var(--dt-currency-fs);
+  color: var(--dt-text-3);
+}
+/* R36: istenen işaret boyanır; birim ve para kodu soluk kalır. */
+.dt-sign-negative {
+  color: var(--dt-r-fg);
+}
+.dt-sign-positive {
+  color: var(--dt-g-fg);
+}
+.dt-sign-zero {
+  color: var(--dt-text-3);
+}
 .dt-ccy {
   margin-left: 6px;
   font-family: var(--dt-font-mono);

@@ -111,6 +111,8 @@ describe('summarize', () => {
   })
   it('30 bin hücre algoritma olarak hızlı', () => {
     const cells = Array.from({ length: 30_000 }, (_, i): [unknown, boolean] => [i % 3 ? String(i / 4) : null, true])
+    // İlk çağrı decimal.js'i ısıtır; paralel koşuda soğuk ölçüm sınırı rastgele aşıyordu.
+    summarize(cells)
     const t0 = performance.now()
     summarize(cells)
     expect(performance.now() - t0).toBeLessThan(60)

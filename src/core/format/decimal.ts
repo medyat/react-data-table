@@ -19,5 +19,9 @@ export const toDecimal = (v: number | string): Decimal => new Decimal(v)
 export const sameDecimal = (a: unknown, b: unknown): boolean =>
   isDecimalValue(a) && isDecimalValue(b) && toDecimal(a).eq(toDecimal(b))
 
+/** İşaret: -1, 0, 1; "-0.00" sıfırdır. Sayı değilse null. */
+export const decimalSign = (v: unknown): -1 | 0 | 1 | null =>
+  isDecimalValue(v) ? (toDecimal(v).cmp(0) as -1 | 0 | 1) : null
+
 /** Kanonik metin: baştaki ve sondaki gereksiz sıfırlar yok, üs yok ("02.50" → "2.5"). */
 export const decimalText = (v: number | string): string => toDecimal(v).toFixed()

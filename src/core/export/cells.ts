@@ -10,8 +10,13 @@ import { toDate } from '../format'
 export function plainText<Row extends object>(def: ColumnDef<Row>, row: Row, value: unknown, env: FormatEnv): string {
   if (isEmptyValue(value)) return ''
   switch (def.type) {
+    // İşaret her zaman yazılır: `signDisplay: 'never'` yalnız ekranındır, kopyalanan değer geri yapıştırılınca aynı kalmalı.
     case 'currency':
       return env.fmt.decimal(decimalOf(value), decimalPlaces(def))
+    case 'int':
+    case 'decimal':
+    case 'percentage':
+      return formatCell({ ...def, signDisplay: 'auto' }, row, value, env)
     case 'date':
     case 'datetime':
       return value instanceof Date ? value.toISOString() : String(value)

@@ -185,19 +185,29 @@ export interface BaseColumn<Row, V = unknown> {
   hint?: string
 }
 
+/** Sayı türlerinin işareti (R36). Verilmezse bugünkü gibi: yalnız eksi yazılır, renk yok. */
+export interface NumberSign {
+  /** Intl'in adı: `exceptZero` artıya + yazar, `never` işareti hiç yazmaz (yön başka yerde söyleniyorsa). */
+  signDisplay?: 'auto' | 'exceptZero' | 'never'
+  /** Yalnız verilen işaret boyanır; sıfır ("-0.00" dahil) eksi ya da artı değildir. */
+  signTone?: { negative?: 'destructive'; positive?: 'success'; zero?: 'muted' }
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Row için üst sınır; api-draft ile aynı
 export type ColumnDef<Row = any> =
-  | (BaseColumn<Row, number | null> & { type: 'int' })
+  | (BaseColumn<Row, number | null> & NumberSign & { type: 'int' })
   // Ondalık türlerin değeri sunucudaki gibi ondalık metindir ("1200.0000"); sayı da okunur, yazılan metindir (R35).
-  | (BaseColumn<Row, string | number | null> & { type: 'decimal'; decimalPlaces?: number })
-  | (BaseColumn<Row, string | number | null> & { type: 'percentage'; display?: 'text' | 'bar'; decimalPlaces?: number })
+  | (BaseColumn<Row, string | number | null> & NumberSign & { type: 'decimal'; decimalPlaces?: number })
+  | (BaseColumn<Row, string | number | null> &
+      NumberSign & { type: 'percentage'; display?: 'text' | 'bar'; decimalPlaces?: number })
   | (BaseColumn<Row, number | null> & { type: 'star'; max?: number })
-  | (BaseColumn<Row, string | number | null> & {
-      type: 'currency'
-      /** Sabit ISO kodu veya satırdan okuma. */
-      currency: string | ((row: Row) => string)
-      decimalPlaces?: number
-    })
+  | (BaseColumn<Row, string | number | null> &
+      NumberSign & {
+        type: 'currency'
+        /** Sabit ISO kodu veya satırdan okuma. */
+        currency: string | ((row: Row) => string)
+        decimalPlaces?: number
+      })
   | (BaseColumn<Row, string | null> & { type: 'string' | 'text' | 'uppercase' | 'lowercase' | 'email' | 'url' | 'id' })
   | (BaseColumn<Row, string | null> & { type: 'phone' })
   | (BaseColumn<Row, string | null> & { type: 'color'; display?: 'swatch' | 'fill'; palette?: string[] })

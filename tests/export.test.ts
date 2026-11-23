@@ -6,7 +6,7 @@ import { strFromU8, unzipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
 import { RemoteLabels } from '../src/core/cells/remote-labels'
 import type { FormatEnv } from '../src/core/cells/format'
-import { datePattern, xlsxCell } from '../src/core/export/cells'
+import { datePattern, plainText, xlsxCell } from '../src/core/export/cells'
 import { sheetName, toCsv, toXlsx, type ExportJob } from '../src/core/export/write'
 import { getFormat } from '../src/core/format'
 import { createI18n } from '../src/core/i18n'
@@ -62,6 +62,13 @@ async function unzip(blob: Blob) {
   const files = unzipSync(new Uint8Array(await blob.arrayBuffer()))
   return (p: string) => strFromU8(files[p]!)
 }
+
+describe('plainText', () => {
+  it('signDisplay yalnız ekranındır: kopyalanan değer işaretini korur', () => {
+    const balance: ColumnDef<P> = { id: 'price', header: 'B', type: 'decimal', signDisplay: 'never' }
+    expect(plainText(balance, rows[0]!, '-1200.5', en)).toBe('−1,200.50')
+  })
+})
 
 describe('xlsxCell', () => {
   const def = (id: keyof P) => columns.find((c) => c.id === id)!
