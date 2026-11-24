@@ -42,6 +42,7 @@ import { fold, parseInput } from '../core/sheet/parse'
 import { ScrollBar, useHorizontalScroll } from '../core/sheet/h-scroll'
 import { mapErrors } from '../core/sheet/errors'
 import { collectIssues, nextError } from '../core/sheet/issues'
+import { CellTip } from './cell-tip'
 import { applyIntent, keyIntent } from '../core/sheet/keyboard'
 import { CELL, createSheetStore, type CellPos, type SheetStore } from '../core/sheet/store'
 import { summarize } from '../core/sheet/summary'
@@ -99,8 +100,8 @@ function GridCell<Row extends object>({
     state & CELL.right && 'is-edge-r',
     issue && `is-${issue.level}`,
     found && 'is-found',
-    // İlk satırın balonu (hata ya da tarih editörünün açıklaması) yapışkan başlığın altında kalmasın.
-    (issue || state & CELL.editing) && index === 0 && 'is-tip-below',
+    // Tarih editörünün açıklaması ilk satırda alta açılır (hata balonu kökte, `CellTip`).
+    state & CELL.editing && index === 0 && 'is-tip-below',
     ...pinClasses(col),
   ]
   const tipId = issue ? `dt-fg-tip-${store.rowId(index)}-${colIndex}` : undefined
@@ -169,18 +170,9 @@ function GridCell<Row extends object>({
         <CellActions actions={actions} row={row} setValue={(v) => store.set({ row: index, col: colIndex }, v)} />
       ) : null}
       {issue && (
-        <span id={tipId} className={`dt-cell-tip is-${issue.level}`} role="tooltip">
+        // Ekran okuyucu için; görünen balon kökte (`CellTip`).
+        <span id={tipId} className="dt-sr-only">
           {issue.message}
-          {issue.suggest && editable && (
-            <button
-              type="button"
-              className="dt-cell-tip-btn"
-              tabIndex={-1}
-              onClick={() => store.set({ row: index, col: colIndex }, issue.suggest!.value)}
-            >
-              {env.i18n.t('sheet.useOption', { option: issue.suggest.label })}
-            </button>
-          )}
         </span>
       )}
     </div>
@@ -239,6 +231,22 @@ export function FormGrid<Row extends object>({
     isNew: store.isNew,
     i18n: ctx.i18n,
   })
+
+  // Balon üzerine gelinen, yoksa aktif hücrenin; düzenlenen hücrede yok (editör hücreyi kaplar).
+  const [hovered, setHovered] = useState<CellPos | null>(null)
+  const activeKey = useSyncExternalStore(store.subscribe, () => {
+    const a = store.active()
+    return a && !store.editing() ? `${a.row}:${a.col}` : ''
+  })
+  const tipAt =
+    hovered ?? (activeKey ? { row: Number(activeKey.split(':')[0]), col: Number(activeKey.split(':')[1]) } : null)
+  const tipIssue = tipAt ? issues.cells.get(tipAt.row)?.get(shown[tipAt.col]?.id ?? '') : undefined
+  const tipEditing = store.editing()?.pos
+  const onCellHover = (target: EventTarget | null) => {
+    const p = posOf(target)
+    const next = p && issues.cells.get(p.row)?.has(shown[p.col]?.id ?? '') ? p : null
+    if (next?.row !== hovered?.row || next?.col !== hovered?.col) setHovered(next)
+  }
 
   const labelsVersion = useSyncExternalStore(labels.subscribe, labels.getVersion)
   const env: RenderEnv & { labelsVersion: number } = {
@@ -878,6 +886,11 @@ export function FormGrid<Row extends object>({
           <div
             ref={body}
             className="dt-fg-body"
+            onMouseOver={(e) => onCellHover(e.target)}
+            onMouseLeave={(e) => {
+              // Öneri düğmeli balona geçen fare balonu kapatmaz.
+              if (!(e.relatedTarget instanceof Element && e.relatedTarget.closest('.dt-cell-tip'))) setHovered(null)
+            }}
             onContextMenu={(e) => {
               const pos = posOf(e.target)
               if (pos && !store.editing()) focusFor(pos)
@@ -924,6 +937,23 @@ export function FormGrid<Row extends object>({
         )}
       </div>
       <DelegatedTooltip root={root} />
+      {tipAt && tipIssue && !(tipEditing?.row === tipAt.row && tipEditing.col === tipAt.col) && (
+        <CellTip
+          body={body}
+          row={tipAt.row}
+          col={tipAt.col}
+          issue={tipIssue}
+          suggest={
+            tipIssue.suggest && store.canEdit(tipAt.row, tipAt.col)
+              ? {
+                  label: ctx.i18n.t('sheet.useOption', { option: tipIssue.suggest.label }),
+                  apply: () => store.set(tipAt, tipIssue.suggest!.value),
+                }
+              : undefined
+          }
+          onLeave={() => setHovered(null)}
+        />
+      )}
     </div>
   )
 }

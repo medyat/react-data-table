@@ -973,6 +973,47 @@ describe('satır penceresi (§7)', () => {
     expect((within(dialog).getByLabelText('Ürün') as HTMLInputElement).value).toBe('')
   })
 
+  it('hata balonu gövdenin dışında (kırpılmaz): pencerede üstte yer yoksa altta, varsa üstte', async () => {
+    const rows: Line[] = [...initial, { code: 'C', qty: 3, gift: null }]
+    // Satırlar pencerede 20 px'ten başlar, 42 px; balon iki satırlık (44 px).
+    const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      const top = 20 + Number(this.dataset.row ?? 0) * 42
+      return { top, bottom: top + 42, left: 30, right: 130, width: 100, height: 42, x: 30, y: top, toJSON() {} }
+    })
+    const height = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(44)
+    const errors = ['Birinci hata.', 'İkinci hata.']
+    render(
+      <FormGrid
+        label="Satırlar"
+        rows={rows}
+        columns={columns}
+        errors={{ '0.qty': errors, '2.qty': errors }}
+        onRowsChange={() => {}}
+      />,
+    )
+    await flush()
+    const tip = () => document.querySelector<HTMLElement>('.dt-cell-tip.is-floating')
+    expect(tip()).toBeNull()
+
+    fireEvent.mouseOver(cell(0, 1))
+    await flush()
+    expect(tip()!.closest('.dt-fg-body')).toBeNull()
+    expect(tip()!.textContent).toBe('Birinci hata.\nİkinci hata.')
+    expect(tip()!.style.top).toBe(`${20 + 42 + 6}px`)
+
+    fireEvent.mouseOver(cell(2, 1))
+    await flush()
+    expect(tip()!.style.top).toBe(`${20 + 84 - 6 - 44}px`)
+
+    fireEvent.mouseLeave(document.querySelector('.dt-fg-body')!)
+    await flush()
+    expect(tip()).toBeNull()
+    rect.mockRestore()
+    height.mockRestore()
+  })
+
   it('hücredeki hata alanın altında tam metniyle; alan değişince kalkar', async () => {
     render(
       <FormGrid

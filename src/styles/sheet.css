@@ -15,7 +15,8 @@
   color: var(--dt-text-3);
 }
 
-/* Gutter (06 §5): 56 px, --dt-surface-2 (header --dt-surface-3), satır no mono 11 sağda. */
+/* Gutter (06 §5): 56 px, --dt-surface-2, satır no mono 11 sağda. Başlıktaki köşe başlık satırıyla aynı zeminde
+   (06'daki koyu köşe göze batıyordu). */
 .dt-gutter {
   --dt-row-bg: var(--dt-surface-2);
   flex-direction: row;
@@ -29,7 +30,6 @@
   cursor: default;
 }
 .dt-head-cell.dt-gutter {
-  --dt-row-bg: var(--dt-surface-3);
   justify-content: flex-end;
   font-family: var(--dt-font);
   font-size: var(--dt-fs-head);
@@ -82,8 +82,8 @@
   border-right-color: var(--dt-r-dot);
 }
 
-/* Hata / uyarı balonu (06 §5): hücrenin üstünde (ilk satırda altında), sol kenar hizalı, 6 px ara; üzerine gelince
-   ya da hücre aktifken. Hücre başına tek düğüm, yalnız sorunlu hücrede çizilir. */
+/* Balon (06 §5): hücrenin üstünde, sol kenar hizalı, 6 px ara. Tarih editörünün açıklaması hücrenin içinde
+   (ilk satırda altında); FormGrid'in hata / uyarı balonu kökte tek düğüm (`is-floating`). */
 .dt-cell-tip {
   position: absolute;
   left: 0;
@@ -109,16 +109,12 @@
   background: var(--dt-tip-bg);
   color: var(--dt-tip-fg);
 }
-.dt-cell.is-tip-below > .dt-cell-tip {
+/* Gövde kabı yatay kaydırma için taşanı kırpar: hücrenin içindeki balon ilk ve son satırda kesilirdi. Yeri JS'ten. */
+.dt-cell-tip.is-floating {
+  position: fixed;
   bottom: auto;
-  top: calc(100% + 6px);
-}
-.dt-sheet-grid .dt-cell[data-col]:hover > .dt-cell-tip,
-.dt-sheet-grid .dt-cell[data-col].is-active > .dt-cell-tip {
+  z-index: 50;
   display: block;
-}
-.dt-sheet-grid .dt-cell[data-col].is-editing > .dt-cell-tip {
-  display: none;
 }
 /* Yakın seçenek önerisi ("Adet kullan"): balon tıklanabilir olur. */
 .dt-cell-tip:has(.dt-cell-tip-btn) {
