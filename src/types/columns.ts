@@ -256,9 +256,11 @@ export interface NumberSign {
 export type ColumnDef<Row = any> =
   | (BaseColumn<Row, number | null> & NumberSign & { type: 'int' })
   // Ondalık türlerin değeri sunucudaki gibi ondalık metindir ("1200.0000"); sayı da okunur, yazılan metindir (R35).
-  | (BaseColumn<Row, string | number | null> & NumberSign & { type: 'decimal'; decimalPlaces?: number })
+  // `decimalPlaces` en çok hane; `minDecimalPlaces` sondaki sıfırların yazıldığı en az hane (verilmezse ikisi eşit).
   | (BaseColumn<Row, string | number | null> &
-      NumberSign & { type: 'percentage'; display?: 'text' | 'bar'; decimalPlaces?: number })
+      NumberSign & { type: 'decimal'; decimalPlaces?: number; minDecimalPlaces?: number })
+  | (BaseColumn<Row, string | number | null> &
+      NumberSign & { type: 'percentage'; display?: 'text' | 'bar'; decimalPlaces?: number; minDecimalPlaces?: number })
   | (BaseColumn<Row, number | null> & { type: 'star'; max?: number })
   | (BaseColumn<Row, string | number | null> &
       NumberSign & {
@@ -266,6 +268,7 @@ export type ColumnDef<Row = any> =
         /** Sabit ISO kodu veya satırdan okuma. */
         currency: string | ((row: Row) => string)
         decimalPlaces?: number
+        minDecimalPlaces?: number
       })
   | (BaseColumn<Row, string | null> & { type: 'string' | 'text' | 'uppercase' | 'lowercase' | 'email' | 'url' | 'id' })
   | (BaseColumn<Row, string | null> & { type: 'phone' })

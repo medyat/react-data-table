@@ -38,21 +38,21 @@ export function createFormat(locale: string) {
   const df = (o: Intl.DateTimeFormatOptions) => cached('d', locale, o, () => new Intl.DateTimeFormat(locale, o))
   const minus = (s: string) => (s.includes('-') ? s.replace(/-/g, MINUS) : s)
   // Sıcak yol (hücre başına): JSON anahtarı üretmeden, hane sayısına göre küçük haritalar.
-  const byDp = (make: (dp: number, sign: SignDisplay) => Intl.NumberFormat) => {
+  const byDp = (make: (dp: number, sign: SignDisplay, min: number) => Intl.NumberFormat) => {
     const m = new Map<string, Intl.NumberFormat>()
-    return (dp: number, sign: SignDisplay) => {
-      const key = `${dp}${sign}`
+    return (dp: number, sign: SignDisplay, min = dp) => {
+      const key = `${dp}${sign}${min}`
       let f = m.get(key)
-      if (!f) m.set(key, (f = make(dp, sign)))
+      if (!f) m.set(key, (f = make(dp, sign, min)))
       return f
     }
   }
   const intFmt = byDp((_, signDisplay) => nf({ maximumFractionDigits: 0, signDisplay }))
-  const decimalFmt = byDp((dp, signDisplay) =>
-    nf({ minimumFractionDigits: dp, maximumFractionDigits: dp, signDisplay }),
+  const decimalFmt = byDp((dp, signDisplay, min) =>
+    nf({ minimumFractionDigits: min, maximumFractionDigits: dp, signDisplay }),
   )
-  const percentFmt = byDp((dp, signDisplay) =>
-    nf({ style: 'percent', minimumFractionDigits: dp, maximumFractionDigits: dp, signDisplay }),
+  const percentFmt = byDp((dp, signDisplay, min) =>
+    nf({ style: 'percent', minimumFractionDigits: min, maximumFractionDigits: dp, signDisplay }),
   )
 
   const relativeFormat = (style: 'long' | 'short') =>
@@ -74,14 +74,14 @@ export function createFormat(locale: string) {
   return {
     locale,
     int: (n: number, sign: SignDisplay = 'auto'): string => minus(intFmt(0, sign).format(n)),
-    /** Her zaman `dp` hane (noktalar hizalanır). */
+    /** En çok `dp`, en az `min` hane (verilmezse her zaman `dp`: noktalar hizalanır). */
     // Ondalık metin Intl'e olduğu gibi verilir: tarayıcı metni tam okur, float'a çevirmez (R35).
-    decimal: (n: number | string, dp = 2, sign: SignDisplay = 'auto'): string =>
-      minus(decimalFmt(dp, sign).format(n as number | `${number}`)),
+    decimal: (n: number | string, dp = 2, sign: SignDisplay = 'auto', min = dp): string =>
+      minus(decimalFmt(dp, sign, min).format(n as number | `${number}`)),
     /** 68 → "68%" (tr: "%68"). */
-    percent: (n: number | string, dp = 0, sign: SignDisplay = 'auto'): string =>
+    percent: (n: number | string, dp = 0, sign: SignDisplay = 'auto', min = dp): string =>
       minus(
-        percentFmt(dp, sign).format(typeof n === 'string' ? (toDecimal(n).div(100).toFixed() as `${number}`) : n / 100),
+        percentFmt(dp, sign, min).format(typeof n === 'string' ? (toDecimal(n).div(100).toFixed() as `${number}`) : n / 100),
       ),
     /** Çip özetleri: 250000 → "250K" (tr: "250 B"). */
     compact: (n: number): string => minus(nf({ notation: 'compact', maximumFractionDigits: 0 }).format(n)),

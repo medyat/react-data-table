@@ -9,6 +9,7 @@ import {
   currencyCode,
   decimalOf,
   decimalPlaces,
+  minDecimalPlaces,
   formatArrayItem,
   formatCell,
   isEmptyValue,
@@ -283,7 +284,7 @@ export function renderCellContent<Row extends object>(
         row,
         value,
         <>
-          {fmt.decimal(decimalOf(value), decimalPlaces(def), def.signDisplay)}
+          {fmt.decimal(decimalOf(value), decimalPlaces(def), def.signDisplay, minDecimalPlaces(def))}
           <Gap />
           <span className="dt-ccy">{currencyCode(def, row)}</span>
         </>,

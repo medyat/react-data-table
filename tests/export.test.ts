@@ -84,6 +84,13 @@ describe('xlsxCell', () => {
     expect(xlsxCell(def('price'), rows[0]!, 1650, en)).toEqual({ value: 1650, type: Number, format: '#,##0.00 "TRY"' })
     expect(xlsxCell(def('vat'), rows[0]!, 20, en)).toEqual({ value: 20, type: Number, format: '#,##0"%"' })
   })
+  it('en az / en çok hane: zorunlu hane 0, gerisi #', () => {
+    const qty = { id: 'qty', header: 'Qty', type: 'decimal', decimalPlaces: 4, minDecimalPlaces: 0 } as const
+    expect(xlsxCell(qty, rows[0]!, 10.5, en).format).toBe('#,##0.####')
+    expect(xlsxCell(qty, rows[0]!, '10.0000', en).format).toBe('#,##0')
+    const price = { ...qty, decimalPlaces: 4, minDecimalPlaces: 2 }
+    expect(xlsxCell(price, rows[0]!, 10, en).format).toBe('#,##0.00##')
+  })
   it('tarih yerel gün olarak (UTC kayması yok), biçim yerel ayarın gün/ay sırasıyla', () => {
     const c = xlsxCell(def('due'), rows[0]!, '2026-10-24', en)
     expect((c.value as Date).toISOString()).toBe('2026-10-24T00:00:00.000Z')

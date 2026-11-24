@@ -68,6 +68,15 @@ describe('sayı tipleri', () => {
     expect(render(col('percentage', { signDisplay: 'exceptZero' }), '18').text()).toBe('+18%')
     expect(render(col('decimal'), '12.5').text()).toBe('12.50')
   })
+  it('minDecimalPlaces: sondaki sıfırlar en az haneye kadar yazılır, dolu hane en çok haneye kadar', () => {
+    const qty = col('decimal', { decimalPlaces: 4, minDecimalPlaces: 0 })
+    expect(render(qty, '10.0000').text()).toBe('10')
+    expect(render(qty, '2000.2500').text()).toBe('2,000.25')
+    expect(render(qty, '1.1234').text()).toBe('1.1234')
+    const price = col('currency', { currency: 'TRY', decimalPlaces: 8, minDecimalPlaces: 2 })
+    expect(render(price, '54.00000000').text()).toBe('54.00 TRY')
+    expect(render(price, '12.34567800').text()).toBe('12.345678 TRY')
+  })
   it('signTone: istenen işaret boyanır, verilmeyen boyanmaz; "-0.00" eksi değildir', () => {
     const tone = { negative: 'destructive', zero: 'muted' }
     expect(render(col('decimal', { signTone: tone }), '-2').find('.dt-sign-negative')).not.toBeNull()

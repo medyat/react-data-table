@@ -39,6 +39,13 @@ export function decimalPlaces(def: ColumnDef): number {
   return 0
 }
 
+/** Sondaki sıfırlar bu kadar haneye kadar yazılır; verilmezse `decimalPlaces` (her zaman o kadar hane). */
+export function minDecimalPlaces(def: ColumnDef): number {
+  const max = decimalPlaces(def)
+  if (def.type !== 'decimal' && def.type !== 'currency' && def.type !== 'percentage') return max
+  return Math.min(def.minDecimalPlaces ?? max, max)
+}
+
 /** Ondalık metin olduğu gibi biçimlenir (float'a çevrilmez, R35); öteki değer sayıya. */
 export const decimalOf = (v: unknown): number | string => (typeof v === 'string' && isDecimalValue(v) ? v : Number(v))
 
@@ -49,13 +56,13 @@ export function formatCell<Row extends object>(def: ColumnDef<Row>, row: Row, va
     case 'int':
       return fmt.int(Number(value), def.signDisplay)
     case 'decimal':
-      return fmt.decimal(decimalOf(value), decimalPlaces(def), def.signDisplay)
+      return fmt.decimal(decimalOf(value), decimalPlaces(def), def.signDisplay, minDecimalPlaces(def))
     case 'percentage':
-      return fmt.percent(decimalOf(value), decimalPlaces(def), def.signDisplay)
+      return fmt.percent(decimalOf(value), decimalPlaces(def), def.signDisplay, minDecimalPlaces(def))
     case 'star':
       return i18n.t('cell.rating', { value: Number(value), max: def.max ?? 5 })
     case 'currency':
-      return `${fmt.decimal(decimalOf(value), decimalPlaces(def), def.signDisplay)} ${currencyCode(def, row)}`
+      return `${fmt.decimal(decimalOf(value), decimalPlaces(def), def.signDisplay, minDecimalPlaces(def))} ${currencyCode(def, row)}`
     case 'url':
       return urlHost(String(value))
     case 'boolean':

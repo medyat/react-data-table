@@ -219,6 +219,10 @@ oturunca çıkar.
   `percentage`'ın varsayılanı) yazılan ondalık atılır. Hücrede `%18` görünen sütunda `18,5` ile
   filtrelemek görünmeyen bir değer arar; tam sayı kolonda sunucu ondalığı reddeder. Ondalık
   isteyen yüzde `decimalPlaces: 1` verir.
+- `decimalPlaces` en çok hanedir; `minDecimalPlaces` verilirse sondaki sıfırlar ancak o kadar haneye
+  kadar yazılır. Miktar (`4` / `0`) 10 gösterir, 10,0000 değil; birim fiyat (`8` / `2`) en az 2 hane,
+  doluysa 8'e kadar. Verilmezse ikisi eşittir: noktalar sütunda hizalanır. Excel biçimi aynı kuralı
+  `0` ve `#` ile taşır.
 
 ## R15 · Görünüm menüsü
 
