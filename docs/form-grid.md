@@ -102,6 +102,7 @@ Her biri bir panodan çıktı; pano yoksa alan da yok.
 | `onChange` | `(row, value, { option, rows }) => Partial<Row> \| void` | Aynı satıra yazma: tek çekimde Taksitle aktarım kapanır (G1a), Ürün seçilince Ad ve Birim dolar (1b). `option` seçilen seçenektir; `ajax`'ta aramanın döndürdüğü nesne, ek alanlarıyla (ürünün birimi). Yazılanlar aynı geri al adımına girer; onların `onChange`'i çağrılmaz. |
 | `group` | `string \| string[]` | İç içe başlık: İndirim → Oran \| Tutar, ek vergiler grup → vergi → Oran \| Tutar, İhracat (F1a, F1b, F3a). FormGrid ve liste tablosu ortak (F5). |
 | `display` (`boolean`) | `'text' \| 'switch'` | POS'ta anahtar görünümü (G1a). |
+| `display` (`select`) | `'badge' \| 'text'` | Taksit düz yazılır, rozet değil (Swors POS, R38). |
 
 Seçimle gelen ama satır değerine girmeyen bilgi (talebin Stok sütunu, T1a) `accessor`'lı sütundur: `accessor`'lı sütun
 düzenlenmez ve ızgara ona yazmaz. Taslaktaki `send: false` bu yüzden eklenmedi (F2).

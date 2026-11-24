@@ -1016,6 +1016,108 @@ describe('telefon (pano 3a, 3b)', () => {
   })
 })
 
+describe('select yazarak', () => {
+  type Rate = { n: number | null }
+  const rateCols: Array<ColumnDef<Rate>> = [
+    {
+      id: 'n',
+      header: 'Taksit',
+      type: 'select',
+      options: [1, 2, 3, 4].map((n) => ({ value: n, label: n === 1 ? 'Tek çekim' : `${n} taksit` })),
+    },
+  ]
+  it('değeriyle eşleşen yazım (4) listeyi süzer, tek Enter seçer', async () => {
+    const onChange = vi.fn()
+    render(
+      <DataTableProvider locale="tr-TR">
+        <FormGrid label="Satırlar" rows={[]} columns={rateCols} onRowsChange={onChange} />
+      </DataTableProvider>,
+    )
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.keyDown(cell(0, 0), { key: '4' })
+    await flush()
+    expect([...document.querySelectorAll('.dt-cell-option')].map((o) => o.textContent)).toEqual(['4 taksit↵'])
+    fireEvent.keyDown(editor()!, { key: 'Enter' })
+    await flush()
+    expect(onChange.mock.lastCall?.[0]).toEqual([{ n: 4 }])
+    expect(editor()).toBeNull()
+  })
+  it("yazılan değerle de eşleşir: 1 etiketi 1 içermeyen Tek çekim'i bulur ve önce o vurgulu", async () => {
+    const onChange = vi.fn()
+    render(
+      <DataTableProvider locale="tr-TR">
+        <FormGrid label="Satırlar" rows={[]} columns={rateCols} onRowsChange={onChange} />
+      </DataTableProvider>,
+    )
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.keyDown(cell(0, 0), { key: '1' })
+    await flush()
+    expect([...document.querySelectorAll('.dt-cell-option')].map((o) => o.textContent)).toEqual(['Tek çekim↵'])
+    fireEvent.keyDown(editor()!, { key: 'Enter' })
+    await flush()
+    expect(onChange.mock.lastCall?.[0]).toEqual([{ n: 1 }])
+  })
+  it('yapıştırma etiketi (büyük/küçük harf, İ/ı duyarsız) ve değeri sayı değerine çevirir', async () => {
+    const onChange = vi.fn()
+    render(
+      <DataTableProvider locale="tr-TR">
+        <FormGrid label="Satırlar" rows={[]} columns={rateCols} onRowsChange={onChange} />
+      </DataTableProvider>,
+    )
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.paste(cell(0, 0), {
+      clipboardData: { getData: (t: string) => (t === 'text/plain' ? 'Tek çekim\n4 TAKSİT\n3\n9 taksit' : '') },
+    })
+    await flush()
+    expect(onChange.mock.lastCall?.[0]).toEqual([{ n: 1 }, { n: 4 }, { n: 3 }, { n: '9 taksit' }])
+  })
+  it('boş seçim hücresine tık listeyi açar; dolu hücrede tık yalnız seçer', async () => {
+    render(
+      <DataTableProvider locale="tr-TR">
+        <FormGrid label="Satırlar" rows={[{ n: 2 }]} columns={rateCols} onRowsChange={() => {}} />
+      </DataTableProvider>,
+    )
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.click(cell(0, 0))
+    await flush()
+    expect(editor()).toBeNull()
+    fireEvent.pointerDown(cell(1, 0), { button: 0 })
+    fireEvent.click(cell(1, 0))
+    await flush()
+    expect(editor()).not.toBeNull()
+    expect(document.querySelectorAll('.dt-cell-option')).toHaveLength(4)
+  })
+})
+
+describe("select display 'text'", () => {
+  it('listede de rozet yok (R38)', async () => {
+    render(
+      <DataTableProvider locale="tr-TR">
+        <FormGrid
+          label="Satırlar"
+          rows={[{ n: 1 }]}
+          columns={[
+            { id: 'n', header: 'Taksit', type: 'select', display: 'text', options: [{ value: 1, label: 'Tek çekim' }] },
+          ]}
+          onRowsChange={() => {}}
+        />
+      </DataTableProvider>,
+    )
+    await flush()
+    expect(cell(0, 0).querySelector('.dt-badge')).toBeNull()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.keyDown(cell(0, 0), { key: 'F2' })
+    await flush()
+    const item = document.querySelector('.dt-cell-option')!
+    expect(item.querySelector('.dt-badge')).toBeNull()
+    expect(item.textContent).toContain('Tek çekim')
+  })
+})
+
 describe('tarih-saat maskesi', () => {
   function AtHarness({ onChange }: { onChange: (rows: Array<{ at: string | null }>) => void }) {
     const [rows, setRows] = useState<Array<{ at: string | null }>>([

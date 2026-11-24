@@ -336,7 +336,7 @@ export function renderCellContent<Row extends object>(
       return <Badge tone={destructive ? 'red' : 'gray'} label={formatted} icon={destructive ? XIcon : MinusIcon} />
     }
     case 'select':
-      return optionBadge(def.options, value)
+      return def.display === 'text' ? optionLabel(def.options, value) : optionBadge(def.options, value)
     case 'multiselect': {
       const vals = value as Array<string | number>
       return (

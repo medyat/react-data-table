@@ -466,6 +466,20 @@ oturunca çıkar.
 - Resize ikisinde de en çok düğmeler + 50 px'e iner. `when` bir satırda düğmeyi gizlese de yer açılır: hizalar aynı.
 - Düğmeleri sağa yaslı sütunda sola almak seçilmedi: aksiyonların yeri sütundan sütuna değişirdi.
 
+## R38 · `select` düz yazıyla: `display: 'text'` (03'ü genişletir)
+
+- `select` hücresi ve FormGrid listesi seçeneği rozetle çiziyordu. Tonu olmayan, sırası anlam taşıyan seçenekte (POS
+  taksiti: Tek çekim, 2 taksit…) rozet sütunu kalabalıklaştırıyor, değer bir durum gibi okunuyordu. `display: 'text'`
+  hücrede ve listede düz etiket çizer; varsayılan `'badge'`. Filtre çipi ve filtre editörü değişmez.
+
+## R39 · `select` hücresi: boşa tık listeyi açar, yazınca ilk eşleşen vurgulu (form-grid.md §3)
+
+- Boş seçim hücresinde tık listeyi açar: seçilecek değer yok, beklenen listedir. Dolu hücrede tık yalnız seçer
+  (kopya, sürükleyerek seçim); Shift ile tık aralık seçer.
+- Yazarak açılışta liste yazılanla süzülür ve ilk eşleşen hemen vurgulu olur (`autoHighlight: 'always'`); tek Enter
+  seçer. Değerin tam yazımı da eşleşir (taksit `1` → Tek çekim), yapıştırmadaki kuralla; değerin parçası aranmaz.
+  Önceden değere eşit yazım ("4" → değer 4) süzmeyi atlatıyor, Enter yalnız listeyi kapatıyordu.
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

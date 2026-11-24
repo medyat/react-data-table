@@ -461,8 +461,13 @@ export function FormGrid<Row extends object>({
       if (at) setRowAt(at.row)
       return
     }
-    const pos = (e.target as HTMLElement).closest('.dt-text-expand') && posOf(e.target)
-    if (!pos || store.editing()) return
+    if (store.editing() || e.shiftKey) return
+    const pos = posOf(e.target)
+    if (!pos) return
+    // Boş seçim hücresinde seçilecek değer yok, beklenen listedir: tık açar. Dolu hücrede tık yalnız seçer (kopya, sürükle).
+    const def = defs[pos.col]!
+    const pick = def.type === 'select' && isEmptyValue(rows[pos.row] && store.read(pos.row, def))
+    if (!pick && !(e.target as HTMLElement).closest('.dt-text-expand')) return
     store.focus(pos)
     store.startEdit()
   }

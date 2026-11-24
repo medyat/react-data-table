@@ -191,10 +191,14 @@ function OptionCell<Row extends object>({
     if (start !== undefined) onDraft(parseInput(def, start, env), start)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  // Yazılanla süzülür (İ/ı ve büyük/küçük harf duyarsız); değer eşleşen etiketi gösterirken liste tam kalır.
+  // Yazılanla süzülür (İ/ı ve büyük/küçük harf duyarsız); F2 ya da tıkla açılınca kutuda değerin etiketi durur, liste
+  // tam kalır. Yazıldı mı metinden çıkarılmaz: yazarak açılışta taslak değer ham harftir ("4"), etiketi de "4" okunur.
+  const [typed, setTyped] = useState(start !== undefined)
   const needle = fold(text, env.locale)
-  const shown =
-    text === inputText(def, value) ? options : options.filter((o) => fold(o.label, env.locale).includes(needle))
+  // Değerin tam yazımı da eşleşir (taksit 1 → Tek çekim), yapıştırmadaki gibi; değer parçası aranmaz (kod gürültüsü).
+  const shown = typed
+    ? options.filter((o) => fold(o.label, env.locale).includes(needle) || String(o.value) === text.trim())
+    : options
   return (
     <Combobox.Root<unknown>
       open={open}
@@ -211,13 +215,17 @@ function OptionCell<Row extends object>({
         // Seçim etiketi input'a kendisi yazar; yalnız kullanıcının yazdığı taslağa gider.
         if (details.reason !== 'input-change') return
         setText(t)
+        setTyped(true)
         setOpen(true)
         onDraft(parseInput(def, t, env), t)
       }}
       items={shown}
       itemToStringLabel={(v) => inputText(def, v)}
       filter={null}
-      autoHighlight
+      // Yazarak açılışta ilk eşleşen hemen vurgulu: tek Enter seçer (yoksa Enter yalnız listeyi kapatırdı).
+      // shortcut: ComboboxRoot tipi 'always'u gizler ama AriaCombobox'a iletir; Base UI yükselince test kırılırsa
+      // onItemHighlighted + Enter'da ilk seçeneği seçmeye geçilir.
+      autoHighlight={(typed ? 'always' : true) as boolean}
     >
       <Combobox.Input
         ref={input}
@@ -244,7 +252,11 @@ function OptionCell<Row extends object>({
                   className="dt-pop-item dt-cell-option"
                   disabled={!!def.optionEnabled && !def.optionEnabled(o, row ?? ({} as Row), rows)}
                 >
-                  <Badge tone={o.tone} label={o.label} />
+                  {def.type === 'select' && def.display === 'text' ? (
+                    <span>{o.label}</span>
+                  ) : (
+                    <Badge tone={o.tone} label={o.label} />
+                  )}
                   <kbd className="dt-kbd dt-cell-option-enter" aria-hidden="true">
                     ↵
                   </kbd>

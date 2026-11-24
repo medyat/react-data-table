@@ -140,6 +140,11 @@ describe('seçim tipleri', () => {
     expect(u.find('.dt-badge')!.classList).toContain('dt-tone-gray')
     expect(u.text()).toBe('qc_hold')
   })
+  it("select display 'text': rozetsiz düz etiket (R38)", () => {
+    const w = render(col('select', { options, display: 'text' }), 'in_progress')
+    expect(w.find('.dt-badge')).toBeNull()
+    expect(w.text()).toBe('In progress')
+  })
   it('select: dolu hap zemini rengin kendisi, yazı okunur olan (R26)', () => {
     const f = render(col('select', { options }), 'shipped').find('.dt-badge')!
     expect(f.classList).toContain('dt-tone-fill')

@@ -268,6 +268,8 @@ export type ColumnDef<Row = any> =
   | (BaseColumn<Row, string | number | null> & {
       type: 'select'
       options: OptionDef[]
+      /** 'text': rozetsiz düz etiket, hücrede ve listede (taksit gibi tonu olmayan sıralı seçenek; R38). */
+      display?: 'badge' | 'text'
     })
   | (BaseColumn<Row, Array<string | number> | null> & {
       type: 'multiselect'
