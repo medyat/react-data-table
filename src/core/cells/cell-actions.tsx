@@ -1,41 +1,92 @@
 // Hücre aksiyonları overlay'i (03 · actions, T7): sağ kenarda ≤ 2 düğme, fazlası ⋯ menüsünde; metin yerleşimi değişmez.
-import { DotsThreeIcon } from '@phosphor-icons/react'
-import type { CellAction } from '../../types/columns'
+// Menü öğesinin kendi `menu`'su alt menü olur (form-grid.md §3.3, pano F4a). `run` hücreyi (`anchor`) ve FormGrid'de
+// `setValue`'yu alır.
+import { Menu } from '@base-ui/react/menu'
+import { CaretRightIcon, DotsThreeIcon } from '@phosphor-icons/react'
+import { useRef } from 'react'
+import type { CellAction, CellActionContext, CellActionItem } from '../../types/columns'
 import { useDataTableContext } from '../provider'
 import { DtMenu, DtMenuItem } from '../ui/menu'
 
-type Item<Row> = Omit<CellAction<Row>, 'reveal' | 'menu'> & { menu?: Array<Omit<CellAction<Row>, 'reveal' | 'menu'>> }
+const disabledOf = <Row,>(a: CellActionItem<Row>, row: Row): string | boolean => a.disabled?.(row) ?? false
 
-export function CellActions<Row extends object>({ actions, row }: { actions: Array<CellAction<Row>>; row: Row }) {
+/** Menü öğeleri; alt menüsü olan öğe Base UI submenu'süyle açılır. */
+function CellActionItems<Row>({
+  items,
+  row,
+  ctx,
+}: {
+  items: Array<CellActionItem<Row>>
+  row: Row
+  ctx: () => CellActionContext
+}) {
+  return items
+    .filter((m) => m.when?.(row) ?? true)
+    .map((m) => {
+      const Icon = m.icon
+      const off = disabledOf(m, row)
+      if (m.menu?.length)
+        return (
+          <Menu.SubmenuRoot key={m.id}>
+            <Menu.SubmenuTrigger className="dt-menu-item" disabled={!!off}>
+              {Icon && <Icon size={16} className="dt-menu-icon" aria-hidden="true" />}
+              <span className="dt-menu-text">{m.label}</span>
+              <CaretRightIcon size={12} className="dt-menu-kbd" aria-hidden="true" />
+            </Menu.SubmenuTrigger>
+            <Menu.Portal>
+              <Menu.Positioner className="dt-positioner" sideOffset={4}>
+                <Menu.Popup className="dt-menu dt-menu-cell dt-sheet-layer" finalFocus={false}>
+                  <CellActionItems items={m.menu} row={row} ctx={ctx} />
+                </Menu.Popup>
+              </Menu.Positioner>
+            </Menu.Portal>
+          </Menu.SubmenuRoot>
+        )
+      return (
+        <DtMenuItem
+          key={m.id}
+          destructive={m.destructive}
+          disabled={!!off}
+          twoLine={typeof off === 'string'}
+          onSelect={() => !off && void m.run?.(row, ctx())}
+        >
+          {Icon && <Icon size={16} className="dt-menu-icon" aria-hidden="true" />}
+          <span className="dt-menu-text">
+            <span>{m.label}</span>
+            {typeof off === 'string' && <span className="dt-menu-sub">{off}</span>}
+          </span>
+        </DtMenuItem>
+      )
+    })
+}
+
+export function CellActions<Row extends object>({
+  actions,
+  row,
+  setValue,
+}: {
+  actions: Array<CellAction<Row>>
+  row: Row
+  /** FormGrid: hücreye yazar (geri al'a girer). */
+  setValue?: (value: unknown) => void
+}) {
   const { i18n } = useDataTableContext()
+  const self = useRef<HTMLSpanElement>(null)
   const visible = actions.filter((a) => a.when?.(row) ?? true)
   if (!visible.length) return null
   const always = visible.some((a) => a.reveal === 'always')
   // 2'den çoksa: ilk aksiyon + ⋯ (kalanlar menüde). Tek aksiyonun kendi `menu`'sü ⋯ olarak çizilir.
-  const buttons: Array<Item<Row>> = visible.length > 2 ? visible.slice(0, 1) : visible
-  const overflow: Array<Item<Row>> = visible.length > 2 ? visible.slice(1) : []
+  const buttons = visible.length > 2 ? visible.slice(0, 1) : visible
+  const overflow = visible.length > 2 ? visible.slice(1) : []
+  const ctx = (): CellActionContext => ({ anchor: self.current?.closest<HTMLElement>('.dt-cell') ?? null, setValue })
 
-  const disabledOf = (a: Item<Row>): string | boolean => a.disabled?.(row) ?? false
-  const tipOf = (a: Item<Row>): string => {
-    const d = disabledOf(a)
+  const tipOf = (a: CellAction<Row>): string => {
+    const d = disabledOf(a, row)
     return typeof d === 'string' ? `${a.label} — ${d}` : a.label
   }
-  const run = (a: Item<Row>) => {
-    if (!disabledOf(a)) void a.run?.(row)
-  }
-  const menuItems = (items: Array<Item<Row>>) =>
-    items.map((m) => {
-      const Icon = m.icon
-      return (
-        <DtMenuItem key={m.id} destructive={m.destructive} disabled={!!disabledOf(m)} onSelect={() => run(m)}>
-          <Icon size={16} aria-hidden="true" />
-          {m.label}
-        </DtMenuItem>
-      )
-    })
 
   return (
-    <span className={always ? 'dt-cell-actions is-always' : 'dt-cell-actions'}>
+    <span ref={self} className={always ? 'dt-cell-actions is-always' : 'dt-cell-actions'}>
       {buttons.map((a) => {
         const Icon = a.icon
         const cls = a.destructive ? 'dt-cell-action is-destructive' : 'dt-cell-action'
@@ -50,7 +101,7 @@ export function CellActions<Row extends object>({ actions, row }: { actions: Arr
                 </button>
               }
             >
-              {menuItems(a.menu)}
+              <CellActionItems items={a.menu} row={row} ctx={ctx} />
             </DtMenu>
           )
         return (
@@ -59,9 +110,9 @@ export function CellActions<Row extends object>({ actions, row }: { actions: Arr
             type="button"
             className={cls}
             aria-label={a.label}
-            aria-disabled={disabledOf(a) ? 'true' : undefined}
+            aria-disabled={disabledOf(a, row) ? 'true' : undefined}
             data-dt-tip={tipOf(a)}
-            onClick={() => run(a)}
+            onClick={() => !disabledOf(a, row) && void a.run?.(row, ctx())}
           >
             <Icon size={14} aria-hidden="true" />
           </button>
@@ -81,9 +132,36 @@ export function CellActions<Row extends object>({ actions, row }: { actions: Arr
             </button>
           }
         >
-          {menuItems(overflow)}
+          <CellActionItems items={overflow} row={row} ctx={ctx} />
         </DtMenu>
       )}
     </span>
+  )
+}
+
+/** ⌥↵ (form-grid.md §8): hücrenin bütün aksiyonları tek menüde, hücreye bağlı. */
+export function CellActionMenu<Row>({
+  actions,
+  row,
+  anchor,
+  setValue,
+  onClose,
+}: {
+  actions: Array<CellAction<Row>>
+  row: Row
+  anchor: HTMLElement
+  setValue: (value: unknown) => void
+  onClose: () => void
+}) {
+  return (
+    <Menu.Root open onOpenChange={(open) => !open && onClose()}>
+      <Menu.Portal>
+        <Menu.Positioner className="dt-positioner" anchor={anchor} align="end" sideOffset={2}>
+          <Menu.Popup className="dt-menu dt-menu-cell dt-sheet-layer" finalFocus={false}>
+            <CellActionItems items={actions} row={row} ctx={() => ({ anchor, setValue })} />
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   )
 }

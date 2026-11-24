@@ -21,5 +21,8 @@
     --dt-focus: var(--ring);
     --dt-r-dot: var(--destructive);
     --dt-r-fg: var(--destructive);
+    /* Dialog shadcn'inki gibi: arka plan hafif karartılır (bulanıklık ui.css'te), köşe rounded-xl. */
+    --dt-scrim: rgb(0 0 0 / 10%);
+    --dt-radius-dialog: calc(var(--radius) * 1.4);
   }
 }

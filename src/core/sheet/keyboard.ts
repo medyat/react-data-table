@@ -34,6 +34,7 @@ export type Intent =
   | { type: 'fill' }
   | { type: 'removeRows' }
   | { type: 'menu' }
+  | { type: 'rowDialog' }
 
 const DIR: Record<string, Direction> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }
 
@@ -67,6 +68,7 @@ export function keyIntent(e: KeyInput, ctx: { editing: boolean; multiline: boole
       return { type: 'tab', back: e.shiftKey }
     case 'Enter':
       if (e.altKey) return { type: 'menu' }
+      if (mod) return { type: 'rowDialog' }
       return { type: 'move', dir: e.shiftKey ? 'up' : 'down', extend: false }
     case 'F2':
       return { type: 'edit' }
@@ -173,6 +175,7 @@ export function applyIntent<Row extends object>(
       return true
     case 'error':
     case 'menu':
+    case 'rowDialog':
       return false
   }
 }

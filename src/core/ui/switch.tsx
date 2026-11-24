@@ -3,12 +3,14 @@
 import { Switch } from '@base-ui/react/switch'
 
 export function DtSwitch({
+  id,
   checked,
   onChange,
   disabled,
   className,
   label,
 }: {
+  id?: string
   checked: boolean
   onChange: (checked: boolean) => void
   disabled?: boolean
@@ -18,6 +20,7 @@ export function DtSwitch({
 }) {
   return (
     <Switch.Root
+      id={id}
       className={className ? `dt-switch ${className}` : 'dt-switch'}
       checked={checked}
       onCheckedChange={(v) => onChange(v)}

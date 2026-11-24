@@ -65,7 +65,7 @@ describe('FormGrid iskeleti', () => {
     ).toEqual(['1', '2', ''])
     expect(within(grid).getByRole('img', { name: 'Required' })).toBeTruthy()
     expect(within(grid).getByRole('img', { name: 'Satırın miktarı' })).toBeTruthy()
-    expect(grid.querySelectorAll('.dt-row-more')).toHaveLength(2)
+    expect(grid.querySelectorAll('.dt-row-more:not(.dt-row-edit)')).toHaveLength(2)
     // Başlıkta sütun menüsü yok: formun sütunu gizlenmez, taşınmaz.
     expect(grid.querySelector('.dt-head-menu')).toBeNull()
   })
@@ -640,5 +640,378 @@ describe('satır silince odak', () => {
     await flush()
     expect(cell(0, 0).textContent).toBe('B')
     expect(document.activeElement).toBe(cell(0, 0))
+  })
+})
+
+describe('hücre aksiyonları (F4a)', () => {
+  type P = { code: string | null; price: string | null }
+  const anchors: Array<HTMLElement | null> = []
+  const cols: Array<ColumnDef<P>> = [
+    { id: 'code', header: 'Ürün', type: 'string' },
+    {
+      id: 'price',
+      header: 'Birim fiyat',
+      type: 'decimal',
+      actions: [
+        {
+          id: 'fetch',
+          label: 'Fiyat getir',
+          icon: TrashIcon,
+          menu: [
+            {
+              id: 'last',
+              label: 'Son satış fiyatı',
+              run: (_row, ctx) => {
+                anchors.push(ctx.anchor)
+                ctx.setValue?.('92.5')
+              },
+            },
+          ],
+        },
+      ],
+    },
+  ]
+  function Harness({ onChange }: { onChange: (rows: P[], c: FormGridChange) => void }) {
+    const [rows, setRows] = useState<P[]>([{ code: 'A', price: '10' }])
+    return (
+      <DataTableProvider locale="tr-TR">
+        <FormGrid
+          label="Satırlar"
+          rows={rows}
+          columns={cols}
+          onRowsChange={(next, change) => {
+            setRows(next)
+            onChange(next, change)
+          }}
+        />
+      </DataTableProvider>
+    )
+  }
+
+  it('iç içe menüdeki öğe ctx.setValue ile hücreye yazar, geri alınır; ctx.anchor hücredir', async () => {
+    const onChange = vi.fn()
+    render(<Harness onChange={onChange} />)
+    await flush()
+    fireEvent.pointerDown(cell(0, 1), { button: 0 })
+    fireEvent.click(within(cell(0, 1)).getByRole('button', { name: 'Fiyat getir' }))
+    await flush()
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Son satış fiyatı' }))
+    await flush()
+    expect(onChange.mock.lastCall).toEqual([[{ code: 'A', price: '92.5' }], expect.objectContaining({ kind: 'edit' })])
+    expect(anchors.at(-1)).toBe(cell(0, 1))
+    const mod = /Mac|iPhone|iPad/.test(navigator.platform) ? { metaKey: true } : { ctrlKey: true }
+    cell(0, 1).focus()
+    fireEvent.keyDown(cell(0, 1), { key: 'z', ...mod })
+    await flush()
+    expect(onChange.mock.lastCall?.[0]).toEqual([{ code: 'A', price: '10' }])
+  })
+
+  it('⌥↵ aksiyon menüsünü açar; Esc kapatır, odak hücrede', async () => {
+    render(<Harness onChange={vi.fn()} />)
+    await flush()
+    fireEvent.pointerDown(cell(0, 1), { button: 0 })
+    cell(0, 1).focus()
+    fireEvent.keyDown(cell(0, 1), { key: 'Enter', altKey: true })
+    await flush()
+    const menu = screen.getByRole('menu')
+    expect(within(menu).getByRole('menuitem', { name: /Fiyat getir/ })).toBeTruthy()
+    fireEvent.keyDown(menu, { key: 'Escape' })
+    await flush()
+    await flush()
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(document.activeElement).toBe(cell(0, 1))
+  })
+})
+
+describe('pencere düzenleyici (§7)', () => {
+  type Lot = { code: string; qty: number }
+  type L = { code: string | null; lots: Lot[] | null }
+  const opened: Array<{ row: L; value: unknown }> = []
+  // Pencerenin Tamam'ı bu değeri yazar.
+  const next: { value: unknown } = { value: null }
+  function LotWindow({ row, value, onApply }: { row: L; value: unknown; onApply: (v: unknown) => void }) {
+    opened.push({ row, value })
+    return (
+      <div role="dialog" aria-label="Lotlar">
+        <button type="button" onClick={() => onApply(next.value)}>
+          uygula
+        </button>
+      </div>
+    )
+  }
+  const cols: Array<ColumnDef<L>> = [
+    { id: 'code', header: 'Ürün', type: 'string' },
+    {
+      id: 'lots',
+      header: 'Lot / seri',
+      type: 'array',
+      cell: ({ value }) => `${(value as Lot[] | null)?.length ?? 0} lot`,
+      editor: { window: LotWindow },
+    },
+  ]
+  const mod = () => (/Mac|iPhone|iPad/.test(navigator.platform) ? { metaKey: true } : { ctrlKey: true })
+  const clip = () => {
+    const data: Record<string, string> = {}
+    return {
+      data,
+      clipboardData: {
+        setData: (type: string, value: string) => (data[type] = value),
+        getData: (type: string) => data[type] ?? '',
+      },
+    }
+  }
+  function Harness({ onChange }: { onChange: (rows: L[], c: FormGridChange) => void }) {
+    const [rows, setRows] = useState<L[]>([
+      { code: 'A', lots: [{ code: 'L1', qty: 2 }] },
+      { code: 'B', lots: null },
+    ])
+    return (
+      <DataTableProvider locale="tr-TR">
+        <FormGrid
+          label="Satırlar"
+          rows={rows}
+          columns={cols}
+          onRowsChange={(next, change) => {
+            setRows(next)
+            onChange(next, change)
+          }}
+        />
+      </DataTableProvider>
+    )
+  }
+
+  it('F2 pencereyi satır ve değerle açar; onApply yazar, pencere kapanır, geri alınır', async () => {
+    const onChange = vi.fn()
+    render(<Harness onChange={onChange} />)
+    await flush()
+    fireEvent.pointerDown(cell(0, 1), { button: 0 })
+    cell(0, 1).focus()
+    fireEvent.keyDown(cell(0, 1), { key: 'F2' })
+    await flush()
+    expect(screen.getByRole('dialog', { name: 'Lotlar' })).toBeTruthy()
+    expect(opened.at(-1)?.value).toEqual([{ code: 'L1', qty: 2 }])
+    next.value = [{ code: 'L9', qty: 5 }]
+    fireEvent.click(screen.getByRole('button', { name: 'uygula' }))
+    await flush()
+    expect(screen.queryByRole('dialog', { name: 'Lotlar' })).toBeNull()
+    expect(onChange.mock.lastCall?.[0][0]).toEqual({ code: 'A', lots: [{ code: 'L9', qty: 5 }] })
+    fireEvent.keyDown(cell(0, 1), { key: 'z', ...mod() })
+    await flush()
+    expect(onChange.mock.lastCall?.[0][0].lots).toEqual([{ code: 'L1', qty: 2 }])
+  })
+
+  it('kalem ve çift tık açar; yazmak düzenlemez, Delete atlar', async () => {
+    const onChange = vi.fn()
+    render(<Harness onChange={onChange} />)
+    await flush()
+    fireEvent.pointerDown(cell(0, 1), { button: 0 })
+    fireEvent.click(within(cell(0, 1)).getByRole('button', { name: 'Düzenle' }))
+    await flush()
+    expect(screen.getByRole('dialog', { name: 'Lotlar' })).toBeTruthy()
+    next.value = [{ code: 'L1', qty: 2 }]
+    fireEvent.click(screen.getByRole('button', { name: 'uygula' }))
+    await flush()
+    fireEvent.doubleClick(cell(1, 1))
+    await flush()
+    expect(opened.at(-1)?.row).toEqual({ code: 'B', lots: null })
+    next.value = null
+    fireEvent.click(screen.getByRole('button', { name: 'uygula' }))
+    await flush()
+    cell(1, 1).focus()
+    fireEvent.keyDown(cell(1, 1), { key: 'x' })
+    expect(cell(1, 1).classList.contains('is-editing')).toBe(false)
+    fireEvent.pointerDown(cell(0, 1), { button: 0 })
+    fireEvent.keyDown(cell(0, 1), { key: 'Delete' })
+    await flush()
+    expect(onChange.mock.lastCall?.[0][0].lots).toEqual([{ code: 'L1', qty: 2 }])
+  })
+
+  it('⌘C / ⌘V değeri bütün nesne olarak taşır; dışarıdan gelen metin yapıştırılmaz', async () => {
+    const onChange = vi.fn()
+    render(<Harness onChange={onChange} />)
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.pointerDown(cell(0, 1), { button: 0, shiftKey: true })
+    const c = clip()
+    fireEvent.copy(cell(0, 1), c)
+    fireEvent.pointerDown(cell(1, 0), { button: 0 })
+    fireEvent.paste(cell(1, 0), c)
+    await flush()
+    expect(onChange.mock.lastCall?.[0][1]).toEqual({ code: 'A', lots: [{ code: 'L1', qty: 2 }] })
+    const p = clip()
+    p.data['text/plain'] = 'C\t3 lot'
+    fireEvent.paste(cell(1, 0), p)
+    await flush()
+    expect(onChange.mock.lastCall?.[0][1]).toEqual({ code: 'C', lots: [{ code: 'L1', qty: 2 }] })
+  })
+})
+
+describe('satır penceresi (§7)', () => {
+  const mod = () => (/Mac|iPhone|iPad/.test(navigator.platform) ? { metaKey: true } : { ctrlKey: true })
+  const open = async (row: number) => {
+    fireEvent.click(document.querySelectorAll<HTMLElement>('.dt-row-edit')[row]!)
+    await flush()
+    return screen.getByRole('dialog')
+  }
+
+  it('kalem açar: alanlar sütun sırasıyla, kilitli alan pasif; Tamam değişeni yazar, geri alınır', async () => {
+    const onChange = vi.fn()
+    render(
+      <DataTableProvider locale="tr-TR">
+        <Harness onChange={onChange} />
+      </DataTableProvider>,
+    )
+    await flush()
+    const dialog = await open(1)
+    expect(within(dialog).getByRole('heading', { name: 'Satır 2' })).toBeTruthy()
+    expect(
+      [...dialog.querySelectorAll('.dt-rd-field :is(.dt-rd-label label, .dt-rd-label-text)')].map((l) => l.textContent),
+    ).toEqual(['Ürün*', 'Miktar', 'Promosyon'])
+    expect(dialog.querySelector('.dt-rd-input.is-disabled')?.contains(within(dialog).getByLabelText('Ürün'))).toBe(true)
+    fireEvent.change(within(dialog).getByLabelText('Miktar'), { target: { value: '7' } })
+    fireEvent.click(within(dialog).getByRole('switch', { name: 'Promosyon' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tamam' }))
+    await flush()
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(onChange.mock.lastCall).toEqual([
+      [initial[0], { code: 'B', qty: '7', gift: true }],
+      {
+        kind: 'edit',
+        cells: [
+          { row: 1, column: 'qty' },
+          { row: 1, column: 'gift' },
+        ],
+      },
+    ])
+    fireEvent.keyDown(document.activeElement!, { key: 'z', ...mod() })
+    await flush()
+    expect(onChange.mock.lastCall?.[0]).toEqual(initial)
+  })
+
+  it('‹ › geçerken yazar; İptal atar', async () => {
+    const onChange = vi.fn()
+    render(
+      <DataTableProvider locale="tr-TR">
+        <Harness onChange={onChange} />
+      </DataTableProvider>,
+    )
+    await flush()
+    const dialog = await open(0)
+    expect(within(dialog).getByRole('button', { name: 'Önceki satır' }).hasAttribute('disabled')).toBe(true)
+    fireEvent.change(within(dialog).getByLabelText('Miktar'), { target: { value: '5' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Sonraki satır' }))
+    await flush()
+    expect(onChange.mock.lastCall?.[0][0]).toEqual({ code: 'A', qty: '5', gift: false })
+    expect(within(dialog).getByRole('heading', { name: 'Satır 2' })).toBeTruthy()
+    expect((within(dialog).getByLabelText('Miktar') as HTMLInputElement).value).toBe('2')
+    fireEvent.change(within(dialog).getByLabelText('Miktar'), { target: { value: '9' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Vazgeç' }))
+    await flush()
+    expect(onChange).toHaveBeenCalledTimes(1)
+  })
+
+  it('⌘↵ boş satırda yeni satır penceresi; "Ekle ve yeni satır" ekler ve boş pencereye geçer', async () => {
+    const onChange = vi.fn()
+    render(
+      <DataTableProvider locale="tr-TR">
+        <Harness onChange={onChange} />
+      </DataTableProvider>,
+    )
+    await flush()
+    fireEvent.pointerDown(cell(2, 1), { button: 0 })
+    cell(2, 1).focus()
+    fireEvent.keyDown(cell(2, 1), { key: 'Enter', ...mod() })
+    await flush()
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByRole('heading', { name: 'Yeni satır' })).toBeTruthy()
+    fireEvent.change(within(dialog).getByLabelText('Ürün'), { target: { value: 'C' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ekle ve yeni satır' }))
+    await flush()
+    expect(onChange.mock.lastCall?.[0][2]).toEqual({ code: 'C' })
+    expect((within(dialog).getByLabelText('Ürün') as HTMLInputElement).value).toBe('')
+  })
+
+  it('hücredeki hata alanın altında tam metniyle; alan değişince kalkar', async () => {
+    render(
+      <FormGrid
+        label="Satırlar"
+        rows={initial}
+        columns={columns}
+        errors={{ '0.qty': 'Stok yetersiz: rafta 22 m var.' }}
+        onRowsChange={() => {}}
+      />,
+    )
+    await flush()
+    const dialog = await open(0)
+    expect(within(dialog).getByText('Stok yetersiz: rafta 22 m var.')).toBeTruthy()
+    const qty = within(dialog).getByLabelText('Miktar')
+    expect(qty.getAttribute('aria-invalid')).toBe('true')
+    expect(qty.closest('.dt-rd-field')?.getAttribute('data-state')).toBe('error')
+    // Dışarı tık kapatmaz (yanlışlıkla tıklayınca taslak gitmesin).
+    const scrim = document.querySelector('.dt-scrim')!
+    fireEvent.pointerDown(scrim)
+    fireEvent.mouseDown(scrim)
+    fireEvent.click(scrim)
+    await flush()
+    expect(screen.getByRole('dialog')).toBe(dialog)
+    fireEvent.change(within(dialog).getByLabelText('Miktar'), { target: { value: '3' } })
+    expect(within(dialog).queryByText('Stok yetersiz: rafta 22 m var.')).toBeNull()
+  })
+
+  it('renderField uygulamanın alanını çizer; null paketin alanını bırakır', async () => {
+    const onChange = vi.fn()
+    render(
+      <DataTableProvider
+        locale="tr-TR"
+        renderField={(col, f) =>
+          col.type === 'decimal' ? (
+            <input
+              id={f.id}
+              aria-label={`app ${f.label}`}
+              value={String(f.value ?? '')}
+              onChange={(e) => f.onChange(Number(e.target.value))}
+            />
+          ) : null
+        }
+      >
+        <Harness onChange={onChange} />
+      </DataTableProvider>,
+    )
+    await flush()
+    const dialog = await open(0)
+    fireEvent.change(within(dialog).getByLabelText('app Miktar'), { target: { value: '8' } })
+    expect(within(dialog).getByRole('switch', { name: 'Promosyon' })).toBeTruthy()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tamam' }))
+    await flush()
+    expect(onChange.mock.lastCall?.[0][0]).toEqual({ code: 'A', qty: 8, gift: false })
+  })
+})
+
+describe('telefon (pano 3a, 3b)', () => {
+  it('dokunmatikte satıra dokunmak satır penceresini açar, hücre düzenlenmez; "Satır ekle" yeni satır penceresi', async () => {
+    const real = window.matchMedia
+    window.matchMedia = ((q: string) => ({ matches: q === '(pointer: coarse)', media: q })) as typeof window.matchMedia
+    try {
+      render(
+        <DataTableProvider locale="tr-TR">
+          <Harness />
+        </DataTableProvider>,
+      )
+      await flush()
+      expect(document.querySelector('.dt-form-grid')?.classList.contains('is-touch')).toBe(true)
+      fireEvent.pointerDown(cell(1, 1), { button: 0 })
+      fireEvent.click(cell(1, 1))
+      await flush()
+      expect(within(screen.getByRole('dialog')).getByRole('heading', { name: 'Satır 2' })).toBeTruthy()
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Vazgeç' }))
+      await flush()
+      fireEvent.doubleClick(cell(1, 1))
+      expect(cell(1, 1).classList.contains('is-editing')).toBe(false)
+      fireEvent.click(screen.getByRole('button', { name: 'Satır ekle' }))
+      await flush()
+      expect(within(screen.getByRole('dialog')).getByRole('heading', { name: 'Yeni satır' })).toBeTruthy()
+    } finally {
+      window.matchMedia = real
+    }
   })
 })

@@ -329,3 +329,23 @@ body {
 .pg-product b.is-empty {
   color: var(--dt-text-3);
 }
+.pg-lots {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+.pg-lots > div {
+  display: grid;
+  grid-template-columns: 1fr 96px;
+  gap: 8px;
+}
+.pg-lots input {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--dt-line-2);
+  border-radius: 6px;
+  font: inherit;
+}
+.pg-lots > .dt-btn {
+  justify-self: start;
+}

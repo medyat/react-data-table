@@ -36,7 +36,7 @@ oradaki kodlardır (1a, F3a, G1a…).
   newRow={(rows) => ({ … })}       // boş satıra ilk değer yazılınca öbür hücreler (§5)
   maxRows={12}                     // dolunca boş satır kaybolur (§5)
   rowActions={rowActions}          // RowAction<Row>[] — paketteki tip; ⋯ menüsü
-  rowDialog                        // varsayılan true: kalem + satır penceresi (§7)
+  rowDialog                        // varsayılan true: kalem, ⌘↵ ve ⋯ › Satırı düzenle satır penceresini açar (§7)
   reorderable={false}              // varsayılan false (§5)
   search                           // varsayılan true: ⌘F ızgara araması (§8.1); false kapatır
 />
@@ -44,7 +44,7 @@ oradaki kodlardır (1a, F3a, G1a…).
 
 - **Kontrollü ve RHF'den bağımsız.** Paket veri çekmez (D18) ve form kütüphanesi seçmez. Swors'ta
   `src/components/form/` altında `useController` ile bağlayan bir alan bileşeni durur; değer RHF'de kalır.
-- **`change`** neyin değiştiğini söyler (`{ kind: 'edit' | 'paste' | 'fill' | 'undo' | 'redo' | 'remove', cells }`):
+- **`change`** neyin değiştiğini söyler (`{ kind: 'edit' | 'paste' | 'fill' | 'remove' | 'duplicate' | 'undo' | 'redo', cells }`):
   uygulama örneğin yalnız Ürün değişince fiyat ister.
 - **Satır kimliği:** `getRowId(row)` verilmezse paket satıra geçici kimlik verir (seçim ve geri al için); kimlik
   `rows`'a yazılmaz. Uygulama bir satırı yeni nesneyle değiştirince (sunucudan gelen fiyat, form kütüphanesinin
@@ -81,7 +81,7 @@ R1 bunları liste için sütundan çıkarmıştı; `FormGrid` ile geri gelir, `D
 
 ```ts
 editable?: boolean | ((row: Row, ctx: { isNew: boolean }) => boolean)
-editor?: CellEditor | WindowEditor<Row>   // WindowEditor: §7
+editor?: { window: ComponentType<WindowEditorProps<Row>> }   // §7; hücreye özel editör bugün yok
 validate?: Validator<Row>   // (value, { row, rows, isNew }) => string | null; Vue'daki `original` yok
 warn?: Validator<Row>
 hint?: string
@@ -121,7 +121,10 @@ ondan farklıdır: kilit değeri silmez, `onChange` değer yazar.
 - `menu` kendine döner: iç içe menü ("Fiyat getir ›").
 - `run(row, ctx)`: `ctx.setValue(value)` hücreye yazar ve geri al'a girer; `ctx.anchor` hücrenin kendisi
   (uygulamanın popover'ı için).
-- Menü öğesinin kendi kısayolu yok.
+- Menü öğesinin kendi kısayolu yok. ⌥↵ hücrenin bütün aksiyonlarını hücreye bağlı tek menüde açar; kapanınca odak
+  hücreye döner.
+- `setValue` kilitli hücreye yazmaz (depo atlar); yazan aksiyonu kilitli satırda kapatmak uygulamanın `disabled`'ıdır,
+  gerekçe metni menüde ikinci satır olur. Liste tablosunda `ctx.setValue` yoktur (salt okunur).
 
 ## 4. Yerleşim
 
@@ -135,6 +138,9 @@ Tek düzen; belgede de form içinde de aynı (POS tablosu için ayrı "gömülü
 - **Alt çubuk** tablonundur: solda satır sayısı + "N hata — git"; iki ve daha çok hücre seçiliyse sağda Hücre,
   Toplam, Ortalama, En küçük, En büyük. Ekrana özel metin yazılmaz.
 - Telefonda aynı sütunlar, yatay kayar; hücre içi düzenleme yok, satıra dokunmak satır penceresini açar (3a, 3b).
+  Dokunmatik `pointer: coarse` ile anlaşılır (ekran genişliğiyle değil: tablette de parmak). Satırlar 52 px, yazılacak
+  boş satır yok, altta tam genişlikte "Satır ekle" yeni satır penceresini açar; "N hata — git" o satırın penceresini
+  açar. `rowDialog={false}` ise ızgara dokunmatikte de masaüstündeki gibidir.
 
 ## 5. Satırlar
 
@@ -164,13 +170,25 @@ Tek düzen; belgede de form içinde de aynı (POS tablosu için ayrı "gömülü
 
 ## 7. Pencereler
 
-- **Satır penceresi** (`rowDialog`): paket sütunlardan üretir; alanlar sütun sırasıyla tek sütun, dar (440 px).
-  Uygulama sütun başına düzenleyiciyi verir. Tamam'da satıra yazar; ‹ › önceki / sonraki satır. Izgaradaki grup
-  pencerede bölüm olur (İhracat, F2a).
+- **Satır penceresi** (`rowDialog`): paket sütunlardan üretir; alanlar sütun sırasıyla tek sütun, dar (440 px),
+  telefonda tam ekran. Alan olan sütun düzenlenebilir türdendir (`accessor` ve `editable: false` alan olmaz); satır
+  için kilitli alan (`editable(row)` false) pasif görünür. Taslak Tamam'a kadar satıra yazılmaz: Tamam değişen alanları
+  tek geri al adımıyla yazar, İptal ve Esc atar. ‹ › geçerken o satırın değişikliğini Tamam gibi yazar. Yeni satırda
+  başlık "Yeni satır", ‹ › yerine "Ekle ve yeni satır". Alana yazılınca sütunun `onChange`'i taslakta çalışır (Ürün →
+  Ad hemen dolar). Hücredeki hata ya da uyarı alanın altında tam metniyle durur, alan değişince kalkar. Izgaradaki
+  grup pencerede bölüm olur (İhracat, F2a): `group` F5'te gelir, bölüm de onunla.
+- **Alanı kim çizer:** varsayılan paketin hücre editörüdür (aynı ayrıştırma, liste ve takvim; pencerede odak almaz,
+  liste kendiliğinden açılmaz). Uygulama `DataTableProvider`'a bir kez `renderField(column, field)` verir:
+  `RowFieldProps` (`id`, `label`, `hint`, `required`, `disabled`, `error`, `value`, `onChange(value, option?)`, `row`)
+  ile kendi form bileşenini etiketi ve hatasıyla döndürür; `null` paketin alanını bırakır. Swors burada türe göre
+  `SourcePickerField`, `NumberField`… eşler. `ajax`'ta seçilen seçeneği `onChange`'e vermek `onChange` (Ürün → Ad)
+  için gerekir. Pencere sütunu `renderField`'e gelmez: özet + kalem kalır (pano F2a: lot penceresi geniştir).
 - **Pencere düzenleyici** (`editor: { window: Component }`): `object` / `array` sütunu hücrede yazılmaz; hücre
   özet gösterir, kalem (hücre aksiyonu), çift tık ya da F2 uygulamanın penceresini açar. Pencere `{ row, value,
-  onApply, onCancel }` alır; içini uygulama tasarlar (Lot / seri, Taşıma, Kap). Değer ⌘C / ⌘V / ⌘D ile bütün nesne
-  olarak taşınır.
+  onApply, onCancel }` alır (`WindowEditorProps`); içini uygulama tasarlar (Lot / seri, Taşıma, Kap). Bileşen
+  çizildiği sürece açıktır; `onApply` hücreye yazar (geri al'a girer). Kalem paketindir, uygulamanın `actions`'ından
+  önce gelir. Değer ⌘C / ⌘V / ⌘D ile bütün nesne olarak taşınır: kopyalanan metin aynen geri yapıştırılınca ham değer
+  gelir, dışarıdan gelen metin bu sütuna yapıştırılmaz. Yazmak ve Delete / ⌘X'in temizlemesi bu sütunu atlar (1a).
 
 ## 8. Klavye
 
@@ -182,6 +200,7 @@ Vue 08'in sheet klavyesi geçerli; farklar:
 - ⌘ + yön o yönde en sona gider (aşağıda son dolu satıra, boş satıra değil); ⌘⇧ + yön seçimi oraya kadar büyütür
   (Excel). Izgara olayı işlediği için tarayıcının kendi işi çalışmaz. ⌥ + yön ızgara tuşu değil.
 - F2 hücreyi düzenler; pencere türünde pencereyi açar. Yazmaya başlamak düzenler.
+- ⌘↵ (Windows Ctrl+Enter) aktif satırın satır penceresini açar; boş satırda yeni satır penceresi.
 - Enter düzenlemede onaylayıp alt hücreye iner, düzenleme yokken yalnız alt hücreye geçer.
 - `select`, `ajax` ve `date` editöründe liste / takvim açıkken Enter önce ona gider; listeden ya da takvimden seçmek
   hücreyi onaylar (Enter ile seçilince alt hücreye de iner; Vue'da ikinci Enter gerekiyordu). Tab her zaman onaylar.
@@ -200,6 +219,9 @@ Vue 08'in sheet klavyesi geçerli; farklar:
 - Sağ tık menüsü (pano ContextMenu): hücre grubu (başlıkta hücre ve atlanan kilitli hücre sayısı; seçim tamamen
   kilitliyse Kes, Temizle, Doldur pasif), "Seç ›" (satır ⇧Space, sütun ⌃Space, tümü ⌘A), satır grubu (başlıkta satır
   sayısı). ⋯ yalnız satır grubu. Menüden Yapıştır izin alamazsa alt çubukta "⌘V ile yapıştırın" yazar.
+- Satır grubunda paketin eylemleri: Satırı düzenle (⌘↵), "N satırı çoğalt", uygulamanın `rowActions`'ı, en altta
+  sil. Çoğaltma kopyaları sona ekler (sıralanmayan ızgarada araya ekleme yok); kopya `newRow`'un tabanına yalnız
+  sütunların alanlarını alır, satır kimliği ve sütunu olmayan alanlar (kaynak bağı) taşınmaz.
 - F8 / ⇧F8 sonraki / önceki hata. ⌘⌫ seçili satırları siler (Vue'daki ⌘− sembol tuşu olduğu için alınmadı).
 - ⌘Z yalnız kullanıcının yazdığını geri alır: hücre o adımdan sonra uygulama tarafından değiştirildiyse (ör. sunucudan
   gelen fiyat) o hücre atlanır, öbürleri geri alınır.
@@ -230,7 +252,7 @@ Swors'ta sipariş ve teklif satırları da `FormGrid` kullanmaz: önce kayıt a�
 | F1 | Çekirdek motor `core/`'da: seçim, klavye, yazınca düzenleme, geri al; `string`, `text`, `decimal`, `int`, `percentage`, `currency`, `select`, `date`, `boolean`; hatalar (§6); alt çubuk; 1000×30 ölçümü |
 | F2 | `ajax` (satır bağlamıyla), `newRow`, `maxRows`, `onChange`, `required(row)`, `optionEnabled(…, rows)`, `placeholder` |
 | F3 | Pano: kopyala, yapıştır (Excel), ⌘D doldurma; sağ tık menüsü; arama (§8.1) |
-| F4 | Satır penceresi, pencere düzenleyici, hücre aksiyonu genişlemesi (§3.3), telefon |
+| F4 | Satır penceresi, pencere düzenleyici, hücre aksiyonu genişlemesi (§3.3), çoğaltma, telefon |
 | F5 | İç içe başlık (`group`); liste tablosu da kullanır |
 
 Her faz playground'da bir senaryo sayfası ve `pnpm check` ile biter. Swors'ta ilk ekran Sevk belgesidir.
@@ -242,6 +264,8 @@ Her faz playground'da bir senaryo sayfası ve `pnpm check` ile biter. Swors'ta i
 bütçeyle karşılaştırılır. 2026-11-24, Apple Silicon, Chrome: ilk çizim ~110 ms (en kötü ~250), ok tuşu ~0,3 ms (yalnız
 iki hücre yeniden çizilir), hücre onayı ~22 ms (en kötü ~73; onay bütün satırların sorunlarını yeniden hesaplar). F3'ten sonra
 (her satırın ⋯'u seçimi dinler): ilk çizim ~131 ms, ok tuşu ~0,3 ms, hücre onayı ~28 ms (en kötü ~71).
+F4'ten sonra (her satırda kalem, hücrede aksiyon katmanı): ilk çizim ~168 ms (en kötü ~283), ok tuşu ~0,4 ms,
+hücre onayı ~32 ms (en kötü ~86).
 
 F1 adımları: A saf katman (tipler, ayrıştırma, hata eşleme, seçim özeti, doğrulama) · B depo ve klavye · C iskelet ·
 D düzenleme ve editörler · E hatalar ve alt çubuk · F ölçüm.
@@ -256,6 +280,23 @@ F3 kararları:
 - Menüden kopyala / yapıştır tarayıcının pano iznini ister; kısayollar izinsiz çalışır.
 - ⌘F 1000×30'da tuş başına ~70 ms tarar (dev): kutu `useDeferredValue` ile takılmaz. Eşleşme mor; uyarı ve seçim
   üstüne binince onlar görünür.
+
+F4 kararları:
+- Satır penceresinin alanları iki katmanlı: paket kurulur kurulmaz çalışır (hücre editörü alan olur), uygulama
+  `renderField` ile kendi bileşenini koyar. Ayar sağlayıcıda: her proje eşlemeyi bir kez yapar, her ızgarada değil.
+- Dialog'un `z-index`'i 51'den 50'ye indi: paketin bütün katmanları 50, sonra açılan üstte (pencere içindeki liste
+  pencerenin arkasında kalıyordu).
+- Pencerede `date` alanı sunucunun metnini (`2026-12-01`) gösterir, hücredeki F2 ile aynı.
+- Satır penceresi dışarı tıkla kapanmaz (`disablePointerDismissal`): yanlışlıkla tık taslağı atıyordu. İptal, Tamam,
+  Esc kapatır.
+- Alan düzeni Swors'un `FormField`'ı: etiket + ? (`hint`, ipucu balonu), 36 px kutu, altında `description` ve hata.
+  Hatalı alanın etiketi, çerçevesi ve metni kırmızı, zemini açık kırmızı; uyarı sarı. Açık / kapalı çerçeveli ayar
+  satırıdır (etiket ve `hint` solda, anahtar sağda), anahtar shadcn ölçüsünde (32 × 18) ve birincil renkte.
+- Dialog'lar bulanık arka plan ve ince çerçeveyle açılır. Karartma ve köşe token'dır: `tokens.css` tasarım belgesinde
+  kalır, shadcn köprüsü shadcn'in değerlerini verir (`black/10`, `rounded-xl`).
+- Hücre listesi en az açıldığı kutu kadar geniştir (`--anchor-width`).
+- Takvim ayrı parçadır; tarih editörü açılınca yüklenir, yüklüyse doğrudan çizilir. `lazy` ilk açılışta popover'ı boş
+  çiziyordu.
 
 **Uygulama notları**
 

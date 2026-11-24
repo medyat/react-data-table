@@ -206,6 +206,13 @@ const REACT_ONLY_MESSAGES: Record<string, [string, string]> = {
   'sheet.agg.max': ['Max', 'En büyük'],
   // FormGrid'in alttaki boş satırı: yazınca satır doğar (form-grid.md §5).
   'sheet.newRow': ['New row', 'Yeni satır'],
+  'sheet.edit': ['Edit', 'Düzenle'],
+  'sheet.aboutField': ['About {label}', '{label} hakkında'],
+  'sheet.rowTitle': ['Row {n}', 'Satır {n}'],
+  'sheet.prevRow': ['Previous row', 'Önceki satır'],
+  'sheet.nextRow': ['Next row', 'Sonraki satır'],
+  'sheet.addNext': ['Add and new row', 'Ekle ve yeni satır'],
+  'sheet.addRow': ['Add row', 'Satır ekle'],
   // FormGrid sağ tık menüsü (form-grid.md §8, pano ContextMenu): grup başlıkları, "Seç ›" alt menüsü; silme seçili
   // satırların hepsini alır (§5).
   'sheet.menu.cells.one': ['{count} cell', '{count} hücre'],
@@ -222,6 +229,9 @@ const REACT_ONLY_MESSAGES: Record<string, [string, string]> = {
   'sheet.menu.selectAll': ['Select all', 'Tümünü seç'],
   // Menüden yapıştırma tarayıcının pano iznini ister; izin yoksa kısayol söylenir.
   'sheet.pasteDenied': ["Couldn't read the clipboard. Paste with {kbd}.", 'Pano okunamadı. {kbd} ile yapıştırın.'],
+  'sheet.menu.editRow': ['Edit row', 'Satırı düzenle'],
+  'sheet.menu.duplicateRows.one': ['Duplicate row', 'Satırı çoğalt'],
+  'sheet.menu.duplicateRows.other': ['Duplicate {count} rows', '{count} satırı çoğalt'],
   'sheet.menu.removeRows.one': ['Delete row', 'Satırı sil'],
   'sheet.menu.removeRows.other': ['Delete {count} rows', '{count} satırı sil'],
   // R6: sistem görünümü olmayan ekranda varsayılandan dönmenin tek yolu.

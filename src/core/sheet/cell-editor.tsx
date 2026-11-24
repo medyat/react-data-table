@@ -18,7 +18,11 @@ import { cleanNumber, plainNumber } from '../format/parse'
 import { useDataTableContext } from '../provider'
 import { fold, inputText, parseInput, type ParseEnv } from './parse'
 
-const DateEditor = lazy(() => import('../editors/date-editor'))
+// Takvim ayrı parçadır: tarih editörü açılınca yüklenir, popover açılmadan hazırdır. `lazy` yüklüyken de ilk çizimde
+// askıya alıp kutuyu boş açıyordu; yüklenmişse bileşen doğrudan çizilir.
+let loadedDate: typeof import('../editors/date-editor').default | null = null
+const loadDate = () => import('../editors/date-editor').then((m) => (loadedDate = m.default))
+const LazyDate = lazy(() => loadDate().then((d) => ({ default: d })))
 
 export interface CellEditorProps<Row extends object> {
   def: ColumnDef<Row>
@@ -33,6 +37,11 @@ export interface CellEditorProps<Row extends object> {
   onDraft: (value: unknown, text: string) => void
   /** Listeden / takvimden seçim: taslağı yazıp onaylar; klavyeyle seçildiyse alt hücreye iner. */
   onPick: (value: unknown, down: boolean) => void
+  /** Satır penceresinin alanı: açılışta odak almaz, liste kendiliğinden açılmaz, uzun metin yerinde yazılır. */
+  field?: boolean
+  /** Pencere alanı: etiketin bağlandığı id ve hata (`aria-invalid`). */
+  id?: string
+  invalid?: boolean
 }
 
 export function useParseEnv(): ParseEnv {
@@ -66,6 +75,9 @@ const escapeToGrid = (e: BaseUIEvent<KeyboardEvent<HTMLInputElement>>) => {
   if (e.key === 'Escape') e.preventBaseUIHandler()
 }
 
+/** Pencere alanında liste input'a değil çerçeveli kutuya bağlanır: kenarları ve genişliği kutuyla aynı olsun. */
+const fieldBox = (input: HTMLElement | null): HTMLElement | null => input?.closest('.dt-rd-input') ?? input
+
 /** Odak editöre, imleç sonda (F2 ve yazarak açılış aynı: yazılan harften sonra devam edilir). */
 function focusEnd(el: HTMLInputElement | HTMLTextAreaElement | null) {
   if (!el) return
@@ -82,7 +94,16 @@ export function CellEditor<Row extends object>(props: CellEditorProps<Row>) {
   return <InputCell {...props} />
 }
 
-function InputCell<Row extends object>({ def, row, text: start, value, onDraft }: CellEditorProps<Row>) {
+function InputCell<Row extends object>({
+  def,
+  row,
+  text: start,
+  value,
+  onDraft,
+  field,
+  id,
+  invalid,
+}: CellEditorProps<Row>) {
   const env = useParseEnv()
   const numeric = TYPE_SPECS[def.type].numeric
   const clean = (t: string) => (numeric ? cleanNumber(env.locale, t, decimalPlaces(def) === 0) : t)
@@ -93,7 +114,7 @@ function InputCell<Row extends object>({ def, row, text: start, value, onDraft }
     onDraft(parseInput(def, t, env), t)
   }
   useLayoutEffect(() => {
-    focusEnd(el.current)
+    if (!field) focusEnd(el.current)
     // Yazarak açılışta taslak ham harftir; çözümlenmiş hali yazılır.
     if (start !== undefined) onDraft(parseInput(def, text, env), text)
     // Yalnız açılışta.
@@ -113,6 +134,8 @@ function InputCell<Row extends object>({ def, row, text: start, value, onDraft }
         autoComplete="off"
         value={text}
         aria-label={def.header}
+        id={id}
+        aria-invalid={invalid || undefined}
         onChange={(e) => change(clean(e.target.value))}
       />
       {suffix && (
@@ -133,14 +156,17 @@ function OptionCell<Row extends object>({
   options,
   onDraft,
   onPick,
+  field,
+  id,
+  invalid,
 }: CellEditorProps<Row> & { options: OptionDef[] }) {
   const { i18n } = useDataTableContext()
   const env = useParseEnv()
   const [text, setText] = useState(() => start ?? inputText(def, value))
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(!field)
   const input = useRef<HTMLInputElement>(null)
   useLayoutEffect(() => {
-    focusEnd(input.current)
+    if (!field) focusEnd(input.current)
     if (start !== undefined) onDraft(parseInput(def, start, env), start)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -155,6 +181,8 @@ function OptionCell<Row extends object>({
       value={value ?? null}
       onValueChange={(v, details) => {
         if (v === null || v === undefined) return
+        // Pencere alanı açık kalır: kutuda seçilenin adı durur.
+        if (field) setText(inputText(def, v))
         onPick(v, details.event instanceof globalThis.KeyboardEvent)
       }}
       inputValue={text}
@@ -174,11 +202,18 @@ function OptionCell<Row extends object>({
         ref={input}
         className="dt-cell-input"
         aria-label={def.header}
+        id={id}
+        aria-invalid={invalid || undefined}
         autoComplete="off"
-        onKeyDown={escapeToGrid}
+        onKeyDown={field ? undefined : escapeToGrid}
       />
       <Combobox.Portal>
-        <Combobox.Positioner className="dt-positioner" align="end" sideOffset={2} anchor={input}>
+        <Combobox.Positioner
+          className="dt-positioner"
+          align={field ? 'start' : 'end'}
+          sideOffset={field ? 4 : 2}
+          anchor={field ? () => fieldBox(input.current) : input}
+        >
           <Combobox.Popup className="dt-pop dt-cell-list dt-sheet-layer" aria-label={def.header}>
             <Combobox.List>
               {shown.map((o) => (
@@ -209,13 +244,23 @@ function OptionCell<Row extends object>({
  */
 // shortcut: yalnız ilk sayfa (varsayılan 20) gösterilir, aşağı kaydırınca devamı yüklenmez; arama daraltır. Uzun listede
 // "devamı" gerekince options-editor'daki sayfalama buraya taşınır.
-function AjaxCell<Row extends object>({ def, row, labels, text: start, value, onPick }: CellEditorProps<Row>) {
+function AjaxCell<Row extends object>({
+  def,
+  row,
+  labels,
+  text: start,
+  value,
+  onPick,
+  field,
+  id,
+  invalid,
+}: CellEditorProps<Row>) {
   const { i18n } = useDataTableContext()
   const { remote, Item } = def as Extract<ColumnDef<Row>, { type: 'ajax' }>
   const labelOf = (v: unknown) => (isEmptyValue(v) ? '' : labels.label(def.id, remote, v as string | number))
   const [text, setText] = useState(() => start ?? labelOf(value))
   const [found, setFound] = useState<OptionDef[] | null>(null)
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(!field)
   const input = useRef<HTMLInputElement>(null)
   const ctl = useRef<AbortController | null>(null)
   const delay = useDelay(250)
@@ -233,9 +278,13 @@ function AjaxCell<Row extends object>({ def, row, labels, text: start, value, on
       // Hata uygulamanındır (D18); liste boş kalır.
       .catch(() => !c.signal.aborted && setFound([]))
   }
-  useLayoutEffect(() => focusEnd(input.current), [])
+  useLayoutEffect(() => {
+    if (!field) focusEnd(input.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   useEffect(() => {
-    load(start ?? '')
+    // Pencere alanında arama liste açılınca (yazınca ya da ok tuşuyla) başlar.
+    if (!field) load(start ?? '')
     return () => ctl.current?.abort()
     // Açılışta bir kez; sonrası yazdıkça.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -244,10 +293,14 @@ function AjaxCell<Row extends object>({ def, row, labels, text: start, value, on
   return (
     <Combobox.Root<unknown>
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (next && found === null) load('')
+      }}
       value={value ?? null}
       onValueChange={(v, details) => {
         if (v === null || v === undefined) return
+        if (field) setText(labelOf(v))
         onPick(v, details.event instanceof globalThis.KeyboardEvent)
       }}
       inputValue={text}
@@ -267,11 +320,18 @@ function AjaxCell<Row extends object>({ def, row, labels, text: start, value, on
         ref={input}
         className="dt-cell-input"
         aria-label={def.header}
+        id={id}
+        aria-invalid={invalid || undefined}
         autoComplete="off"
-        onKeyDown={escapeToGrid}
+        onKeyDown={field ? undefined : escapeToGrid}
       />
       <Combobox.Portal>
-        <Combobox.Positioner className="dt-positioner" align="start" sideOffset={2} anchor={input}>
+        <Combobox.Positioner
+          className="dt-positioner"
+          align="start"
+          sideOffset={field ? 4 : 2}
+          anchor={field ? () => fieldBox(input.current) : input}
+        >
           <Combobox.Popup className="dt-pop dt-cell-list dt-sheet-layer" aria-label={def.header}>
             <Combobox.List>
               {items.map((o) => (
@@ -299,17 +359,28 @@ function AjaxCell<Row extends object>({ def, row, labels, text: start, value, on
   )
 }
 
-function DateCell<Row extends object>({ def, text: start, value, onDraft, onPick }: CellEditorProps<Row>) {
+function DateCell<Row extends object>({
+  def,
+  text: start,
+  value,
+  onDraft,
+  onPick,
+  field,
+  id,
+  invalid,
+}: CellEditorProps<Row>) {
   const { i18n } = useDataTableContext()
   const env = useParseEnv()
   const [text, setText] = useState(() => start ?? inputText(def, value))
+  useEffect(() => void loadDate(), [])
+  const Calendar = loadedDate ?? LazyDate
   const [open, setOpen] = useState(false)
   const el = useRef<HTMLInputElement>(null)
   // Takvimden seçim onaylar ve editör kapanır: odak input'a değil hücreye döner. Esc ile kapanınca input'a.
   const picked = useRef(false)
   const draft = parseInput(def, text, env)
   useLayoutEffect(() => {
-    focusEnd(el.current)
+    if (!field) focusEnd(el.current)
     if (start !== undefined) onDraft(draft, start)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -333,6 +404,8 @@ function DateCell<Row extends object>({ def, text: start, value, onDraft, onPick
         autoComplete="off"
         value={text}
         aria-label={def.header}
+        id={id}
+        aria-invalid={invalid || undefined}
         aria-expanded={open}
         onChange={(e) => change(e.target.value)}
         onKeyDown={onKeyDown}
@@ -348,7 +421,7 @@ function DateCell<Row extends object>({ def, text: start, value, onDraft, onPick
               finalFocus={() => (picked.current ? false : el.current)}
             >
               <Suspense>
-                <DateEditor
+                <Calendar
                   op="eq"
                   value={typeof draft === 'string' ? draft : undefined}
                   onChange={(v) => {
@@ -370,7 +443,30 @@ function DateCell<Row extends object>({ def, text: start, value, onDraft, onPick
  * Uzun metin: hücre ilk satırı gösterir, metin hücrenin altında açılan kutuda yazılır (satırların üstüne taşmaz, dar
  * sütunda sıkışmaz; hücredeki ⤢ de bunu açar). Tuşlar ızgaranınki: Enter onaylar, ⇧↵ / ⌥↵ satır atlatır, Esc iptal.
  */
-function TextCell<Row extends object>({ def, text: start, value, onDraft }: CellEditorProps<Row>) {
+function TextCell<Row extends object>(props: CellEditorProps<Row>) {
+  return props.field ? <TextField {...props} /> : <TextPop {...props} />
+}
+
+function TextField<Row extends object>({ def, value, onDraft, id, invalid }: CellEditorProps<Row>) {
+  const env = useParseEnv()
+  const [text, setText] = useState(() => inputText(def, value))
+  return (
+    <textarea
+      className="dt-rd-textarea"
+      value={text}
+      aria-label={def.header}
+      id={id}
+      aria-invalid={invalid || undefined}
+      rows={3}
+      onChange={(e) => {
+        setText(e.target.value)
+        onDraft(parseInput(def, e.target.value, env), e.target.value)
+      }}
+    />
+  )
+}
+
+function TextPop<Row extends object>({ def, text: start, value, onDraft }: CellEditorProps<Row>) {
   const env = useParseEnv()
   const [text, setText] = useState(() => start ?? inputText(def, value))
   const cell = useRef<HTMLSpanElement>(null)

@@ -105,19 +105,42 @@ export type IconComponent = ComponentType<{
 }>
 
 /** Hücre aksiyonu: paket sağ kenarda overlay olarak çizer (metin yerleşimi değişmez), ≤ 2 ikon + ⋯ menüsü. */
-export interface CellAction<Row> {
+/** Pencere düzenleyicinin aldığı değerler; pencere çizildiği sürece açıktır. */
+export interface WindowEditorProps<Row> {
+  row: Row
+  value: unknown
+  /** Değeri hücreye yazar (geri al'a girer) ve pencereyi kapatır. */
+  onApply: (value: unknown) => void
+  onCancel: () => void
+}
+
+/** `run`'ın ikinci parametresi (form-grid.md §3.3). */
+export interface CellActionContext {
+  /** Hücrenin kendisi: uygulamanın popover'ı ona bağlanır. */
+  anchor: HTMLElement | null
+  /** FormGrid'de hücreye yazar ve geri al'a girer; liste tablosunda yok (salt okunur). */
+  setValue?: (value: unknown) => void
+}
+
+/** Menü öğesi; kendi `menu`'su alt menü olur ("Fiyat getir ›"). Öğenin kendi kısayolu yok. */
+export interface CellActionItem<Row> {
   id: string
   label: string
+  icon?: IconComponent
+  /** Değere bağlı aksiyon: false → gösterilmez. */
+  when?: (row: Row) => boolean
+  /** true ya da gerekçe metni → pasif; gerekçe ipucunda (kilitli hücrede yazan aksiyon). */
+  disabled?: (row: Row) => boolean | string
+  destructive?: boolean
+  menu?: Array<CellActionItem<Row>>
+  run?: (row: Row, ctx: CellActionContext) => void | Promise<void>
+}
+
+/** Hücrenin sağındaki aksiyon: ≤ 2 ikon düğme, fazlası ⋯ menüsünde. */
+export interface CellAction<Row> extends CellActionItem<Row> {
   icon: IconComponent
   /** 'hover': hover ve focus-within'de görünür (varsayılan). 'always': her zaman. */
   reveal?: 'hover' | 'always'
-  /** Değere bağlı aksiyon: false → gösterilmez. */
-  when?: (row: Row) => boolean
-  disabled?: (row: Row) => boolean | string
-  destructive?: boolean
-  /** Alt menü (⋯ olarak çizilir). */
-  menu?: Array<Omit<CellAction<Row>, 'reveal' | 'menu'>>
-  run?: (row: Row) => void | Promise<void>
 }
 
 export interface ColumnFilterOptions {
@@ -196,6 +219,11 @@ export interface BaseColumn<Row, V = unknown> {
    * geri al adımına girer; onların `onChange`'i çağrılmaz.
    */
   onChange?: (row: Row, value: unknown, ctx: { option?: OptionDef; rows: readonly Row[] }) => Partial<Row> | void
+  /**
+   * Pencere düzenleyici (form-grid.md §7, `object` / `array`): hücreye yazılmaz, hücre özet gösterir; kalem, çift tık
+   * ya da F2 uygulamanın penceresini açar. Değer ⌘C / ⌘V / ⌘D ile bütün olarak taşınır; temizleme atlar.
+   */
+  editor?: { window: ComponentType<WindowEditorProps<Row>> }
   /** `select`'te seçeneği kapatır: liste soluk gösterir, seçilemez (taksit her satırda bir kez). */
   optionEnabled?: (option: OptionDef, row: Row, rows: readonly Row[]) => boolean
   /** Hata: hücre kırmızı, balonda mesaj. */

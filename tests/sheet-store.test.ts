@@ -592,3 +592,83 @@ describe('tümü / sütun seçimi boş satırı almaz', () => {
     expect(store.range()).toEqual({ top: 0, bottom: 0, left: 0, right: 0 })
   })
 })
+
+describe('satır penceresi (F4)', () => {
+  type R = { code: string | null; title: string | null; qty: number | null }
+  const columns: Array<ColumnDef<R>> = [
+    { id: 'code', header: 'Ürün', type: 'string', onChange: (_r, v) => ({ title: v ? `Ad ${String(v)}` : null }) },
+    { id: 'title', header: 'Ad', type: 'string' },
+    { id: 'qty', header: 'Miktar', type: 'decimal', editable: (r) => r.code !== 'X' },
+  ]
+  it('preview onChange alanlarını taslağa yazar; setRow değişenleri tek adımda yazar, geri alınır', () => {
+    const onRowsChange = vi.fn()
+    const store = createSheetStore<R>({ rows: [{ code: 'A', title: 'Ad A', qty: 1 }], columns, onRowsChange })
+    const draft = store.preview(store.rows()[0]!, 0, 'B')
+    expect(draft).toEqual({ code: 'B', title: 'Ad B', qty: 1 })
+    expect(store.setRow(0, { ...draft, qty: 4 })).toBe(true)
+    expect(onRowsChange.mock.lastCall).toEqual([
+      [{ code: 'B', title: 'Ad B', qty: 4 }],
+      {
+        kind: 'edit',
+        cells: [
+          { row: 0, column: 'code' },
+          { row: 0, column: 'title' },
+          { row: 0, column: 'qty' },
+        ],
+      },
+    ])
+    store.undo()
+    expect(onRowsChange.mock.lastCall?.[0]).toEqual([{ code: 'A', title: 'Ad A', qty: 1 }])
+  })
+  it('setRow kilitli alanı yazmaz; satır yoksa doğurur, newRow alanları değişiklik sayılmaz', () => {
+    const onRowsChange = vi.fn()
+    const store = createSheetStore<R>({
+      rows: [{ code: 'X', title: null, qty: 1 }],
+      columns,
+      onRowsChange,
+      newRow: () => ({ qty: 1 }),
+    })
+    expect(store.setRow(0, { code: 'X', title: null, qty: 9 })).toBe(false)
+    expect(store.blankRow()).toEqual({ qty: 1 })
+    expect(store.setRow(1, { code: null, title: null, qty: 1 })).toBe(false)
+    expect(store.setRow(1, store.preview(store.blankRow(), 0, 'C'))).toBe(true)
+    expect(onRowsChange.mock.lastCall?.[0][1]).toEqual({ qty: 1, code: 'C', title: 'Ad C' })
+  })
+})
+
+describe('çoğalt (F4)', () => {
+  type R = { id?: string; code: string | null; qty: number | null; hidden?: string }
+  const columns: Array<ColumnDef<R>> = [
+    { id: 'code', header: 'Ürün', type: 'string' },
+    { id: 'qty', header: 'Miktar', type: 'decimal' },
+  ]
+  it('seçili satırlar sona kopyalanır: sütun alanları newRow tabanının üstüne; geri alınca kalkar, yinelenince döner', () => {
+    const onRowsChange = vi.fn()
+    let n = 0
+    const store = createSheetStore<R>({
+      rows: [
+        { id: 'a', code: 'A', qty: 1, hidden: 'kaynak' },
+        { id: 'b', code: 'B', qty: 2 },
+        { id: 'c', code: 'C', qty: 3 },
+      ],
+      columns,
+      onRowsChange,
+      getRowId: (r) => r.id!,
+      newRow: () => ({ id: `n${++n}` }),
+      maxRows: 4,
+    })
+    store.focus({ row: 0, col: 0 })
+    store.focus({ row: 1, col: 1 }, true)
+    store.duplicate()
+    // En çok 4 satır: yalnız ilki kopyalanır.
+    expect(onRowsChange.mock.lastCall).toEqual([
+      [expect.anything(), expect.anything(), expect.anything(), { id: 'n1', code: 'A', qty: 1 }],
+      { kind: 'duplicate', cells: [] },
+    ])
+    expect(store.active()).toEqual({ row: 3, col: 1 })
+    store.undo()
+    expect(onRowsChange.mock.lastCall?.[0]).toHaveLength(3)
+    store.redo()
+    expect(onRowsChange.mock.lastCall?.[0][3]).toEqual({ id: 'n1', code: 'A', qty: 1 })
+  })
+})

@@ -10,6 +10,7 @@ export interface DataTableContext {
   viewsAdapter: ViewsAdapter | null
   /** null → tercihler oturumluk; arayüz "kaydedildi" demez. */
   preferences: PreferencesAdapter | null
+  renderField: DataTableOptions['renderField']
 }
 
 export function createDataTableContext(options: DataTableOptions = {}): DataTableContext {
@@ -19,6 +20,7 @@ export function createDataTableContext(options: DataTableOptions = {}): DataTabl
     i18n,
     viewsAdapter: options.viewsAdapter ?? null,
     preferences: options.preferences ?? null,
+    renderField: options.renderField,
   }
 }
 
@@ -31,9 +33,10 @@ export function DataTableProvider({
   messages,
   viewsAdapter,
   preferences,
+  renderField,
 }: DataTableOptions & { children: ReactNode }) {
   // Seçenekler tek tek okunur: derleyici bağlamı bunlar değişince yeniden kurar (`...rest` her çizimde yenidir).
-  const value = createDataTableContext({ locale, messages, viewsAdapter, preferences })
+  const value = createDataTableContext({ locale, messages, viewsAdapter, preferences, renderField })
   return <Context value={value}>{children}</Context>
 }
 

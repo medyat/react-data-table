@@ -5,7 +5,11 @@
 // Adet ile başlar (`newRow`); boş Teslim belgenin tarihini soluk gösterir (`placeholder`), Promosyonlu satırda zorunlu;
 // Metre tek satırda seçilebilir (`optionEnabled`); "En çok 6 satır" `maxRows`.
 // F3: ⌘C/⌘X/⌘V (Excel'den kod yapıştırılınca Ad ve Birim üründen gelir, `remote.match`), ⌘D, sağ tık menüsü, ⌘F.
-import { FormGrid, type ColumnDef, type OptionDef } from '@medyat/react-data-table'
+// F4: Birim fiyatın aksiyonları (Geçmiş fiyatlar, ⋯ › Fiyat getir ›, ⌥↵); Lot / seri pencere düzenleyici (kalem, F2,
+// çift tık); satırdaki kalem ve ⌘↵ satır penceresi. Telefonda (dokunmatik) satıra dokunmak pencereyi açar.
+import { Dialog } from '@base-ui/react/dialog'
+import { ClockCounterClockwiseIcon, EraserIcon, TagIcon } from '@phosphor-icons/react'
+import { FormGrid, type ColumnDef, type OptionDef, type WindowEditorProps } from '@medyat/react-data-table'
 import { useState } from 'react'
 
 interface Line {
@@ -18,7 +22,55 @@ interface Line {
   date: string | null
   note: string | null
   gift: boolean | null
+  lots?: Lot[] | null
   [extra: string]: unknown
+}
+interface Lot {
+  code: string
+  qty: number
+}
+
+// Uygulamanın lot penceresi (pano 2b): paket yalnız açar ve Tamam'da gelen diziyi satıra yazar.
+function LotWindow({ row, value, onApply, onCancel }: WindowEditorProps<Line>) {
+  const [lots, setLots] = useState<Lot[]>(() => (value as Lot[] | null) ?? [])
+  return (
+    <Dialog.Root open onOpenChange={(open) => !open && onCancel()}>
+      <Dialog.Portal>
+        <Dialog.Backdrop className="dt-scrim" />
+        <Dialog.Popup className="dt-dialog">
+          <Dialog.Title className="dt-dialog-title">Lotlar · {row.code}</Dialog.Title>
+          <div className="pg-lots">
+            {lots.map((l, i) => (
+              <div key={i}>
+                <input
+                  aria-label="Lot kodu"
+                  value={l.code}
+                  onChange={(e) => setLots(lots.map((x, j) => (j === i ? { ...x, code: e.target.value } : x)))}
+                />
+                <input
+                  aria-label="Miktar"
+                  inputMode="decimal"
+                  value={l.qty}
+                  onChange={(e) => setLots(lots.map((x, j) => (j === i ? { ...x, qty: Number(e.target.value) } : x)))}
+                />
+              </div>
+            ))}
+            <button type="button" className="dt-btn" onClick={() => setLots([...lots, { code: '', qty: 1 }])}>
+              Lot ekle
+            </button>
+          </div>
+          <div className="dt-dialog-actions">
+            <button type="button" className="dt-btn" onClick={onCancel}>
+              Vazgeç
+            </button>
+            <button type="button" className="dt-btn dt-btn-primary" onClick={() => onApply(lots.length ? lots : null)}>
+              Tamam
+            </button>
+          </div>
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
+  )
 }
 
 const units = [
@@ -114,7 +166,38 @@ const base: Array<ColumnDef<Line>> = [
     width: 112,
     optionEnabled: (o, row, rows) => o.value !== 'm' || !rows.some((r) => r !== row && r.unit === 'm'),
   },
-  { id: 'price', header: 'Birim fiyat', type: 'currency', currency: 'TRY', width: 128 },
+  {
+    id: 'price',
+    header: 'Birim fiyat',
+    type: 'currency',
+    currency: 'TRY',
+    width: 128,
+    // Pano F4a: saat doğrudan, ⋯ içinde iç içe "Fiyat getir ›"; tutarlar örnek.
+    actions: [
+      {
+        id: 'history',
+        label: 'Geçmiş fiyatlar',
+        icon: ClockCounterClockwiseIcon,
+        run: (_row, { setValue }) => setValue?.(88),
+      },
+      {
+        id: 'fetch',
+        label: 'Fiyat getir',
+        icon: TagIcon,
+        menu: [
+          { id: 'list', label: 'Fiyat listesinden', run: (_row, { setValue }) => setValue?.(412) },
+          { id: 'sale', label: 'Son satış fiyatı', run: (_row, { setValue }) => setValue?.(92.5) },
+          {
+            id: 'buy',
+            label: 'Son alış fiyatı',
+            disabled: (row) => (row.gift ? 'Promosyonlu satırda alış fiyatı yok' : false),
+            run: (_row, { setValue }) => setValue?.(61.2),
+          },
+        ],
+      },
+      { id: 'clear', label: 'Fiyatı temizle', icon: EraserIcon, run: (_row, { setValue }) => setValue?.(null) },
+    ],
+  },
   { id: 'vat', header: 'KDV', type: 'percentage', width: 80, hint: 'Satırın KDV oranı; boşsa üründen gelir.' },
   {
     id: 'date',
@@ -124,7 +207,18 @@ const base: Array<ColumnDef<Line>> = [
     placeholder: () => '1 Ara',
     required: (row) => row.gift === true,
   },
-  { id: 'gift', header: 'Promosyon', type: 'boolean', width: 104 },
+  { id: 'gift', header: 'Promosyon', type: 'boolean', width: 104, hint: 'Promosyonlu satırda Teslim zorunludur.' },
+  {
+    id: 'lots',
+    header: 'Lot / seri',
+    type: 'array',
+    width: 120,
+    cell: ({ value }) => {
+      const lots = value as Lot[] | null
+      return lots?.length ? `${lots.length} lot` : ''
+    },
+    editor: { window: LotWindow },
+  },
   { id: 'note', header: 'Açıklama', type: 'text', width: 260 },
 ]
 
@@ -150,6 +244,10 @@ const sample: Line[] = [
     date: null,
     note: '280 cm en, kurşunlu etek',
     gift: false,
+    lots: [
+      { code: 'LN-2611-A', qty: 180 },
+      { code: 'LN-2611-B', qty: 120 },
+    ],
   },
   {
     code: 'SMF-RTS',

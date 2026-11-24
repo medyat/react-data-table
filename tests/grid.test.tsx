@@ -147,7 +147,7 @@ describe('guard ve klavye', () => {
     const action = cell.querySelector('.dt-cell-action')!
     fireEvent.mouseDown(action)
     fireEvent.click(action)
-    expect(run).toHaveBeenCalledWith(rows[0])
+    expect(run).toHaveBeenCalledWith(rows[0], { anchor: cell, setValue: undefined })
     expect(onRowClick).not.toHaveBeenCalled()
     fireEvent.mouseDown(cell, { clientX: 10, clientY: 10 })
     fireEvent.click(cell, { clientX: 10, clientY: 10 })

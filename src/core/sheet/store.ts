@@ -14,7 +14,7 @@ export interface CellPos {
 export type Direction = 'up' | 'down' | 'left' | 'right'
 
 export interface SheetChange {
-  kind: 'edit' | 'paste' | 'fill' | 'remove' | 'undo' | 'redo'
+  kind: 'edit' | 'paste' | 'fill' | 'remove' | 'duplicate' | 'undo' | 'redo'
   /** Değişen hücreler: satır sırası (değişiklikten sonraki dizide) ve sütun id. */
   cells: Array<{ row: number; column: string }>
 }
@@ -159,10 +159,20 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
     return def.accessor ? def.accessor(row) : readPath(row, def.id)
   }
 
-  const canEdit = (rowIndex: number, col: number): boolean => {
+  /** Sütun düzenlenebilir türde mi (satıra bakmadan): satır penceresinde alan olur. */
+  const isField = (col: number): boolean => {
     const def = o.columns[col]
-    if (!def || def.accessor || !(INLINE.has(def.type) || def.type === 'boolean')) return false
-    if (typeof def.editable !== 'function') return def.editable !== false
+    return (
+      !!def &&
+      !def.accessor &&
+      def.editable !== false &&
+      (INLINE.has(def.type) || def.type === 'boolean' || !!def.editor?.window)
+    )
+  }
+  const canEdit = (rowIndex: number, col: number): boolean => {
+    if (!isField(col)) return false
+    const def = o.columns[col]!
+    if (typeof def.editable !== 'function') return true
     const row = rows[rowIndex]
     // Boş satır: henüz satır yok, sütunun kuralı boş nesneyle sorulur.
     return def.editable(row ?? ({} as Row), { isNew: !row || !initial.has(idOf(row)) })
@@ -311,6 +321,7 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
     isNew: (index: number) => !rows[index] || !initial.has(idOf(rows[index])),
     read,
     canEdit,
+    isField,
     active: () => active,
     range,
     editing: () => editing,
@@ -404,7 +415,7 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
     startEdit(seed?: string): boolean {
       if (!active || !canEdit(active.row, active.col)) return false
       const def = o.columns[active.col]!
-      if (def.type === 'boolean') return false
+      if (def.type === 'boolean' || def.editor?.window) return false
       // `ajax`'ta yazılan harf aramadır, değer değil: listeden seçilene kadar taslak eski değerdir.
       const draft = seed === undefined || def.type === 'ajax' ? read(active.row, def) : seed
       editing = { pos: active, draft, text: seed }
@@ -422,6 +433,26 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
       editing = null
       emit()
     },
+    /** Satır penceresinin taslağı: alana yazılan değer `onChange`'in yazdıklarıyla (Ürün → Ad); depoya yazmaz. */
+    preview(row: Row, col: number, value: unknown, option?: OptionDef): Row {
+      const def = o.columns[col]!
+      let next = writePath(row, def.id, value)
+      const extra = def.onChange?.(next, value, { option: option ?? o.optionOf?.(def, value), rows })
+      for (const [path, v] of Object.entries(extra ?? {})) next = writePath(next, path, v)
+      return next
+    },
+    /** Satır penceresinin Tamam'ı: değişen alanlar sütun sırasıyla, tek geri al adımı. Satır yoksa doğar. */
+    setRow(index: number, draft: Row): boolean {
+      const base = rows[index] ?? ({ ...o.newRow?.(rows) } as Row)
+      const cells: Array<{ row: number; col: number; value: unknown }> = []
+      o.columns.forEach((def, col) => {
+        const value = readPath(draft, def.id)
+        if (canEdit(index, col) && !same(readPath(base, def.id), value)) cells.push({ row: index, col, value })
+      })
+      return write(cells, 'edit')
+    },
+    /** Yeni satırın başlangıcı (satır penceresinde "Satır ekle"). */
+    blankRow: (): Row => ({ ...o.newRow?.(rows) }) as Row,
     /** Tek hücreye yazar (balondaki yakın seçenek önerisi); tek geri al adımı. */
     set(pos: CellPos, value: unknown) {
       if (canEdit(pos.row, pos.col)) write([{ ...pos, value }], 'edit')
@@ -429,9 +460,13 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
     /**
      * Yapıştırma (Vue 07 §7): aktif hücreden başlar; tek değer + aralık seçiliyse aralığın hepsine yazılır. Kilitli hücre
      * atlanır, alttan taşan satırlar yeni satır olur; `maxRows`'u aşanlar alınmaz ve sayısı döner. Tek geri al adımı;
-     * yapıştırılan alan seçili kalır. `value` metni sütunun değerine çevirir (çözümleme, `ajax` eşleşmesi).
+     * yapıştırılan alan seçili kalır. `value` metni sütunun değerine çevirir (çözümleme, `ajax` eşleşmesi); `i`, `j` metnin
+     * matristeki yeridir, `undefined` hücreyi atlar.
      */
-    paste(matrix: string[][], value: (def: ColumnDef<Row>, text: string) => unknown): { skipped: number } {
+    paste(
+      matrix: string[][],
+      value: (def: ColumnDef<Row>, text: string, i: number, j: number) => unknown,
+    ): { skipped: number } {
       if (editing || !active || !matrix.length) return { skipped: 0 }
       const r = range()!
       const single = matrix.length === 1 && matrix[0]!.length === 1
@@ -451,7 +486,9 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
           const def = o.columns[col]
           const text = single ? matrix[0]![0] : matrix[i]![j]
           if (!def || text === undefined || !canEdit(row, col)) continue
-          cells.push({ row, col, value: value(def, text) })
+          const v = single ? value(def, text, 0, 0) : value(def, text, i, j)
+          // undefined: yapıştırılamaz (pencere sütununa dışarıdan metin), hücre olduğu gibi kalır.
+          if (v !== undefined) cells.push({ row, col, value: v })
         }
       }
       write(cells, 'paste', true)
@@ -493,6 +530,32 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
       o.onRowsChange([...rows], { kind: 'remove', cells: [] })
       emit()
     },
+    /**
+     * Seçimdeki satırları sona kopyalar (pano 1e · "N satırı çoğalt"; sıralanmayan ızgarada araya ekleme yok). Kopya
+     * `newRow`'un tabanına yalnız sütunların alanlarını alır: satır kimliği ve sütunu olmayan alanlar (kaynak bağı)
+     * taşınmaz. `maxRows`'u aşanlar alınmaz. Geri alınınca kopyalar kalkar.
+     */
+    duplicate() {
+      const r = range()
+      if (!r || editing) return
+      const room = (o.maxRows ?? Infinity) - rows.length
+      const copies: Row[] = []
+      for (let i = r.top; i <= Math.min(r.bottom, rows.length - 1) && copies.length < room; i++) {
+        let copy = { ...o.newRow?.(rows) } as Row
+        for (const def of o.columns) {
+          const value = def.accessor ? undefined : readPath(rows[i], def.id)
+          if (value !== undefined) copy = writePath(copy, def.id, value)
+        }
+        copies.push(copy)
+      }
+      if (!copies.length) return
+      record({ patches: [], added: copies.map((row) => ({ id: idOf(row), base: row })), removed: [] })
+      rows = [...rows, ...copies]
+      anchor = null
+      active = { row: rows.length - copies.length, col: active?.col ?? 0 }
+      o.onRowsChange([...rows], { kind: 'duplicate', cells: [] })
+      emit()
+    },
     /** Space: boolean hücresini çevirir. */
     toggle() {
       if (!active || !canEdit(active.row, active.col)) return
@@ -505,7 +568,8 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
       if (!r) return
       const cells: Array<{ row: number; col: number; value: unknown }> = []
       for (let row = r.top; row <= Math.min(r.bottom, rows.length - 1); row++)
-        for (let col = r.left; col <= r.right; col++) if (canEdit(row, col)) cells.push({ row, col, value: null })
+        for (let col = r.left; col <= r.right; col++)
+          if (canEdit(row, col) && !o.columns[col]!.editor?.window) cells.push({ row, col, value: null })
       write(cells, 'edit')
     },
     undo() {

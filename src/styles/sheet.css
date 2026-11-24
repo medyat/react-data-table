@@ -262,8 +262,10 @@
 
 /* Combobox listesi (06 §7): hücrenin altında sağa hizalı; vurgulu öğe --dt-surface-3 + ↵. */
 .dt-cell-list {
-  min-width: calc(180 * var(--dt-ui-fs) / 13);
+  /* En az açıldığı kutu kadar (hücre ya da pencere alanı); dar hücrede 180. */
+  min-width: max(calc(180 * var(--dt-ui-fs) / 13), var(--anchor-width, 0px));
   padding: 4px;
+  box-sizing: border-box;
 }
 .dt-cell-option {
   min-height: 30px;
@@ -474,4 +476,230 @@
   font-weight: 500;
   color: var(--dt-text);
   font-variant-numeric: tabular-nums;
+}
+
+/* Satır penceresi (form-grid.md §7, pano 2a · DialogStock, 3b): 440 px, alanlar tek sütun; başlık ve düğmeler sabit,
+   gövde kayar. Alan düzeni Swors'un FormField'ı: etiket + ?, 36 px kutu, altında açıklama ve hata; hatalı alanın
+   etiketi ve kutusu kırmızı. Açık / kapalı çerçeveli ayar satırıdır. Telefonda (Dialog kutusunun kendi ekran öneki)
+   tam ekran, kontroller 44 px. */
+.dt-row-dialog {
+  display: flex;
+  flex-direction: column;
+  width: calc(440 * var(--dt-ui-fs) / 13);
+  max-height: calc(100dvh - 48px);
+  padding: 0;
+}
+.dt-rd-head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 18px 14px 16px 24px;
+  border-bottom: 1px solid var(--dt-line);
+}
+.dt-rd-titles {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+.dt-rd-sub {
+  overflow: hidden;
+  color: var(--dt-text-3);
+  font-size: var(--dt-ui-fs-sm);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.dt-rd-body {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: 20px;
+  overflow: auto;
+  padding: 20px 24px 24px;
+}
+.dt-rd-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.dt-rd-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 20px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.dt-rd-label-text {
+  font-weight: 500;
+}
+.dt-rd-req {
+  margin-left: 2px;
+  color: var(--dt-r-fg);
+}
+.dt-rd-hint {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--dt-radius-sm);
+  background: none;
+  color: var(--dt-text-3);
+  cursor: help;
+}
+.dt-rd-hint:hover {
+  color: var(--dt-text);
+}
+.dt-rd-input {
+  --dt-cell-x: 12px;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 36px;
+  border: 1px solid var(--dt-line-2);
+  border-radius: var(--dt-radius-md);
+  background: var(--dt-surface);
+  transition: border-color 120ms ease;
+}
+.dt-rd-input:focus-within {
+  border-color: var(--dt-focus);
+  box-shadow: 0 0 0 1px var(--dt-focus);
+}
+.dt-rd-input.is-disabled {
+  background: var(--dt-surface-3);
+  color: var(--dt-text-3);
+}
+.dt-rd-input:has(> .dt-rd-textarea) {
+  height: auto;
+}
+.dt-rd-summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.dt-rd-textarea {
+  width: 100%;
+  min-height: 64px;
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  resize: vertical;
+  outline: none;
+}
+.dt-rd-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid var(--dt-line-2);
+  border-radius: var(--dt-radius-md);
+  background: var(--dt-surface);
+  box-sizing: border-box;
+  cursor: pointer;
+}
+.dt-rd-card:has(:focus-visible) {
+  border-color: var(--dt-focus);
+  box-shadow: 0 0 0 1px var(--dt-focus);
+}
+.dt-rd-card.is-disabled {
+  background: var(--dt-surface-3);
+  cursor: default;
+}
+.dt-rd-card-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.dt-rd-desc {
+  color: var(--dt-text-3);
+  font-size: var(--dt-ui-fs-sm);
+  line-height: 1.45;
+}
+.dt-rd-error {
+  font-size: var(--dt-ui-fs-sm);
+  line-height: 1.45;
+}
+/* Hata: etiket, kutu ve metin kırmızı, kutunun zemini açık kırmızı (Swors'taki aria-invalid). Uyarı yalnız sarı metin. */
+.dt-rd-field[data-state='error'] :is(.dt-rd-label, .dt-rd-label-text, .dt-rd-error) {
+  color: var(--dt-r-fg);
+}
+.dt-rd-field[data-state='error'] :is(.dt-rd-input, .dt-rd-card) {
+  border-color: var(--dt-r-fg);
+  background: var(--dt-r-bg);
+}
+.dt-rd-field[data-state='error'] :is(.dt-rd-input, .dt-rd-card):focus-within {
+  box-shadow: 0 0 0 1px var(--dt-r-fg);
+}
+.dt-rd-field[data-state='warning'] .dt-rd-input {
+  border-color: var(--dt-a-fg);
+}
+.dt-rd-field[data-state='warning'] .dt-rd-error {
+  color: var(--dt-a-fg);
+}
+.dt-rd-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--dt-space);
+  padding: 14px 24px;
+  border-top: 1px solid var(--dt-line);
+  background: var(--dt-surface-2);
+  border-radius: 0 0 var(--dt-radius-dialog) var(--dt-radius-dialog);
+}
+.dt-rd-count {
+  flex: 1;
+  color: var(--dt-text-3);
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) {
+  .dt-row-dialog {
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    transform: none;
+  }
+  .dt-rd-foot {
+    border-radius: 0;
+  }
+  .dt-rd-input,
+  .dt-rd-card {
+    min-height: 44px;
+  }
+  .dt-row-dialog .dt-btn {
+    height: 44px;
+  }
+}
+
+/* Telefon (pano 3a): satırlar 52 px (parmakla isabet), yazılacak boş satır yok; altta tam genişlikte "Satır ekle". */
+.dt-form-grid.is-touch {
+  --dt-row-h: 52px;
+}
+.dt-form-grid.is-touch .dt-row.is-blank {
+  display: none;
+}
+.dt-fg-add {
+  padding: 12px;
+  border-top: 1px solid var(--dt-line);
+}
+.dt-fg-add .dt-btn {
+  width: 100%;
+  height: 40px;
+}
+
+/* Hücre aksiyonları aktif hücrenin 2 px çerçevesini örtmez. */
+.dt-form-grid .dt-cell-actions {
+  top: 2px;
+  right: 2px;
+  bottom: 2px;
 }

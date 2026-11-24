@@ -275,9 +275,9 @@
 .dt-switch {
   position: relative;
   flex: none;
-  width: 28px;
-  height: 16px;
-  padding: 2px;
+  width: 32px;
+  height: 18px;
+  padding: 1px;
   border: 0;
   border-radius: var(--dt-radius-pill);
   background: var(--dt-line-3);
@@ -286,18 +286,26 @@
   transition: background 150ms ease;
 }
 .dt-switch[data-state='checked'] {
-  background: var(--dt-accent);
+  background: var(--dt-ink);
+}
+.dt-switch:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--dt-focus-soft);
+}
+.dt-switch[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .dt-switch-thumb {
   display: block;
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   border-radius: var(--dt-radius-pill);
   background: var(--dt-switch-knob);
   transition: transform 150ms ease;
 }
 .dt-switch[data-state='checked'] .dt-switch-thumb {
-  transform: translateX(12px);
+  transform: translateX(14px);
 }
 
 /* Popover ve menü (02 §6 handoff): yarıçap 10, dolgu 4, --dt-shadow-pop. */
@@ -513,12 +521,19 @@
   }
 }
 
-/* Dialog (02 §6 handoff): 460, dolgu 20, yarıçap 14, --dt-shadow-dialog; arkada --dt-scrim. Başlık 16/600, gövde 13 text-2. */
+/* Dialog (02 §6 handoff, shadcn Dialog'una yaklaştırıldı): 460, dolgu 20, --dt-radius-dialog, ince çerçeve + gölge;
+   arkada karartılmış ve bulanık sayfa (karartma token'dır, shadcn köprüsünde shadcn'inki). Başlık 16/500, gövde 13
+   text-2. */
 .dt-scrim {
   position: fixed;
   inset: 0;
   background: var(--dt-scrim);
   z-index: 50;
+}
+@supports (backdrop-filter: blur(1px)) {
+  .dt-scrim {
+    backdrop-filter: blur(4px);
+  }
 }
 .dt-dialog {
   position: fixed;
@@ -530,18 +545,20 @@
   border-radius: var(--dt-radius-dialog);
   background: var(--dt-surface);
   color: var(--dt-text);
-  box-shadow: var(--dt-shadow-dialog);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--dt-text) 10%, transparent),
+    var(--dt-shadow-dialog);
   font-family: var(--dt-font);
   font-size: var(--dt-ui-fs);
   transform: translate(-50%, -50%);
   box-sizing: border-box;
   outline: none;
-  z-index: 51;
+  z-index: 50;
 }
 .dt-dialog-title {
   margin: 0;
   font-size: var(--dt-ui-fs-xl);
-  font-weight: 600;
+  font-weight: 500;
 }
 .dt-dialog-body {
   margin: 4px 0 0;

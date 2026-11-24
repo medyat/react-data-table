@@ -1,10 +1,10 @@
 // FormGrid (R34, docs/form-grid.md): formun içindeki satır dizisi; kontrollü, kaydetmez.
 import type { Density } from './core'
-import type { ColumnDef } from './columns'
+import type { ColumnDef, OptionDef } from './columns'
 import type { RowAction } from './list'
 
 export interface FormGridChange {
-  kind: 'edit' | 'paste' | 'fill' | 'remove' | 'undo' | 'redo'
+  kind: 'edit' | 'paste' | 'fill' | 'remove' | 'duplicate' | 'undo' | 'redo'
   /** Değişen hücreler: satır sırası (yeni dizide) ve sütun id. */
   cells: Array<{ row: number; column: string }>
 }
@@ -29,7 +29,26 @@ export interface FormGridProps<Row extends object> {
   maxRows?: number
   /** false: ⌘F ızgara araması kapalı, tarayıcınınki çalışır (form-grid.md §8.1). */
   search?: boolean
+  /** Varsayılan true: satırda kalem, ⌘↵ ve ⋯ › Satırı düzenle satır penceresini açar (§7). */
+  rowDialog?: boolean
   /** ⋯ menüsü. */
   rowActions?: Array<RowAction<Row>>
   density?: Density
+}
+
+/** Satır penceresinin bir alanı (`renderField`); değer taslaktır, Tamam'a kadar satıra yazılmaz. */
+export interface RowFieldProps {
+  /** Etiketin `htmlFor`'u; iç içe pencerelerde tekil. */
+  id: string
+  label: string
+  hint?: string
+  required: boolean
+  /** Satır için kilitli (`editable(row)` false). */
+  disabled: boolean
+  /** Hücredeki hata ya da uyarının tam metni; alan değişince kalkar. */
+  error?: string
+  value: unknown
+  /** `option`: seçilen seçenek (`ajax`), sütunun `onChange`'ine gider (Ürün → Ad). */
+  onChange: (value: unknown, option?: OptionDef) => void
+  row: object
 }
