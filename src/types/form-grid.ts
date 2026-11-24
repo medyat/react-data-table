@@ -33,6 +33,7 @@ export interface FormGridProps<Row extends object> {
   rowDialog?: boolean
   /** ⋯ menüsü. */
   rowActions?: Array<RowAction<Row>>
+  /** Varsayılan `standard` (formda 42 px satır, R40). */
   density?: Density
 }
 

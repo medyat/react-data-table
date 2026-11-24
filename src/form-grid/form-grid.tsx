@@ -50,7 +50,7 @@ import type { Issue } from '../core/sheet/validate'
 
 // Satır no sütunu (handoff 06 §5): 56 px; ⋯ sütunu dolgu 8 + düğme + 8.
 const GUTTER_W = 56
-const FALLBACK_ROW_H = 36
+const FALLBACK_ROW_H = 42
 const FALLBACK_HEAD_H = 36
 const FALLBACK_FOOT_H = 48
 
@@ -198,7 +198,7 @@ export function FormGrid<Row extends object>({
   rowActions = [],
   search = true,
   rowDialog = true,
-  density = 'compact',
+  density = 'standard',
 }: FormGridProps<Row>) {
   const ctx = useDataTableContext()
   const root = useRef<HTMLDivElement>(null)
@@ -251,10 +251,8 @@ export function FormGrid<Row extends object>({
   }
 
   const [metrics, setMetrics] = useState({ row: FALLBACK_ROW_H, head: FALLBACK_HEAD_H, foot: FALLBACK_FOOT_H })
-  // ⋯ ve satır penceresinin kalemi.
-  const menuW = rowDialog
-    ? 'calc(16px + 2 * var(--dt-control-h-sm) + var(--dt-space))'
-    : 'calc(16px + var(--dt-control-h-sm))'
+  // ⋯ ve satır penceresinin kalemi; aralarında 2 px (sheet.css `.dt-form-grid .dt-cell-menu`).
+  const menuW = rowDialog ? 'calc(16px + 2 * var(--dt-control-h-sm) + 2px)' : 'calc(16px + var(--dt-control-h-sm))'
   const startW = () => GUTTER_W + layout.start.reduce((w, c) => w + layout.widthOf(c.id), 0)
   const hs = useHorizontalScroll([body, head], () => ({
     start: startW(),

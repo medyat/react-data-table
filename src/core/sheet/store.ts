@@ -557,11 +557,12 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
       o.onRowsChange([...rows], { kind: 'duplicate', cells: [] })
       emit()
     },
-    /** Space: boolean hücresini çevirir. */
+    /** Space: boolean hücresini çevirir; listeli hücrede (select, ajax) listeyi açar, F2 gibi. */
     toggle() {
       if (!active || !canEdit(active.row, active.col)) return
       const def = o.columns[active.col]!
       if (def.type === 'boolean') write([{ ...active, value: read(active.row, def) !== true }], 'edit')
+      else if (def.type === 'select' || def.type === 'ajax') this.startEdit()
     },
     /** Delete / Backspace: seçimdeki düzenlenebilir hücreleri boşaltır (boş satıra dokunmaz). */
     clear() {

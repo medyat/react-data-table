@@ -264,8 +264,19 @@
 .dt-cell-list {
   /* En az açıldığı kutu kadar (hücre ya da pencere alanı); dar hücrede 180. */
   min-width: max(calc(180 * var(--dt-ui-fs) / 13), var(--anchor-width, 0px));
+  /* Ekranda kalan yükseklikte kayar (Base UI `--available-height`); uzun listede ekrandan taşmaz. */
+  max-height: min(calc(320 * var(--dt-ui-fs) / 13), var(--available-height, 100dvh));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 4px;
   box-sizing: border-box;
+}
+/* Sonraki sayfa yolda (Swors SourcePicker'la aynı): altta ortada soluk dönen ikon. */
+.dt-cell-list-more {
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+  color: var(--dt-text-3);
 }
 .dt-cell-option {
   min-height: 30px;
@@ -316,6 +327,14 @@
   border-radius: var(--dt-radius-card);
   background: var(--dt-surface);
 }
+/* R40: formda satır listeden sık doldurulur ama liste kadar yoğun değil; standart 48 px fazla, sıkışık 36 px az. */
+.dt-form-grid[data-density='standard'] {
+  --dt-row-h: 42px;
+}
+/* Kalem ve ⋯ tek grup: aralarında 2 px (menuW aynı sayıyla). */
+.dt-form-grid .dt-cell-menu {
+  gap: 2px;
+}
 .dt-fg-head {
   position: sticky;
   top: 0;
@@ -349,9 +368,11 @@
 .dt-form-grid .dt-cell[data-row] {
   scroll-margin: var(--dt-fg-head-h, var(--dt-head-h)) 0 var(--dt-fg-foot-h, 48px);
 }
+/* Yapışkan alt çubuk kaydırma kutusunun iç boşluğunun kenarında durur; altındaki şeritte satırlar görünürdü. Uygulama
+   kutunun alt boşluğunu eksi olarak verir (Swors Sheet gövdesi: -18px), çubuk kutunun kenarına yapışır. */
 .dt-fg-foot {
   position: sticky;
-  bottom: 0;
+  bottom: var(--dt-sticky-bottom, 0px);
   z-index: 4;
   background: var(--dt-surface-2);
   border-top: 1px solid var(--dt-line);

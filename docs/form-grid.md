@@ -107,8 +107,9 @@ Her biri bir panodan çıktı; pano yoksa alan da yok.
 Seçimle gelen ama satır değerine girmeyen bilgi (talebin Stok sütunu, T1a) `accessor`'lı sütundur: `accessor`'lı sütun
 düzenlenmez ve ızgara ona yazmaz. Taslaktaki `send: false` bu yüzden eklenmedi (F2).
 
-`ajax` hücresi: yazılan metin aramadır, değer değil; listeden seçilene kadar hücre eski değerini korur. Liste ilk
-sayfayı gösterir (arama daraltır); kaydırınca devamı yüklenmez. Seçeneğin içeriği varsayılan olarak ad + açıklamadır; `Item`
+`ajax` hücresi: yazılan metin aramadır, değer değil; listeden seçilene kadar hücre eski değerini korur. Liste ekranda
+kalan yükseklikte kayar (arama daraltır); sona bir liste boyu kala sonraki sayfa istenir;
+gelmeden sona varılırsa altta dönen ikon görünür (Swors SourcePicker'la aynı). Seçeneğin içeriği varsayılan olarak ad + açıklamadır; `Item`
 (`ComponentType<{ option, search }>`, Swors `SourcePicker`'ın adı ve biçimi) stok, kategori gibi alanları çizer:
 `option` aramanın döndürdüğü nesnedir. Liste içeriğe göre genişler, `wide` gerekmez.
 
@@ -201,6 +202,7 @@ Vue 08'in sheet klavyesi geçerli; farklar:
 - ⌘ + yön o yönde en sona gider (aşağıda son dolu satıra, boş satıra değil); ⌘⇧ + yön seçimi oraya kadar büyütür
   (Excel). Izgara olayı işlediği için tarayıcının kendi işi çalışmaz. ⌥ + yön ızgara tuşu değil.
 - F2 hücreyi düzenler; pencere türünde pencereyi açar. Yazmaya başlamak düzenler.
+- Space onay kutusunu çevirir; listeli hücrede (`select`, `ajax`) listeyi açar, F2 gibi.
 - ⌘↵ (Windows Ctrl+Enter) aktif satırın satır penceresini açar; boş satırda yeni satır penceresi.
 - Enter düzenlemede onaylayıp alt hücreye iner, düzenleme yokken yalnız alt hücreye geçer.
 - `select`, `ajax` ve `date` editöründe liste / takvim açıkken Enter önce ona gider; listeden ya da takvimden seçmek
@@ -339,3 +341,9 @@ F4 kararları:
 - Hatalar, F8 sırası ve seçim özeti her çizimde veriden tek geçişte hesaplanır (`core/sheet/issues.ts`); seçim özeti
   ayrı bileşen olarak depoyu dinler, ok tuşunda ızgara yeniden çizilmez.
 - Yapışkan başlık ile yatay kaydırma aynı kapta olamaz: başlık, gövde ve alt çubuk ayrı kaplar, `scrollLeft` eşitlenir.
+
+## Yapışkan alt çubuk
+
+Alt çubuk en yakın kaydırma kutusuna yapışır; kutunun iç boşluğu varsa çubuk o boşluğun kenarında durur ve altındaki
+şeritte satırlar görünür. Uygulama kutunun alt boşluğunu eksi olarak `--dt-sticky-bottom`'a verir (Swors Sheet gövdesi:
+`-18px`).

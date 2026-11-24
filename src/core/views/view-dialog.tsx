@@ -38,7 +38,7 @@ export function ViewDialog({
   return (
     <Dialog.Root open={open} onOpenChange={(o) => onOpenChange(o)}>
       <Dialog.Portal>
-        <Dialog.Backdrop className="dt-scrim" />
+        <Dialog.Backdrop className="dt-scrim" forceRender />
         <Dialog.Popup
           className="dt-dialog dt-view-dialog"
           initialFocus={() => {

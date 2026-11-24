@@ -6,7 +6,7 @@ import { isDecimalType, isDecimalValue } from '../format/decimal'
 import { Combobox } from '@base-ui/react/combobox'
 import { Popover } from '@base-ui/react/popover'
 import type { BaseUIEvent } from '@base-ui/react/types'
-import { CalendarBlankIcon } from '@phosphor-icons/react'
+import { CalendarBlankIcon, SpinnerGapIcon } from '@phosphor-icons/react'
 import {
   lazy,
   Suspense,
@@ -17,6 +17,7 @@ import {
   useState,
   type ChangeEvent,
   type KeyboardEvent,
+  type UIEvent,
 } from 'react'
 import type { ColumnDef, OptionDef } from '../../types/columns'
 import { decimalPlaces, isEmptyValue } from '../cells/format'
@@ -274,9 +275,8 @@ function OptionCell<Row extends object>({
 /**
  * Sunucuda aranan seçenek (form-grid.md §3.2): yazdıkça 250 ms sonra arar, aramaya satırı da verir. Yazılan metin
  * değer değildir; listeden seçilene kadar hücre eski değerini korur (Enter listede bir şey yoksa değişiklik yapmaz).
+ * Liste ekranda kalan yükseklikte kayar; sona bir liste boyu kala sonraki sayfa istenir.
  */
-// shortcut: yalnız ilk sayfa (varsayılan 20) gösterilir, aşağı kaydırınca devamı yüklenmez; arama daraltır. Uzun listede
-// "devamı" gerekince options-editor'daki sayfalama buraya taşınır.
 function AjaxCell<Row extends object>({
   def,
   row,
@@ -292,24 +292,48 @@ function AjaxCell<Row extends object>({
   const { remote, Item } = def as Extract<ColumnDef<Row>, { type: 'ajax' }>
   const labelOf = (v: unknown) => (isEmptyValue(v) ? '' : labels.label(def.id, remote, v as string | number))
   const [text, setText] = useState(() => start ?? labelOf(value))
-  const [found, setFound] = useState<OptionDef[] | null>(null)
+  // null: ilk sayfa aranıyor.
+  const [found, setFound] = useState<{ items: OptionDef[]; hasMore: boolean; page: number } | null>(null)
+  // Sonraki sayfa yolda: ref tekrar istemeyi önler (kaydırma olayları render'dan hızlı), state alttaki satırı çizer.
+  const loadingMore = useRef(false)
+  const [more, setMore] = useState(false)
+  const query = useRef('')
   const [open, setOpen] = useState(!field)
   const input = useRef<HTMLInputElement>(null)
   const ctl = useRef<AbortController | null>(null)
   const delay = useDelay(250)
-  const load = (q: string) => {
+  const load = (q: string, page = 1) => {
+    query.current = q
     ctl.current?.abort()
     const c = new AbortController()
     ctl.current = c
     remote
-      .search(q, 1, { signal: c.signal, row })
+      .search(q, page, { signal: c.signal, row })
       .then((res) => {
         if (c.signal.aborted) return
         labels.seed(def.id, res.items)
-        setFound(res.items)
+        setFound((f) => ({
+          items: page > 1 && f ? [...f.items, ...res.items] : res.items,
+          hasMore: res.hasMore,
+          page,
+        }))
       })
-      // Hata uygulamanındır (D18); liste boş kalır.
-      .catch(() => !c.signal.aborted && setFound([]))
+      // Hata uygulamanındır (D18); ilk sayfada liste boş kalır, sonrakinde eldeki durur.
+      .catch(() => !c.signal.aborted && page === 1 && setFound({ items: [], hasMore: false, page }))
+      .finally(() => {
+        if (c.signal.aborted) return
+        loadingMore.current = false
+        setMore(false)
+      })
+  }
+  // Sona bir liste boyu kala sonraki sayfa: satırlar kullanıcı sona varmadan gelir, liste sonda çarpıp sıçramaz.
+  const onScroll = (e: UIEvent<HTMLElement>) => {
+    const el = e.currentTarget
+    if (!found?.hasMore || loadingMore.current) return
+    if (el.scrollTop + el.clientHeight < el.scrollHeight - el.clientHeight) return
+    loadingMore.current = true
+    setMore(true)
+    load(query.current, found.page + 1)
   }
   useLayoutEffect(() => {
     if (!field) focusEnd(input.current)
@@ -322,7 +346,7 @@ function AjaxCell<Row extends object>({
     // Açılışta bir kez; sonrası yazdıkça.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  const items = found ?? []
+  const items = found?.items ?? []
   return (
     <Combobox.Root<unknown>
       open={open}
@@ -365,7 +389,11 @@ function AjaxCell<Row extends object>({
           sideOffset={field ? 4 : 2}
           anchor={field ? () => fieldBox(input.current) : input}
         >
-          <Combobox.Popup className="dt-pop dt-cell-list dt-sheet-layer" aria-label={columnName(def)}>
+          <Combobox.Popup
+            className="dt-pop dt-cell-list dt-sheet-layer"
+            aria-label={columnName(def)}
+            onScroll={onScroll}
+          >
             <Combobox.List>
               {items.map((o) => (
                 <Combobox.Item key={String(o.value)} value={o.value} className="dt-pop-item dt-cell-option">
@@ -384,7 +412,12 @@ function AjaxCell<Row extends object>({
               ))}
             </Combobox.List>
             {found === null && <div className="dt-options-empty">{i18n.t('remote.searching')}</div>}
-            {found?.length === 0 && <div className="dt-options-empty">{i18n.t('remote.noResults')}</div>}
+            {found?.items.length === 0 && <div className="dt-options-empty">{i18n.t('remote.noResults')}</div>}
+            {more && (
+              <div className="dt-cell-list-more" role="status" aria-label={i18n.t('common.loading')}>
+                <SpinnerGapIcon size={16} className="dt-spin" aria-hidden="true" />
+              </div>
+            )}
           </Combobox.Popup>
         </Combobox.Positioner>
       </Combobox.Portal>

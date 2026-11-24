@@ -25,7 +25,7 @@ export function ConfirmDialog({
   return (
     <AlertDialog.Root open={open} onOpenChange={(o) => onOpenChange(o)}>
       <AlertDialog.Portal>
-        <AlertDialog.Backdrop className="dt-scrim" />
+        <AlertDialog.Backdrop className="dt-scrim" forceRender />
         <AlertDialog.Popup className="dt-dialog dt-dialog-confirm" initialFocus={cancel}>
           <AlertDialog.Title className="dt-dialog-title">{title}</AlertDialog.Title>
           {body && <AlertDialog.Description className="dt-dialog-body">{body}</AlertDialog.Description>}

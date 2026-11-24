@@ -37,7 +37,8 @@ export function RowDialog<Row extends object>(props: RowDialogProps<Row>) {
     // Dışarı tık kapatmaz: yanlışlıkla tıklayınca taslak gitmesin; İptal, Tamam ve Esc kapatır.
     <Dialog.Root open disablePointerDismissal onOpenChange={(open) => !open && props.onClose()}>
       <Dialog.Portal>
-        <Dialog.Backdrop className="dt-scrim" />
+        {/* Uygulamanın Sheet'i de bir Dialog: iç içe pencerede Base UI arka planı çizmez, zorlanır. */}
+        <Dialog.Backdrop className="dt-scrim" forceRender />
         <Dialog.Popup
           ref={popup}
           className="dt-dialog dt-row-dialog dt-sheet-layer"
@@ -92,10 +93,12 @@ function RowForm<Row extends object>({ store, defs, index, labels, issues, onInd
     ? ''
     : defs
         .slice(0, 2)
-        // `ajax`'ta kod (ürün kodu + adı), öbürlerinde görünen metin.
-        .map((d) =>
-          d.type === 'ajax' ? String(readPath(draft, d.id) ?? '') : plainText(d, draft, readPath(draft, d.id), env),
-        )
+        // `ajax`'ta seçeneğin etiketi (değer çoğu zaman kimliktir), öbürlerinde görünen metin.
+        .map((d) => {
+          const v = readPath(draft, d.id)
+          if (d.type !== 'ajax') return plainText(d, draft, v, env)
+          return v == null || v === '' ? '' : labels.label(d.id, d.remote, v as string | number)
+        })
         .filter(Boolean)
         .join(' · ')
 

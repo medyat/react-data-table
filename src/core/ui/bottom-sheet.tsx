@@ -42,7 +42,7 @@ export function BottomSheet({
     <Dialog.Root open={open} onOpenChange={(o) => onOpenChange(o)}>
       {trigger && <Dialog.Trigger render={trigger} />}
       <Dialog.Portal>
-        <Dialog.Backdrop className="dt-scrim" />
+        <Dialog.Backdrop className="dt-scrim" forceRender />
         <Dialog.Popup
           className={className ? `dt-bsheet ${className}` : 'dt-bsheet'}
           initialFocus={initialFocus}

@@ -479,6 +479,14 @@ oturunca çıkar.
 - Yazarak açılışta liste yazılanla süzülür ve ilk eşleşen hemen vurgulu olur (`autoHighlight: 'always'`); tek Enter
   seçer. Değerin tam yazımı da eşleşir (taksit `1` → Tek çekim), yapıştırmadaki kuralla; değerin parçası aranmaz.
   Önceden değere eşit yazım ("4" → değer 4) süzmeyi atlatıyor, Enter yalnız listeyi kapatıyordu.
+- Space listeli hücrede (`select`, `ajax`) listeyi açar, F2 gibi: fareyle boşa tıklamanın klavye karşılığı.
+
+## R40 · FormGrid satırı 42 px, varsayılan yoğunluk standart; satır düğmeleri tek grup
+
+- Formda satır elle doldurulur: sıkışık 36 px dar, listenin standart 48 px'i boşluklu. FormGrid'in standart yoğunluğu
+  42 px (`.dt-form-grid[data-density='standard']`), varsayılan yoğunluk `standard`; yazı ve iç boşluk standarttaki gibi.
+  Liste tablosu 48 px'te kalır. Satır yüksekliği `--dt-row-h`'den okunur, sanal kaydırma aynı sayıyı kullanır.
+- Kalem ve ⋯ arası 2 px (tek düğme grubu); üzerine gelince ⋯ de kalem gibi ghost zemin alır.
 
 ## Yol haritası
 

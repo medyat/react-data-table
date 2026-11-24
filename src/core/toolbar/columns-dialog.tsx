@@ -55,7 +55,7 @@ export default function ColumnsDialog<Row extends object>({
   return (
     <Dialog.Root open={open} onOpenChange={(o) => onOpenChange(o)}>
       <Dialog.Portal>
-        <Dialog.Backdrop className="dt-scrim" />
+        <Dialog.Backdrop className="dt-scrim" forceRender />
         <Dialog.Popup
           className={phone ? 'dt-dialog dt-cols-dialog is-phone' : 'dt-dialog dt-cols-dialog'}
           finalFocus={finalFocus}

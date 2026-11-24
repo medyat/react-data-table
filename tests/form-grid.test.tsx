@@ -1,11 +1,12 @@
 // FormGrid C adımı: iskelet (role=grid, satır no, boş satır, ⋯), fare ve klavyeyle seçim, Space ile yazma, geri al.
+import { Dialog } from '@base-ui/react/dialog'
 import { TrashIcon } from '@phosphor-icons/react'
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { useState } from 'react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { DataTableProvider } from '../src/core/provider'
 import { FormGrid } from '../src/form-grid/form-grid'
-import type { ColumnDef, FormGridChange, RowAction } from '../src/types'
+import type { ColumnDef, FormGridChange, OptionDef, RowAction } from '../src/types'
 import { flush, mockLayout } from './helpers/dom'
 
 interface Line {
@@ -854,6 +855,47 @@ describe('satır penceresi (§7)', () => {
     return screen.getByRole('dialog')
   }
 
+  it('alt başlıkta ajax değeri kimlik değil etiketidir', async () => {
+    type P = { product: string | null; qty: number | null }
+    const cols: Array<ColumnDef<P>> = [
+      {
+        id: 'product',
+        header: 'Ürün',
+        type: 'ajax',
+        remote: {
+          search: async () => ({ items: [], hasMore: false }),
+          resolve: async () => [{ value: 'p-uuid-1', label: 'VDA-6' }],
+        },
+      },
+      { id: 'qty', header: 'Miktar', type: 'int' },
+    ]
+    render(
+      <DataTableProvider locale="tr-TR">
+        <FormGrid label="Satırlar" rows={[{ product: 'p-uuid-1', qty: 5 }]} columns={cols} onRowsChange={() => {}} />
+      </DataTableProvider>,
+    )
+    await flush()
+    const dialog = await open(0)
+    expect(dialog.querySelector('.dt-rd-sub')?.textContent).toBe('VDA-6 · 5')
+  })
+
+  it("başka bir Dialog (uygulamanın Sheet'i) içinde de arka planı çizer", async () => {
+    render(
+      <Dialog.Root open>
+        <Dialog.Portal>
+          <Dialog.Popup>
+            <DataTableProvider locale="tr-TR">
+              <Harness onChange={() => {}} />
+            </DataTableProvider>
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>,
+    )
+    await flush()
+    await open(0)
+    expect(document.querySelectorAll('.dt-scrim')).toHaveLength(1)
+  })
+
   it('kalem açar: alanlar sütun sırasıyla, kilitli alan pasif; Tamam değişeni yazar, geri alınır', async () => {
     const onChange = vi.fn()
     render(
@@ -1016,6 +1058,103 @@ describe('telefon (pano 3a, 3b)', () => {
   })
 })
 
+describe('ajax listesi', () => {
+  it('Space listeyi açar', async () => {
+    type P = { product: string | null }
+    const search = vi.fn(async () => ({ items: [{ value: 'p1', label: 'VDA-6' }], hasMore: false }))
+    const cols: Array<ColumnDef<P>> = [
+      { id: 'product', header: 'Ürün', type: 'ajax', remote: { search, resolve: async () => [] } },
+    ]
+    render(
+      <DataTableProvider locale="tr-TR">
+        <FormGrid label="Satırlar" rows={[{ product: null }]} columns={cols} onRowsChange={() => {}} />
+      </DataTableProvider>,
+    )
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.keyDown(cell(0, 0), { key: ' ' })
+    await flush()
+    expect(document.querySelectorAll('.dt-cell-option')).toHaveLength(1)
+  })
+
+  it('sona bir liste boyu kala sonraki sayfayı ister; gelene kadar altta yükleniyor satırı', async () => {
+    type P = { product: string | null }
+    let release = () => {}
+    const search = vi.fn((_q: string, page: number) =>
+      page === 1
+        ? Promise.resolve({ items: [{ value: 'p1', label: 'VDA-6' }], hasMore: true })
+        : new Promise<{ items: OptionDef[]; hasMore: boolean }>((done) => {
+            release = () => done({ items: [{ value: 'p2', label: 'VDA-7' }], hasMore: false })
+          }),
+    )
+    const cols: Array<ColumnDef<P>> = [
+      { id: 'product', header: 'Ürün', type: 'ajax', remote: { search, resolve: async () => [] } },
+    ]
+    render(
+      <DataTableProvider locale="tr-TR">
+        <FormGrid label="Satırlar" rows={[]} columns={cols} onRowsChange={() => {}} />
+      </DataTableProvider>,
+    )
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.keyDown(cell(0, 0), { key: 'F2' })
+    await flush()
+    const list = document.querySelector<HTMLElement>('.dt-cell-list')!
+    // Sona 500 px var, liste 320: henüz değil; 300 kala istenir.
+    Object.defineProperties(list, {
+      scrollHeight: { value: 1000, configurable: true },
+      clientHeight: { value: 320, configurable: true },
+      scrollTop: { value: 180, configurable: true, writable: true },
+    })
+    fireEvent.scroll(list)
+    await flush()
+    expect(search).toHaveBeenCalledTimes(1)
+    list.scrollTop = 380
+    fireEvent.scroll(list)
+    await flush()
+    expect(search).toHaveBeenLastCalledWith('', 2, expect.anything())
+    expect(within(list).getByRole('status', { name: 'Yükleniyor…' })).toBeTruthy()
+    await act(async () => release())
+    await flush()
+    expect(within(list).queryByRole('status')).toBeNull()
+    expect(document.querySelectorAll('.dt-cell-option')).toHaveLength(2)
+  })
+
+  it('sona yaklaşınca sonraki sayfayı ekler', async () => {
+    type P = { product: string | null }
+    const search = vi.fn(async (_q: string, page: number) => ({
+      items: Array.from({ length: page === 1 ? 20 : 5 }, (_, i) => ({
+        value: `p${page}-${i}`,
+        label: `Ürün ${page}-${i}`,
+      })),
+      hasMore: page === 1,
+    }))
+    const cols: Array<ColumnDef<P>> = [
+      { id: 'product', header: 'Ürün', type: 'ajax', remote: { search, resolve: async () => [] } },
+    ]
+    render(
+      <DataTableProvider locale="tr-TR">
+        <FormGrid label="Satırlar" rows={[]} columns={cols} onRowsChange={() => {}} />
+      </DataTableProvider>,
+    )
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.keyDown(cell(0, 0), { key: 'F2' })
+    await flush()
+    expect(document.querySelectorAll('.dt-cell-option')).toHaveLength(20)
+    const list = document.querySelector<HTMLElement>('.dt-cell-list')!
+    Object.defineProperties(list, {
+      scrollHeight: { value: 600, configurable: true },
+      clientHeight: { value: 300, configurable: true },
+      scrollTop: { value: 280, configurable: true, writable: true },
+    })
+    fireEvent.scroll(list)
+    await flush()
+    expect(search).toHaveBeenLastCalledWith('', 2, expect.anything())
+    expect(document.querySelectorAll('.dt-cell-option')).toHaveLength(25)
+  })
+})
+
 describe('select yazarak', () => {
   type Rate = { n: number | null }
   const rateCols: Array<ColumnDef<Rate>> = [
@@ -1026,6 +1165,19 @@ describe('select yazarak', () => {
       options: [1, 2, 3, 4].map((n) => ({ value: n, label: n === 1 ? 'Tek çekim' : `${n} taksit` })),
     },
   ]
+  it('Space boş satırda da listeyi açar, hepsi görünür', async () => {
+    render(
+      <DataTableProvider locale="tr-TR">
+        <FormGrid label="Satırlar" rows={[]} columns={rateCols} onRowsChange={() => {}} />
+      </DataTableProvider>,
+    )
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.keyDown(cell(0, 0), { key: ' ' })
+    await flush()
+    expect(document.querySelectorAll('.dt-cell-option')).toHaveLength(4)
+  })
+
   it('değeriyle eşleşen yazım (4) listeyi süzer, tek Enter seçer', async () => {
     const onChange = vi.fn()
     render(
