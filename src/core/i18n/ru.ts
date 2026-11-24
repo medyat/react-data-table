@@ -298,6 +298,8 @@ export const ru: Record<string, string> = {
   'sheet.pasteSkipped.other': 'Не вставлено строк: {count}. Допускается не более {max} строк',
   'sheet.agg.max': 'Максимум',
   'sheet.newRow': 'Новая строка',
+  'remote.create': 'Новая запись',
+  'remote.createWith': 'Новая запись «{text}»',
   'sheet.edit': 'Изменить',
   'sheet.aboutField': 'О поле «{label}»',
   'sheet.maskDay': 'дд',

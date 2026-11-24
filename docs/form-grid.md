@@ -109,7 +109,10 @@ düzenlenmez ve ızgara ona yazmaz. Taslaktaki `send: false` bu yüzden eklenmed
 
 `ajax` hücresi: yazılan metin aramadır, değer değil; listeden seçilene kadar hücre eski değerini korur. Liste ekranda
 kalan yükseklikte kayar (arama daraltır); sona bir liste boyu kala sonraki sayfa istenir;
-gelmeden sona varılırsa altta dönen ikon görünür (Swors SourcePicker'la aynı). Seçeneğin içeriği varsayılan olarak ad + açıklamadır; `Item`
+gelmeden sona varılırsa altta dönen ikon görünür (Swors SourcePicker'la aynı).
+`remote.create` verilirse listenin altında yapışık "Yeni kayıt" öğesi durur (yazılan metinle "“x” ile yeni kayıt"); ↓ ile
+ulaşılır. Uygulama kaydı kendi formunda açar ve kaydedileni seçenek olarak döndürür; editör o sırada kapanmış olsa da
+seçenek hücreye listeden seçilmiş gibi yazılır (`onChange` seçenekle, tek geri al adımı). Vazgeçişte hücre değişmez. Seçeneğin içeriği varsayılan olarak ad + açıklamadır; `Item`
 (`ComponentType<{ option, search }>`, Swors `SourcePicker`'ın adı ve biçimi) stok, kategori gibi alanları çizer:
 `option` aramanın döndürdüğü nesnedir. Liste içeriğe göre genişler, `wide` gerekmez.
 

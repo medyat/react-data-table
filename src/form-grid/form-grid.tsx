@@ -153,6 +153,7 @@ function GridCell<Row extends object>({
             if (down) store.move('down')
             onPicked()
           }}
+          onCreated={(v) => store.set({ row: index, col: colIndex }, v)}
         />
       ) : (
         <span className="dt-cell-content">

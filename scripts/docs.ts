@@ -206,6 +206,9 @@ const REACT_ONLY_MESSAGES: Record<string, [string, string]> = {
   'sheet.agg.max': ['Max', 'En büyük'],
   // FormGrid'in alttaki boş satırı: yazınca satır doğar (form-grid.md §5).
   'sheet.newRow': ['New row', 'Yeni satır'],
+  // ajax listesinin "yeni kayıt" öğesi (form-grid.md §3.2).
+  'remote.create': ['New record', 'Yeni kayıt'],
+  'remote.createWith': ['New record with “{text}”', '“{text}” ile yeni kayıt'],
   'sheet.edit': ['Edit', 'Düzenle'],
   'sheet.aboutField': ['About {label}', '{label} hakkında'],
   // Tarih editörünün kalıp harfleri (placeholder) ve canlı açıklaması.

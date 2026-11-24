@@ -6,7 +6,7 @@ import { isDecimalType, isDecimalValue } from '../format/decimal'
 import { Combobox } from '@base-ui/react/combobox'
 import { Popover } from '@base-ui/react/popover'
 import type { BaseUIEvent } from '@base-ui/react/types'
-import { CalendarBlankIcon, SpinnerGapIcon } from '@phosphor-icons/react'
+import { CalendarBlankIcon, PlusIcon, SpinnerGapIcon } from '@phosphor-icons/react'
 import {
   lazy,
   Suspense,
@@ -59,6 +59,8 @@ export interface CellEditorProps<Row extends object> {
   onDraft: (value: unknown, text: string) => void
   /** Listeden / takvimden seçim: taslağı yazıp onaylar; klavyeyle seçildiyse alt hücreye iner. */
   onPick: (value: unknown, down: boolean) => void
+  /** `ajax` "yeni kayıt"tan dönen seçenek: editör o sırada kapanmış olabilir, yazma çağıranın işidir. */
+  onCreated?: (value: unknown, option: OptionDef) => void
   /** Satır penceresinin alanı: açılışta odak almaz, liste kendiliğinden açılmaz, uzun metin yerinde yazılır. */
   field?: boolean
   /** Pencere alanı: etiketin bağlandığı id ve hata (`aria-invalid`). */
@@ -277,6 +279,9 @@ function OptionCell<Row extends object>({
  * değer değildir; listeden seçilene kadar hücre eski değerini korur (Enter listede bir şey yoksa değişiklik yapmaz).
  * Liste ekranda kalan yükseklikte kayar; sona bir liste boyu kala sonraki sayfa istenir.
  */
+/** `ajax` listesinde "yeni kayıt" öğesinin değeri; hiçbir seçenekle çakışmaz. */
+const CREATE = Symbol('create')
+
 function AjaxCell<Row extends object>({
   def,
   row,
@@ -284,6 +289,7 @@ function AjaxCell<Row extends object>({
   text: start,
   value,
   onPick,
+  onCreated,
   field,
   id,
   invalid,
@@ -347,6 +353,17 @@ function AjaxCell<Row extends object>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const items = found?.items ?? []
+  // "Yeni kayıt" listenin son öğesi: ↓ ile ulaşılır (ızgarada Tab hücre değiştirir), altta yapışık durur.
+  const creatable = !!remote.create && found !== null
+  const create = () => {
+    const typed = text.trim() === labelOf(value) ? '' : text.trim()
+    setOpen(false)
+    void remote.create?.(typed).then((option) => {
+      if (!option) return
+      labels.seed(def.id, [option])
+      onCreated?.(option.value, option)
+    })
+  }
   return (
     <Combobox.Root<unknown>
       open={open}
@@ -357,6 +374,7 @@ function AjaxCell<Row extends object>({
       value={value ?? null}
       onValueChange={(v, details) => {
         if (v === null || v === undefined) return
+        if (v === CREATE) return create()
         if (field) setText(labelOf(v))
         onPick(v, details.event instanceof globalThis.KeyboardEvent)
       }}
@@ -368,8 +386,8 @@ function AjaxCell<Row extends object>({
         setFound(null)
         delay.run(() => load(t))
       }}
-      items={items.map((o) => o.value)}
-      itemToStringLabel={labelOf}
+      items={creatable ? [...items.map((o) => o.value), CREATE] : items.map((o) => o.value)}
+      itemToStringLabel={(v) => (v === CREATE ? '' : labelOf(v))}
       filter={null}
       autoHighlight
     >
@@ -417,6 +435,14 @@ function AjaxCell<Row extends object>({
               <div className="dt-cell-list-more" role="status" aria-label={i18n.t('common.loading')}>
                 <SpinnerGapIcon size={16} className="dt-spin" aria-hidden="true" />
               </div>
+            )}
+            {creatable && (
+              <Combobox.Item value={CREATE} className="dt-pop-item dt-cell-create">
+                <PlusIcon size={16} aria-hidden="true" />
+                {text.trim() && text.trim() !== labelOf(value)
+                  ? i18n.t('remote.createWith', { text: text.trim() })
+                  : i18n.t('remote.create')}
+              </Combobox.Item>
             )}
           </Combobox.Popup>
         </Combobox.Positioner>

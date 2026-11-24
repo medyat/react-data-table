@@ -271,6 +271,17 @@
   padding: 4px;
   box-sizing: border-box;
 }
+/* "Yeni kayıt": listenin altında yapışık, üstünde çizgi (Swors SourcePicker'ın alt şeridi). */
+.dt-cell-create {
+  position: sticky;
+  bottom: -4px;
+  margin: 4px -4px -4px;
+  padding-inline: 12px;
+  gap: 8px;
+  border-top: 1px solid var(--dt-line);
+  border-radius: 0;
+  background: var(--dt-surface);
+}
 /* Sonraki sayfa yolda (Swors SourcePicker'la aynı): altta ortada soluk dönen ikon. */
 .dt-cell-list-more {
   display: flex;

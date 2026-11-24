@@ -67,6 +67,12 @@ export interface RemoteOptions<O extends OptionDef = OptionDef, Row = unknown> {
   /** Kayıtlı filtre değerlerinin, yapıştırılan değerlerin ve hücre değerlerinin etiketlerini çözer. */
   resolve: (values: Array<string | number>, ctx: { signal: AbortSignal }) => Promise<O[]>
   pageSize?: number
+  /**
+   * Listenin altında "yeni kayıt": uygulama kaydı kendi formunda açar (yazılan metin ön dolu) ve kaydedilen kaydı
+   * seçenek olarak döndürür; hücreye listeden seçilmiş gibi yazılır (`onChange` seçenekle). Vazgeçilirse `null` ya da
+   * hiç dönmeyen söz: hücre değişmez. Verilmezse öğe çizilmez (yetkisi olmayana verilmez).
+   */
+  create?(text: string): Promise<O | null>
 }
 
 /** Özel hücre içeriğine verilen bağlam. `value` tipe göre daralır (int → number | null, select → string | number | null …). */

@@ -295,6 +295,8 @@ export const tr: Record<string, string> = {
   "sheet.pasteSkipped.other": "{count} satır yapıştırılmadı: en çok {max} satır",
   "sheet.agg.max": "En büyük",
   "sheet.newRow": "Yeni satır",
+  "remote.create": "Yeni kayıt",
+  "remote.createWith": "“{text}” ile yeni kayıt",
   "sheet.edit": "Düzenle",
   "sheet.aboutField": "{label} hakkında",
   "sheet.maskDay": "gg",

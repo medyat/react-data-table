@@ -295,6 +295,8 @@ export const en: Record<string, string> = {
   "sheet.pasteSkipped.other": "{count} rows weren't pasted: the limit is {max} rows",
   "sheet.agg.max": "Max",
   "sheet.newRow": "New row",
+  "remote.create": "New record",
+  "remote.createWith": "New record with “{text}”",
   "sheet.edit": "Edit",
   "sheet.aboutField": "About {label}",
   "sheet.maskDay": "dd",

@@ -202,6 +202,7 @@ function RowForm<Row extends object>({ store, defs, index, labels, issues, onInd
               value={value}
               onDraft={(v) => change(col, v === '' ? null : v)}
               onPick={(v) => change(col, v)}
+              onCreated={(v, option) => change(col, v, option)}
             />
           )}
         </div>
