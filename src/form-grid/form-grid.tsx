@@ -27,6 +27,7 @@ import { getFormat, type Format } from '../core/format'
 import { HeaderCell } from '../core/grid/header-cell'
 import { pinClasses, pinStyle } from '../core/grid/pin'
 import { RowMenu } from '../core/grid/row-menu'
+import { HeaderGroups, headStyle } from '../core/grid/header-groups'
 import { withFill } from '../core/grid/row'
 import { DelegatedTooltip } from '../core/grid/tooltip'
 import type { I18n } from '../core/i18n'
@@ -777,10 +778,11 @@ export function FormGrid<Row extends object>({
         </div>
       )}
       <div ref={head} className="dt-fg-head">
-        <div className="dt-head" role="row" aria-rowindex={1}>
+        <div className="dt-head" role="row" aria-rowindex={1} style={headStyle(layout)}>
           <div className="dt-head-cell dt-gutter is-pinned-start" style={{ left: 0 }} role="columnheader">
             #
           </div>
+          <HeaderGroups layout={layout} lead={1} />
           {withFill(shown, (col) => (
             <HeaderCell key={col.id} column={col} layout={layout} onMoved={() => {}} menu={false} />
           ))}

@@ -116,3 +116,60 @@ describe('useColumnLayout', () => {
     expect(hook.result.current.cols()).toContain(' 200px ')
   })
 })
+
+describe('iç içe başlık (group, F5)', () => {
+  const grouped: Array<ColumnDef<Order>> = [
+    { id: 'number', header: 'Order no.', type: 'id', primary: true },
+    { id: 'customer', header: 'Customer', type: 'string' },
+    { id: 'value', header: 'Oran', group: 'İndirim', type: 'currency', currency: 'TRY' },
+    { id: 'dueAt', header: 'Tutar', group: 'İndirim', type: 'date' },
+    { id: 'product.name', header: 'Product', type: 'string' },
+  ]
+  const cells = (api: ReturnType<typeof useColumnLayout<Order>>) =>
+    api.groups.map((row) => row.map((g) => [g.label, g.from, g.span, g.pin?.pinned ?? null]))
+  it('grupsuz tabloda grup satırı yok', () => {
+    const api = renderHook(() => useColumnLayout<Order>({ columns })).result.current
+    expect(api.groups).toEqual([])
+  })
+  it('yan yana grup tek hücre; sıra tanımdaki gibi kalır', () => {
+    const api = renderHook(() => useColumnLayout<Order>({ columns: grouped })).result.current
+    expect(api.columns.map((c) => c.id)).toEqual(['number', 'customer', 'value', 'dueAt', 'product.name'])
+    expect(cells(api)).toEqual([[['İndirim', 2, 2, null]]])
+  })
+  it('araya sütun girince grup bölünür; sabitleme sınırında da (AG Grid gibi)', () => {
+    const moved = renderHook(() =>
+      useColumnLayout<Order>({ columns: grouped, layout: { order: ['number', 'value', 'customer', 'dueAt'] } }),
+    ).result.current
+    expect(cells(moved)).toEqual([
+      [
+        ['İndirim', 1, 1, null],
+        ['İndirim', 3, 1, null],
+      ],
+    ])
+    const pinned = renderHook(() =>
+      useColumnLayout<Order>({ columns: grouped, layout: { pinned: { left: ['value'], right: [] } } }),
+    ).result.current
+    // Sol bölge: number, value; dolgu orta bölgeden sonra sayılır.
+    expect(cells(pinned)).toEqual([
+      [
+        ['İndirim', 1, 1, 'start'],
+        ['İndirim', 3, 1, null],
+      ],
+    ])
+    expect(pinned.groups[0]![0]!.edge).toBe(true)
+  })
+  it('gizli yaprak grubu daraltır, hepsi gizliyse grup satırı da kalkar', () => {
+    const one = renderHook(() =>
+      useColumnLayout<Order>({
+        columns: grouped,
+        layout: { visible: ['number', 'customer', 'value', 'product.name'] },
+      }),
+    ).result.current
+    expect(cells(one)).toEqual([[['İndirim', 2, 1, null]]])
+    const none = renderHook(() =>
+      useColumnLayout<Order>({ columns: grouped, layout: { visible: ['number', 'customer', 'product.name'] } }),
+    ).result.current
+    // Görünür grup kalmayınca TanStack derinliği 1'e iner: boş şerit çizilmez.
+    expect(none.groups).toEqual([])
+  })
+})

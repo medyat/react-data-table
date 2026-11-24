@@ -29,6 +29,7 @@ import { useState, type RefObject } from 'react'
 import type { ColumnsDraft, PanelColumn } from '../columns/use-column-layout'
 import { useDataTableContext } from '../provider'
 import { DtSwitch } from '../ui/switch'
+import { columnName, nameOf } from '../columns/column-name'
 
 const PIN_COUNTS = [0, 1, 2] as const
 type Side = 'start' | 'end'
@@ -92,7 +93,7 @@ function Body<Row extends object>({
 
   const fixedRows = rows.filter((c) => c.fixed)
   const needle = find.toLocaleLowerCase()
-  const listed = rows.filter((c) => !c.fixed && (!find || c.def.header.toLocaleLowerCase().includes(needle)))
+  const listed = rows.filter((c) => !c.fixed && (!find || columnName(c.def).toLocaleLowerCase().includes(needle)))
   /** Kaydedilince sabitlenecek sütunlar: listede raptiye ile gösterilir. */
   const free = rows.filter((c) => c.visible && !c.fixed).map((c) => c.id)
   const left = free.slice(0, pins.start)
@@ -123,7 +124,7 @@ function Body<Row extends object>({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
   const at = (id: UniqueIdentifier, position: UniqueIdentifier = id) => ({
-    column: rows.find((c) => c.id === id)?.def.header ?? String(id),
+    column: nameOf(rows.find((c) => c.id === id)?.def) ?? String(id),
     position: listed.findIndex((c) => c.id === position) + 1,
     total: listed.length,
   })
@@ -243,7 +244,7 @@ function Name<Row extends object>({ column, pinned }: { column: PanelColumn<Row>
     <span className="dt-col-name">
       <span>
         {pinned && <PushPinIcon size={12} className="dt-col-pin" aria-label={i18n.t('columns.pinned')} />}
-        {column.def.header}
+        {columnName(column.def)}
       </span>
       {column.def.description && <span className="dt-col-desc">{column.def.description}</span>}
     </span>
@@ -283,7 +284,7 @@ function SortableRow<Row extends object>({
         disabled={disabled}
         {...attributes}
         {...listeners}
-        aria-label={i18n.t('columns.reorder', { column: column.def.header })}
+        aria-label={i18n.t('columns.reorder', { column: columnName(column.def) })}
       >
         <DotsSixVerticalIcon size={16} weight="bold" aria-hidden="true" />
       </button>
@@ -292,7 +293,7 @@ function SortableRow<Row extends object>({
         className="dt-col-switch"
         checked={column.visible}
         disabled={!column.canHide}
-        label={column.def.header}
+        label={columnName(column.def)}
         onChange={onVisible}
       />
     </li>

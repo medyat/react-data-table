@@ -17,6 +17,7 @@ import { DtSwitch } from '../core/ui/switch'
 import { CellEditor } from '../core/sheet/cell-editor'
 import type { SheetStore } from '../core/sheet/store'
 import type { Issue } from '../core/sheet/validate'
+import { columnName } from '../core/columns/column-name'
 
 interface RowDialogProps<Row extends object> {
   store: SheetStore<Row>
@@ -104,7 +105,7 @@ function RowForm<Row extends object>({ store, defs, index, labels, issues, onInd
     const value = readPath(draft, def.id)
     const props: RowFieldProps = {
       id: fieldId,
-      label: def.header,
+      label: columnName(def),
       hint: def.hint,
       required: typeof def.required === 'function' ? def.required(draft) : !!def.required,
       disabled: !store.canEdit(index, col),
@@ -119,7 +120,7 @@ function RowForm<Row extends object>({ store, defs, index, labels, issues, onInd
     }
     const label = (
       <>
-        {def.header}
+        {columnName(def)}
         {props.required && <span className="dt-rd-req">*</span>}
       </>
     )
@@ -128,7 +129,7 @@ function RowForm<Row extends object>({ store, defs, index, labels, issues, onInd
         type="button"
         className="dt-rd-hint"
         tabIndex={-1}
-        aria-label={i18n.t('sheet.aboutField', { label: def.header })}
+        aria-label={i18n.t('sheet.aboutField', { label: columnName(def) })}
         aria-description={def.hint}
         data-dt-tip={def.hint}
       >

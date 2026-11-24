@@ -12,6 +12,7 @@ import { DtMenu, DtMenuItem, DtMenuSeparator } from '../ui/menu'
 import { changeOperator, editorOf, isComplete, opLabel, operatorsOf, shapeOf, type Chip, type Summary } from './model'
 import { TYPE_ICONS } from './type-icons'
 import { ValueEditor } from './value-editor'
+import { columnName } from '../columns/column-name'
 
 export function FilterChip({
   chip,
@@ -48,8 +49,8 @@ export function FilterChip({
   const opText = opLabel(i18n, chip.op, type, count)
   const tip = summary.full && summary.full !== summary.text ? summary.full : undefined
   const aria = complete
-    ? i18n.t('filter.valueAria', { column: column.header, op: opText, value: summary.text })
-    : i18n.t('filter.chooseValueAria', { column: column.header, op: opText, value: i18n.t('filter.selectValue') })
+    ? i18n.t('filter.valueAria', { column: columnName(column), op: opText, value: summary.text })
+    : i18n.t('filter.chooseValueAria', { column: columnName(column), op: opText, value: i18n.t('filter.selectValue') })
   const editor = editorOf(chip.op, type)
   const status =
     editor === 'options' && Array.isArray(chip.value) && chip.value.length
@@ -71,7 +72,7 @@ export function FilterChip({
     <>
       <Icon size={14} className="dt-chip-icon" aria-hidden="true" />
       {/* Boşluklar görünmez (flex) ama metni "Status is Draft" yapar: erişilebilir ad görünen metni içermeli (WCAG 2.5.3). */}
-      <span className="dt-chip-field">{column.header}</span> <span className="dt-chip-op">{opText}</span>{' '}
+      <span className="dt-chip-field">{columnName(column)}</span> <span className="dt-chip-op">{opText}</span>{' '}
     </>
   )
   const people = complete ? (summary.people?.slice(0, 3) ?? []) : []
@@ -95,11 +96,11 @@ export function FilterChip({
         <button
           type="button"
           className="dt-chip-body"
-          aria-label={i18n.t('mobile.chipAria', { summary: `${column.header} ${opText} ${summary.text}`.trim() })}
+          aria-label={i18n.t('mobile.chipAria', { summary: `${columnName(column)} ${opText} ${summary.text}`.trim() })}
           onClick={onOpen}
         >
           <Icon size={14} className="dt-chip-icon" aria-hidden="true" />
-          <span className="dt-chip-field">{column.header}</span> <span className="dt-chip-op">{opText}</span>{' '}
+          <span className="dt-chip-field">{columnName(column)}</span> <span className="dt-chip-op">{opText}</span>{' '}
           <span className="dt-chip-value">{summary.text}</span>
         </button>
       ) : type === 'boolean' ? (
@@ -139,7 +140,7 @@ export function FilterChip({
                 }
               >
                 <div className="dt-chip-pop-head">
-                  <span className="dt-chip-pop-field">{column.header}</span>
+                  <span className="dt-chip-pop-field">{columnName(column)}</span>
                   <DtMenu
                     align="start"
                     className="dt-op-menu"
@@ -196,7 +197,7 @@ export function FilterChip({
         <button
           type="button"
           className="dt-chip-remove"
-          aria-label={i18n.t('filter.removeAria', { column: column.header })}
+          aria-label={i18n.t('filter.removeAria', { column: columnName(column) })}
           onClick={onRemove}
         >
           <XIcon size={12} aria-hidden="true" />

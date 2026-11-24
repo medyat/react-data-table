@@ -60,6 +60,7 @@ export const orderColumns: Array<ColumnDef<Order>> = [
   },
   {
     id: 'owner',
+    group: 'Planning',
     header: 'Owner',
     type: 'user',
     accessor: (r) => r.owner?.id ?? null,
@@ -67,7 +68,7 @@ export const orderColumns: Array<ColumnDef<Order>> = [
     suggested: true,
     filterNoun: { one: 'person', other: 'people' },
   },
-  { id: 'dueAt', header: 'Due date', type: 'date', overdue: (r) => r.status !== 'done' },
+  { id: 'dueAt', header: 'Due date', group: 'Planning', type: 'date', overdue: (r) => r.status !== 'done' },
   { id: 'value', header: 'Value', type: 'currency', currency: 'TRY' },
   {
     id: 'plant',

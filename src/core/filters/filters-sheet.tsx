@@ -24,6 +24,7 @@ import { BottomSheet } from '../ui/bottom-sheet'
 import { changeOperator, defaultOperator, isComplete, opLabel, operatorsOf, type Chip, type Summary } from './model'
 import { TYPE_ICONS } from './type-icons'
 import { ValueEditor } from './value-editor'
+import { columnName, nameOf } from '../columns/column-name'
 
 type Level = 'main' | 'editor' | 'picker'
 
@@ -55,7 +56,7 @@ export function FiltersSheet({
 }) {
   const { i18n } = useDataTableContext()
   const defOf = (id: string) => columns.find((c) => c.id === id)
-  const headerOf = (id: string) => defOf(id)?.header ?? id
+  const headerOf = (id: string) => nameOf(defOf(id)) ?? id
 
   /** Var olan taslak çipi açar, yoksa varsayılan operatörle oluşturur. boolean'ın editörü yok: dokunuş Yes ↔ No. */
   const editIn = (list: Chip[], id: string): { draft: Chip[]; editing: string | null } => {
@@ -86,7 +87,7 @@ export function FiltersSheet({
   const suggested = filterable.filter((c) => c.suggested && !drafted(c.id as string))
   const needle = q.toLocaleLowerCase()
   const pickable = filterable.filter(
-    (c) => !drafted(c.id as string) && (!q || c.header.toLocaleLowerCase().includes(needle)),
+    (c) => !drafted(c.id as string) && (!q || columnName(c).toLocaleLowerCase().includes(needle)),
   )
   const chip = draft.find((c) => c.column === editing) ?? null
   const chipDef = editing ? defOf(editing) : undefined
@@ -119,7 +120,7 @@ export function FiltersSheet({
       ? i18n.t('mobile.filters')
       : level === 'picker'
         ? i18n.t('filter.addFilter')
-        : (chipDef?.header ?? '')
+        : (nameOf(chipDef) ?? '')
   const count = Array.isArray(chip?.value) ? chip.value.length : 1
 
   return (
@@ -192,7 +193,7 @@ export function FiltersSheet({
               <div className="dt-bsheet-label">{i18n.t('picker.suggested')}</div>
               {suggested.map((c) => (
                 <button key={c.id} type="button" className="dt-bsheet-row" onClick={() => edit(c.id as string)}>
-                  <span className="dt-bsheet-field">{c.header}</span>
+                  <span className="dt-bsheet-field">{columnName(c)}</span>
                   <span className="dt-bsheet-value">{i18n.t('common.any')}</span>
                   <CaretRightIcon size={16} aria-hidden="true" />
                 </button>
@@ -217,7 +218,7 @@ export function FiltersSheet({
                 <option value="">{i18n.t('common.empty')}</option>
                 {sortable.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.header}
+                    {columnName(c)}
                   </option>
                 ))}
               </select>
@@ -271,7 +272,7 @@ export function FiltersSheet({
             return (
               <button key={c.id} type="button" className="dt-bsheet-row" onClick={() => edit(c.id as string)}>
                 <Icon size={16} className="dt-bsheet-icon" aria-hidden="true" />
-                {c.header}
+                {columnName(c)}
               </button>
             )
           })}

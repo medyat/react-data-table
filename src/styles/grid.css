@@ -181,6 +181,42 @@
   clip-path: inset(0 0 0 -16px);
 }
 
+/* İç içe başlık (form-grid.md §2 `group`, pano F1a): grup satırı yaprakların üstünde; kapsamını yan çizgi değil
+   alt çizgi gösterir, iç boşluk kadar içeriden: bölünmüş iki grup yan yana birleşmez. Grupsuz sütunun üstü boş kalır.
+   Yapraklar ve dolgu alt satırda, ön / son hücreler (tutamaç, seçim, satır no, menü) bütün satırları kaplar. */
+.dt-head {
+  --dt-group-h: calc(var(--dt-head-h) * 0.7);
+  /* Açık tek satır: aşağıdaki satır numaraları grupsuz başlıkta da o satırı gösterir (grup varken satırlar inline). */
+  grid-template-rows: var(--dt-head-h);
+}
+.dt-head > .dt-head-cell[data-col],
+.dt-head > .dt-cell-fill {
+  grid-row: -2;
+}
+/* Bütün satırları kaplar (sabitken kayan grup başlığını örter); içeriği yaprak satırının ortasında durur. */
+.dt-head > :is(.dt-head-handle, .dt-head-select, .dt-head-menu-col, .dt-gutter, .dt-cell-menu) {
+  grid-row: 1 / -1;
+  padding-top: var(--dt-head-groups, 0px);
+}
+.dt-head-cell.dt-head-group {
+  font-size: var(--dt-ui-fs-sm);
+  font-weight: 600;
+  color: var(--dt-text-2);
+}
+.dt-head-cell.dt-head-group::after {
+  content: '';
+  position: absolute;
+  right: var(--dt-cell-x);
+  bottom: 0;
+  left: var(--dt-cell-x);
+  border-bottom: 1px solid var(--dt-line);
+}
+.dt-head-group-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 /* Header hücresi (05 §4 · Header, T4). */
 .dt-head-cell {
   --dt-row-bg: var(--dt-surface-2);

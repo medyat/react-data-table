@@ -17,6 +17,7 @@ import { TYPE_SPECS } from '../cells/specs'
 import { cleanNumber, plainNumber } from '../format/parse'
 import { useDataTableContext } from '../provider'
 import { fold, inputText, parseInput, type ParseEnv } from './parse'
+import { columnName } from '../columns/column-name'
 
 // Takvim ayrı parçadır: tarih editörü açılınca yüklenir, popover açılmadan hazırdır. `lazy` yüklüyken de ilk çizimde
 // askıya alıp kutuyu boş açıyordu; yüklenmişse bileşen doğrudan çizilir.
@@ -133,7 +134,7 @@ function InputCell<Row extends object>({
         inputMode={numeric ? 'decimal' : undefined}
         autoComplete="off"
         value={text}
-        aria-label={def.header}
+        aria-label={columnName(def)}
         id={id}
         aria-invalid={invalid || undefined}
         onChange={(e) => change(clean(e.target.value))}
@@ -201,7 +202,7 @@ function OptionCell<Row extends object>({
       <Combobox.Input
         ref={input}
         className="dt-cell-input"
-        aria-label={def.header}
+        aria-label={columnName(def)}
         id={id}
         aria-invalid={invalid || undefined}
         autoComplete="off"
@@ -214,7 +215,7 @@ function OptionCell<Row extends object>({
           sideOffset={field ? 4 : 2}
           anchor={field ? () => fieldBox(input.current) : input}
         >
-          <Combobox.Popup className="dt-pop dt-cell-list dt-sheet-layer" aria-label={def.header}>
+          <Combobox.Popup className="dt-pop dt-cell-list dt-sheet-layer" aria-label={columnName(def)}>
             <Combobox.List>
               {shown.map((o) => (
                 <Combobox.Item
@@ -319,7 +320,7 @@ function AjaxCell<Row extends object>({
       <Combobox.Input
         ref={input}
         className="dt-cell-input"
-        aria-label={def.header}
+        aria-label={columnName(def)}
         id={id}
         aria-invalid={invalid || undefined}
         autoComplete="off"
@@ -332,7 +333,7 @@ function AjaxCell<Row extends object>({
           sideOffset={field ? 4 : 2}
           anchor={field ? () => fieldBox(input.current) : input}
         >
-          <Combobox.Popup className="dt-pop dt-cell-list dt-sheet-layer" aria-label={def.header}>
+          <Combobox.Popup className="dt-pop dt-cell-list dt-sheet-layer" aria-label={columnName(def)}>
             <Combobox.List>
               {items.map((o) => (
                 <Combobox.Item key={String(o.value)} value={o.value} className="dt-pop-item dt-cell-option">
@@ -403,7 +404,7 @@ function DateCell<Row extends object>({
         type="text"
         autoComplete="off"
         value={text}
-        aria-label={def.header}
+        aria-label={columnName(def)}
         id={id}
         aria-invalid={invalid || undefined}
         aria-expanded={open}
@@ -454,7 +455,7 @@ function TextField<Row extends object>({ def, value, onDraft, id, invalid }: Cel
     <textarea
       className="dt-rd-textarea"
       value={text}
-      aria-label={def.header}
+      aria-label={columnName(def)}
       id={id}
       aria-invalid={invalid || undefined}
       rows={3}
@@ -508,7 +509,7 @@ function TextPop<Row extends object>({ def, text: start, value, onDraft }: CellE
                 ref={el}
                 className="dt-text-pop-input"
                 value={text}
-                aria-label={def.header}
+                aria-label={columnName(def)}
                 rows={5}
                 onChange={(e) => change(e.target.value)}
                 onKeyDown={onKeyDown}

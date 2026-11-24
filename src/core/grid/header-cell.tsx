@@ -16,6 +16,7 @@ import { MOVE_KBD } from '../interaction/kbd'
 import { useDataTableContext } from '../provider'
 import { DtMenu, DtMenuItem, DtMenuLabel, DtMenuSeparator } from '../ui/menu'
 import { pinStyle } from './pin'
+import { columnName, groupPath } from '../columns/column-name'
 
 export interface HeaderSort {
   dir: 'asc' | 'desc'
@@ -57,7 +58,7 @@ export function HeaderCell<Row extends object>({
   const unit = typeof def.unit === 'string' ? def.unit : undefined
   // D33: açıklama tooltip'te ikinci satır, ekran okuyucuya aria-describedby; düğme metnine girmez.
   const descId = useId()
-  const tip = def.description ? `${def.header}\n${def.description}` : def.header
+  const tip = def.description ? `${columnName(def)}\n${def.description}` : columnName(def)
   const [menuOpen, setMenuOpen] = useState(false)
   // Filter by this column… ile kapanınca odak ⋯'ya dönmez: açılan çip editörü alır (08 §2 · Popover).
   const toFilter = useRef(false)
@@ -171,6 +172,7 @@ export function HeaderCell<Row extends object>({
       >
         {/* Sayısal sütunda ok metnin solunda: sağa yaslı başlıkta metin kenara oturur. */}
         {sort && numeric && sortMark}
+        {def.group && <span className="dt-sr-only">{groupPath(def).join(' · ')} · </span>}
         <span className="dt-head-text">{(layout.phone && def.headerShort) || def.header}</span>
         {unit && <span className="dt-head-unit">{unit}</span>}
         {def.required === true && (
@@ -207,7 +209,7 @@ export function HeaderCell<Row extends object>({
               ref={menuButton}
               type="button"
               className="dt-head-icon dt-head-menu"
-              aria-label={i18n.t('header.optionsAria', { column: def.header })}
+              aria-label={i18n.t('header.optionsAria', { column: columnName(def) })}
             >
               <DotsThreeIcon size={16} weight="bold" aria-hidden="true" />
             </button>

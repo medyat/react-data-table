@@ -159,6 +159,10 @@ export interface BaseColumn<Row, V = unknown> {
   header: string
   /** Dar alanlarda (telefon) kısa header. */
   headerShort?: string
+  /** İç içe başlık: üstteki grup adı, dıştan içe (`['Ek vergiler', 'ÖTV']`). Yan yana duran aynı gruplu sütunlar tek
+   *  grup başlığı altında çizilir; taşıma ya da sabitleme araya girerse grup bölünür. Izgara dışında (filtre, Sütunlar,
+   *  satır penceresi, Excel) sütun tam adıyla görünür: "İndirim · Oran". */
+  group?: string | string[]
   /** Sütun açıklaması: header tooltip'inde ad altında ikinci satır, Columns dialog'unda ad altında; hücrede gösterilmez. */
   description?: string
   /** Hesaplanan değer. Verilirse `fields` ile sunucudan istenecek alanlar bildirilir. */

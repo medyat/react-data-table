@@ -22,6 +22,7 @@ import { getFormat } from '../format'
 import { isPlainRowClick } from '../interaction/is-interactive'
 import { useDataTableContext } from '../provider'
 import { HeaderCell, type HeaderSort } from './header-cell'
+import { HeaderGroups, headStyle } from './header-groups'
 import { inlineActionsOf, inlineClass } from './inline-actions'
 import { Row, type RowExtras } from './row'
 import { SkeletonRow } from './skeleton-row'
@@ -522,7 +523,7 @@ export function Grid<Row extends object>({
         className="dt-scroll"
         style={{ scrollPaddingTop: metrics.head, scrollPaddingBottom: metrics.bar }}
       >
-        <div className="dt-head" role="row" aria-rowindex={1}>
+        <div className="dt-head" role="row" aria-rowindex={1} style={headStyle(layout)}>
           {reorder && (
             <div
               className={
@@ -558,6 +559,7 @@ export function Grid<Row extends object>({
               />
             </div>
           )}
+          <HeaderGroups layout={layout} lead={(reorder ? 1 : 0) + (selectable ? 1 : 0)} />
           {[...layout.start, ...layout.center].map(header)}
           <div className="dt-head-cell dt-cell-fill" role="presentation" aria-hidden="true" />
           {layout.end.map(header)}

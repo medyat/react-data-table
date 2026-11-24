@@ -62,6 +62,7 @@ import { isFilterable, isSearchable, isSortable } from './use-list-table'
 import type { DataTableInstance } from './use-data-table'
 import { useLoadState } from './use-load-state'
 import { useRowOrder } from './use-row-order'
+import { nameOf } from '../core/columns/column-name'
 
 /** `error` yapısal okunur: TanStack Query'nin `Error`'u, uygulamanın `{ message, id }`'si ya da düz metin. */
 const NONE: Record<string, true> = {}
@@ -400,7 +401,7 @@ export function DataTable<Row extends object>({
     q.sort.map((s, i) => [s.column, { dir: s.dir, index: q.sort.length > 1 ? i + 1 : null }]),
   )
   const sortable = new Set(table.columns.filter(isSortable).map((c) => c.id as string))
-  const headerOf = (id: string) => table.columns.find((c) => c.id === id)?.header ?? id
+  const headerOf = (id: string) => nameOf(table.columns.find((c) => c.id === id)) ?? id
 
   // Ekran okuyucu (08 §5): tek polite bölge; son değişen olay okunur. İlk çizimde duyuru yok.
   const first = q.sort[0]

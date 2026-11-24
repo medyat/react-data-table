@@ -100,7 +100,7 @@ Her biri bir panodan çıktı; pano yoksa alan da yok.
 | `remote.match` | `(texts, { signal }) => Promise<(O \| null)[]>` | Excel'den ürün kodu ya da adı yapıştırılır; seçenek `onChange`'e gider, boş yapıştırılan Ad üründen dolar (1b). Paket 100'erlik sorar; bulunamayan metin değer olarak kalır, sunucu reddeder. Verilmezse metin değerdir. |
 | `placeholder` | `(row) => string \| null` | Boş hücrede başka yerden gelen değer soluk yazılır, değer olmaz: talebin İhtiyaç tarihi (T1a). |
 | `onChange` | `(row, value, { option, rows }) => Partial<Row> \| void` | Aynı satıra yazma: tek çekimde Taksitle aktarım kapanır (G1a), Ürün seçilince Ad ve Birim dolar (1b). `option` seçilen seçenektir; `ajax`'ta aramanın döndürdüğü nesne, ek alanlarıyla (ürünün birimi). Yazılanlar aynı geri al adımına girer; onların `onChange`'i çağrılmaz. |
-| `group` | `string \| string[]` | İç içe başlık: İndirim → Oran \| Tutar, ek vergiler grup → vergi → Oran \| Tutar, İhracat (F1a, F1b, F3a). Grup başlığı rengi yalnız başlık hücresinde. |
+| `group` | `string \| string[]` | İç içe başlık: İndirim → Oran \| Tutar, ek vergiler grup → vergi → Oran \| Tutar, İhracat (F1a, F1b, F3a). FormGrid ve liste tablosu ortak (F5). |
 | `display` (`boolean`) | `'text' \| 'switch'` | POS'ta anahtar görünümü (G1a). |
 
 Seçimle gelen ama satır değerine girmeyen bilgi (talebin Stok sütunu, T1a) `accessor`'lı sütundur: `accessor`'lı sütun
@@ -176,7 +176,7 @@ Tek düzen; belgede de form içinde de aynı (POS tablosu için ayrı "gömülü
   tek geri al adımıyla yazar, İptal ve Esc atar. ‹ › geçerken o satırın değişikliğini Tamam gibi yazar. Yeni satırda
   başlık "Yeni satır", ‹ › yerine "Ekle ve yeni satır". Alana yazılınca sütunun `onChange`'i taslakta çalışır (Ürün →
   Ad hemen dolar). Hücredeki hata ya da uyarı alanın altında tam metniyle durur, alan değişince kalkar. Izgaradaki
-  grup pencerede bölüm olur (İhracat, F2a): `group` F5'te gelir, bölüm de onunla.
+  gruplu sütun pencerede tam adıyla görünür ("İndirim · Oran", pano F2a); ayrı bölüm başlığı yok.
 - **Alanı kim çizer:** varsayılan paketin hücre editörüdür (aynı ayrıştırma, liste ve takvim; pencerede odak almaz,
   liste kendiliğinden açılmaz). Uygulama `DataTableProvider`'a bir kez `renderField(column, field)` verir:
   `RowFieldProps` (`id`, `label`, `hint`, `required`, `disabled`, `error`, `value`, `onChange(value, option?)`, `row`)
@@ -254,6 +254,19 @@ Swors'ta sipariş ve teklif satırları da `FormGrid` kullanmaz: önce kayıt a�
 | F3 | Pano: kopyala, yapıştır (Excel), ⌘D doldurma; sağ tık menüsü; arama (§8.1) |
 | F4 | Satır penceresi, pencere düzenleyici, hücre aksiyonu genişlemesi (§3.3), çoğaltma, telefon |
 | F5 | İç içe başlık (`group`); liste tablosu da kullanır |
+
+**F5 kararları (iç içe başlık):**
+
+- Başlık satırlarını TanStack kurar (`buildHeaderGroups`, bölge başına): `group`'lu sütunlar grup sütunlarının
+  altına girer, sıra tanımdaki gibi kalır (`columnOrder` hep tam). Grup başlığı yan yana duran sütunları kaplar.
+- Grup bölünebilir (AG Grid'in varsayılanı): taşıma, Sütunlar penceresinde sürükleme ya da sabitleme araya girerse
+  aynı grup iki başlık olur. Grubu bir arada tutan seçenek (`marryChildren`) yok; ihtiyaç çıkınca eklenir.
+- Gizli sütun grubu daraltır; grubun hepsi gizliyse grup satırı da kalkar.
+- Grup satırları `.dt-head`'in üst grid satırlarıdır; tutamaç, seçim, satır no ve menü sütunu bütün satırları kaplar.
+  Sabit grup hücresi sticky'dir (soldakinde ilk, sağdakinde son yaprağın ofseti).
+- Izgara dışında sütun tam adıyla görünür (`columnName`): filtre çipi, Sütunlar penceresi, satır penceresi, Excel
+  başlığı, editörün ve başlığın erişilebilir adı. Tek başına "Oran" iki grupta anlamsızdı. Excel'de ikinci başlık
+  satırı ve birleştirilmiş hücre yok.
 
 Her faz playground'da bir senaryo sayfası ve `pnpm check` ile biter. Swors'ta ilk ekran Sevk belgesidir.
 

@@ -18,6 +18,7 @@ import { useDataTableContext } from '../provider'
 import { BottomSheet } from '../ui/bottom-sheet'
 import type { ToolbarAction } from '../../types/list'
 import { DtSwitch } from '../ui/switch'
+import { nameOf } from '../columns/column-name'
 
 const ColumnsDialog = lazy(() => import('./columns-dialog')) as unknown as typeof import('./columns-dialog').default
 const DENSITIES: Density[] = ['comfortable', 'standard', 'compact']
@@ -77,7 +78,7 @@ export function PhoneMoreSheet<Row extends object>({
   const [columnsOpen, setColumnsOpen] = useState(false)
   const [columnsUsed, setColumnsUsed] = useState(false)
   const trigger = useRef<HTMLButtonElement>(null)
-  const headerOf = (id: string) => columns.find((c) => c.id === id)?.def.header ?? id
+  const headerOf = (id: string) => nameOf(columns.find((c) => c.id === id)?.def) ?? id
   const lead = sort[0]
   const sortSummary = lead
     ? `${headerOf(lead.column)} ${lead.dir === 'asc' ? '↑' : '↓'}${sort.length > 1 ? ` +${sort.length - 1}` : ''}`

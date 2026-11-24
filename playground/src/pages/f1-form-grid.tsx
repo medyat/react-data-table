@@ -19,6 +19,8 @@ interface Line {
   unit: string | null
   price: number | null
   vat: number | null
+  discRate?: number | null
+  discAmount?: number | null
   date: string | null
   note: string | null
   gift: boolean | null
@@ -198,6 +200,9 @@ const base: Array<ColumnDef<Line>> = [
       { id: 'clear', label: 'Fiyatı temizle', icon: EraserIcon, run: (_row, { setValue }) => setValue?.(null) },
     ],
   },
+  // Pano F1a: İndirim → Oran | Tutar.
+  { id: 'discRate', header: 'Oran', group: 'İndirim', type: 'percentage', width: 92 },
+  { id: 'discAmount', header: 'Tutar', group: 'İndirim', type: 'currency', currency: 'TRY', width: 112 },
   { id: 'vat', header: 'KDV', type: 'percentage', width: 80, hint: 'Satırın KDV oranı; boşsa üründen gelir.' },
   {
     id: 'date',

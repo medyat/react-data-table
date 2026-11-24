@@ -3,6 +3,7 @@
 import type { ColumnDef } from '../../types/columns'
 import type { FormatEnv } from '../cells/format'
 import { listOptions, plainText, xlsxCell } from './cells'
+import { columnName } from '../columns/column-name'
 
 export interface ExportJob<Row extends object> {
   format: 'csv' | 'xlsx'
@@ -46,7 +47,7 @@ export function toCsv<Row extends object>(job: ExportJob<Row>): string {
   const sep = job.env.fmt.decimal(1.5, 1).includes(',') ? ';' : ','
   const esc = (t: string) => (t.includes(sep) || /["\r\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t)
   const lines = [
-    job.columns.map((c) => esc(c.header)),
+    job.columns.map((c) => esc(columnName(c))),
     ...job.rows.map((r) => job.columns.map((c) => esc(plainText(c, r, job.read(r, c), job.env)))),
   ]
   return lines.map((l) => l.join(sep)).join('\r\n')
@@ -59,18 +60,18 @@ export async function toXlsx<Row extends object>(job: ExportJob<Row>): Promise<B
   ])
   const { columns, rows, env } = job
   const data = [
-    columns.map((c) => ({ value: c.header, ...HEADER })),
+    columns.map((c) => ({ value: columnName(c), ...HEADER })),
     ...rows.map((r) => columns.map((c) => xlsxCell(c, r, job.read(r, c), env))),
   ]
   const sample = rows.slice(0, 200)
   const widths = columns.map((c) => ({
-    width: widthOf([c.header, ...sample.map((r) => plainText(c, r, job.read(r, c), env))]),
+    width: widthOf([columnName(c), ...sample.map((r) => plainText(c, r, job.read(r, c), env))]),
   }))
 
   // Seçimli sütunlar: seçenekler ikinci sayfada birer sütun (görünür); içerik sayfasında hücre o listeden seçilir.
   const listed = columns.flatMap((c, i) => {
     const values = listOptions(c, env)
-    return values ? [{ column: i + 1, header: c.header, values }] : []
+    return values ? [{ column: i + 1, header: columnName(c), values }] : []
   })
   const optionsName = sheetName(env.i18n.t('export.optionsSheet'))
   const ref = `'${optionsName.replace(/'/g, "''")}'`

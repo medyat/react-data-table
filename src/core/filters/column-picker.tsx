@@ -8,6 +8,7 @@ import { typeLabelKey } from '../cells/specs'
 import { useDataTableContext } from '../provider'
 import type { Chip } from './model'
 import { TYPE_ICONS } from './type-icons'
+import { columnName } from '../columns/column-name'
 
 export function ColumnPicker({
   columns,
@@ -37,7 +38,7 @@ export function ColumnPicker({
   const picked = useRef(false)
 
   const needle = q.toLocaleLowerCase()
-  const match = (c: ColumnDef) => !q || c.header.toLocaleLowerCase().includes(needle)
+  const match = (c: ColumnDef) => !q || columnName(c).toLocaleLowerCase().includes(needle)
   const chipped = new Set(chips.map((c) => c.column))
   const filtered = chips
     .map((ch) => columns.find((c) => c.id === ch.column))
@@ -98,7 +99,7 @@ export function ColumnPicker({
                     return (
                       <Combobox.Item key={c.id as string} value={c.id as string} className="dt-picker-item">
                         <Icon size={14} aria-hidden="true" />
-                        <span className="dt-picker-name">{c.header}</span>
+                        <span className="dt-picker-name">{columnName(c)}</span>
                         <span className="dt-picker-hint">{g.hint(c)}</span>
                       </Combobox.Item>
                     )

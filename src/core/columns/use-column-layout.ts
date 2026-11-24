@@ -8,6 +8,7 @@
 // Performans (05 · Resize): hook genişlik değişiminde yeniden çizilmez (useTable seçicisi genişliği içermez).
 // Izgara `subscribeSizing` ile `--cols` ve sabit ofsetlerini React render'ı dışında yazar.
 import {
+  buildHeaderGroups,
   columnOrderingFeature,
   columnPinningFeature,
   columnResizingFeature,
@@ -23,6 +24,7 @@ import { useState } from 'react'
 import type { ColumnDef } from '../../types/columns'
 import type { ColumnLayout } from '../../types/query'
 import { defaultTrack, type Track } from '../cells/specs'
+import { groupPath } from './column-name'
 import { readPath } from './read-path'
 
 export const MIN_COLUMN_WIDTH = 80
@@ -51,6 +53,19 @@ export interface LayoutColumn<Row extends object = object> {
   canHide: boolean
   /** Resize tutamacının TanStack işleyicisi (fare ve dokunma). */
   resizeHandler: (event: unknown) => void
+}
+
+/** İç içe başlığın bir grup hücresi (`group`). Konum, başlık satırındaki sütun sırasıdır: sabit + orta, dolgu, sağ sabit. */
+export interface HeaderGroupCell<Row extends object = object> {
+  key: string
+  label: string
+  /** İlk yaprak sütunun sırası (0'dan), dolgu track'i sayılır. */
+  from: number
+  span: number
+  /** Sabit grubun sticky ofseti: soldaki için ilk, sağdaki için son yaprağı. */
+  pin: LayoutColumn<Row> | null
+  /** Sabit bölgenin kayan alana bakan kenarında: gölgeyi taşır. */
+  edge: boolean
 }
 
 /** Columns dialog'unun satırı (05 §5, D45): tüm sütunlar ekran sırasıyla. */
@@ -109,8 +124,10 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
     return Math.min(def?.maxWidth ?? Infinity, Math.max(def ? minOf(def) : MIN_COLUMN_WIDTH, Math.round(px)))
   }
 
-  // Her zaman açık id + accessorFn (accessorKey asla: nokta → alt çizgi çakışması, 01).
-  const tanstackColumns: Array<TanstackColumnDef<Features, Row, unknown>> = defs.map((d) => {
+  // Her zaman açık id + accessorFn (accessorKey asla: nokta → alt çizgi çakışması, 01). `group`'lu sütunlar TanStack'in
+  // grup sütunlarının altına girer; başlık satırlarını (bölünme dahil) TanStack kurar. Ağaç aynı grubu birleştirdiği için
+  // sıra tanımdaki gibi kalsın diye `columnOrder` hep tam verilir (stateOf).
+  const leafOf = (d: ColumnDef<Row>): TanstackColumnDef<Features, Row, unknown> => {
     const id = d.id as string
     return {
       id,
@@ -121,7 +138,23 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
       maxSize: d.maxWidth,
       enableHiding: !alwaysShown(d),
     }
-  })
+  }
+  const tanstackColumns: Array<TanstackColumnDef<Features, Row, unknown>> = []
+  const groupNodes = new Map<string, Array<TanstackColumnDef<Features, Row, unknown>>>()
+  for (const d of defs) {
+    let level = tanstackColumns
+    groupPath(d).forEach((name, i, path) => {
+      const id = `group:${path.slice(0, i + 1).join('/')}`
+      let children = groupNodes.get(id)
+      if (!children) {
+        children = []
+        groupNodes.set(id, children)
+        level.push({ id, header: name, columns: children })
+      }
+      level = children
+    })
+    level.push(leafOf(d))
+  }
 
   /** Görünümden gelen düzen → TanStack durumu (04 §7): bilinmeyen sütun atlanır; `visible` varsa beyaz listedir; gizlenemeyen hep açık. */
   const known = (ids: string[] | undefined) => ids?.filter((id) => defById.has(id))
@@ -139,7 +172,10 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
     return {
       columnPinning: { start, end },
       columnVisibility: visibility,
-      columnOrder: known(l?.order) ?? [],
+      columnOrder: [
+        ...(known(l?.order) ?? []),
+        ...defs.map((d) => d.id as string).filter((id) => !l?.order?.includes(id)),
+      ],
       columnSizing: sizing,
     }
   }
@@ -156,7 +192,7 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
     (s) => ({ columnOrder: s.columnOrder, columnVisibility: s.columnVisibility, columnPinning: s.columnPinning }),
   )
 
-  const headerById = new Map(table.getFlatHeaders().map((h) => [h.column.id, h as Header<Features, Row, unknown>]))
+  const headerById = new Map(table.getLeafHeaders().map((h) => [h.column.id, h as Header<Features, Row, unknown>]))
   const toLayoutColumn = (col: TColumn<Row>, pinned: PinSide, pinEdge: boolean): LayoutColumn<Row> => ({
     id: col.id,
     def: defById.get(col.id)!,
@@ -177,6 +213,41 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
   const start = startCols.map((c, i, all) => toLayoutColumn(c, 'start', i === all.length - 1))
   const center = centerCols.map((c) => toLayoutColumn(c, null, false))
   const end = endCols.map((c, i) => toLayoutColumn(c, 'end', i === 0))
+
+  /** Grup satırları (üstten alta); grupsuz tabloda boş. Bölge başına TanStack `buildHeaderGroups`: aynı gruptaki sütunlar
+   *  yan yana değilse ya da sabitleme sınırında grup bölünür. Telefonun bölgeleri TanStack'inkinden farklı olduğu için
+   *  bölgeler bizim sütun listelerimizdir. */
+  const groups: Array<Array<HeaderGroupCell<Row>>> = []
+  if (groupNodes.size) {
+    const all = table.getAllColumns()
+    const regions = [
+      { cols: startCols, family: 'start', layout: start, at: 0 },
+      { cols: centerCols, family: 'center', layout: center, at: start.length },
+      { cols: endCols, family: 'end', layout: end, at: start.length + center.length + 1 },
+    ] as const
+    for (const r of regions) {
+      const built = buildHeaderGroups(all, r.cols, table, r.family)
+      // Son satır yapraklardır; üsttekiler grup satırları.
+      built.slice(0, -1).forEach((hg, level) => {
+        const row = (groups[level] ??= [])
+        let from = 0
+        for (const h of hg.headers) {
+          if (!h.isPlaceholder && h.colSpan > 0)
+            row.push({
+              key: h.id,
+              label: String(h.column.columnDef.header),
+              from: r.at + from,
+              span: h.colSpan,
+              pin: r.family === 'start' ? r.layout[from]! : r.family === 'end' ? r.layout[from + h.colSpan - 1]! : null,
+              edge:
+                (r.family === 'start' && r.layout[from + h.colSpan - 1]!.pinEdge) ||
+                (r.family === 'end' && r.layout[from]!.pinEdge),
+            })
+          from += h.colSpan
+        }
+      })
+    }
+  }
 
   /** Sütunun gerçek track'i: sabit ve resize edilmiş sütunlar px, diğerleri tip varsayılanı (minmax olabilir). */
   const trackOf = (col: TColumn<Row>, pinned: boolean): Track => {
@@ -301,6 +372,7 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
 
   return {
     columns: [...start, ...center, ...end],
+    groups,
     start,
     center,
     end,
