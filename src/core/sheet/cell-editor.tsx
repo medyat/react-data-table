@@ -90,7 +90,7 @@ export function CellEditor<Row extends object>(props: CellEditorProps<Row>) {
   const { def } = props
   if (def.type === 'select') return <OptionCell {...props} options={def.options} />
   if (def.type === 'ajax') return <AjaxCell {...props} />
-  if (def.type === 'date') return <DateCell {...props} />
+  if (def.type === 'date' || def.type === 'datetime') return <DateCell {...props} />
   if (def.type === 'text') return <TextCell {...props} />
   return <InputCell {...props} />
 }
@@ -380,6 +380,10 @@ function DateCell<Row extends object>({
   // Takvimden seçim onaylar ve editör kapanır: odak input'a değil hücreye döner. Esc ile kapanınca input'a.
   const picked = useRef(false)
   const draft = parseInput(def, text, env)
+  // Takvim yerel günle çalışır; tarih-saatte değer andır, gün ve saat editör metninden (yerel) okunur.
+  const local = typeof draft === 'string' ? inputText(def, draft) : ''
+  const day = local ? local.slice(0, 10) : undefined
+  const clock = local.slice(11) || '00:00'
   useLayoutEffect(() => {
     if (!field) focusEnd(el.current)
     if (start !== undefined) onDraft(draft, start)
@@ -424,8 +428,10 @@ function DateCell<Row extends object>({
               <Suspense>
                 <Calendar
                   op="eq"
-                  value={typeof draft === 'string' ? draft : undefined}
+                  value={day}
                   onChange={(v) => {
+                    // Tarih-saatte gün seçimi saati korur ve editör açık kalır: saat yazılabilsin.
+                    if (def.type === 'datetime') return change(`${v} ${clock}`)
                     picked.current = true
                     onPick(v, false)
                   }}

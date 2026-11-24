@@ -24,6 +24,7 @@ interface Line {
   date: string | null
   note: string | null
   gift: boolean | null
+  shippedAt?: string | null
   lots?: Lot[] | null
   [extra: string]: unknown
 }
@@ -212,6 +213,7 @@ const base: Array<ColumnDef<Line>> = [
     placeholder: () => '1 Ara',
     required: (row) => row.gift === true,
   },
+  { id: 'shippedAt', header: 'Sevk zamanı', type: 'datetime', width: 156 },
   { id: 'gift', header: 'Promosyon', type: 'boolean', width: 104, hint: 'Promosyonlu satırda Teslim zorunludur.' },
   {
     id: 'lots',

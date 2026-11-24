@@ -300,6 +300,10 @@ F4 kararları:
 - Dialog'un `z-index`'i 51'den 50'ye indi: paketin bütün katmanları 50, sonra açılan üstte (pencere içindeki liste
   pencerenin arkasında kalıyordu).
 - Pencerede `date` alanı sunucunun metnini (`2026-12-01`) gösterir, hücredeki F2 ile aynı.
+- `datetime` düzenlenir: değer bir andır (ISO UTC metni, Swors `DateTimeField` ile aynı), editör kullanıcının yerel
+  gün ve saatini yazar ve okur (`2026-11-24 14:30`). Gün yazımları `date`'inkiler, saat `14:30` / `14.30`, saat yoksa
+  00:00. Bölgesi yazılı ISO (kendi kopyamız, sunucunun metni) anı korur. Takvimden gün seçmek saati korur ve editör
+  açık kalır: saat yazılabilsin.
 - Satır penceresi dışarı tıkla kapanmaz (`disablePointerDismissal`): yanlışlıkla tık taslağı atıyordu. İptal, Tamam,
   Esc kapatır.
 - Alan düzeni Swors'un `FormField`'ı: etiket + ? (`hint`, ipucu balonu), 36 px kutu, altında `description` ve hata.

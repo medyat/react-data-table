@@ -57,6 +57,7 @@ const INLINE = new Set([
   'currency',
   'select',
   'date',
+  'datetime',
 ])
 
 interface Patch {

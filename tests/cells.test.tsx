@@ -50,10 +50,10 @@ describe('boş değer', () => {
 })
 
 describe('sayı tipleri', () => {
-  it('int negatif U+2212, currency kod ayrı, percentage bar', () => {
+  it('int negatif U+2212, currency kod ayrı (metinde boşlukla: tooltip, ekran okuyucu), percentage bar', () => {
     expect(render(col('int'), -320).text()).toBe('−320')
     const c = render(col('currency', { currency: 'TRY' }), 412800)
-    expect(c.text()).toBe('412,800.00TRY')
+    expect(c.text()).toBe('412,800.00 TRY')
     expect(c.find('.dt-ccy')!.textContent).toBe('TRY')
     const b = render(col('percentage', { display: 'bar' }), 68)
     expect(b.find('.dt-bar-fill')!.style.width).toBe('68%')
@@ -63,7 +63,7 @@ describe('sayı tipleri', () => {
     expect(render(col('decimal', { signDisplay: 'exceptZero' }), '12.5').text()).toBe('+12.50')
     expect(render(col('decimal', { signDisplay: 'exceptZero' }), '0.00').text()).toBe('0.00')
     expect(render(col('decimal', { signDisplay: 'exceptZero' }), '-3').text()).toBe('−3.00')
-    expect(render(col('currency', { currency: 'TRY', signDisplay: 'never' }), '-1200.5').text()).toBe('1,200.50TRY')
+    expect(render(col('currency', { currency: 'TRY', signDisplay: 'never' }), '-1200.5').text()).toBe('1,200.50 TRY')
     expect(render(col('int', { signDisplay: 'never' }), -4).text()).toBe('4')
     expect(render(col('percentage', { signDisplay: 'exceptZero' }), '18').text()).toBe('+18%')
     expect(render(col('decimal'), '12.5').text()).toBe('12.50')
@@ -78,7 +78,7 @@ describe('sayı tipleri', () => {
   })
   it('satır bazında unit hücrede sayının yanında yazılır', () => {
     const w = render(col('decimal', { unit: (r: R) => (r.id === 1 ? 'm' : 'pcs') }), '486.5')
-    expect(w.text()).toBe('486.50m')
+    expect(w.text()).toBe('486.50 m')
     expect(w.find('.dt-unit')!.textContent).toBe('m')
   })
   it('star: dolu sayısı ve tooltip "4 of 5"', () => {

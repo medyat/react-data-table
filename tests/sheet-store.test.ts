@@ -672,3 +672,22 @@ describe('çoğalt (F4)', () => {
     expect(onRowsChange.mock.lastCall?.[0][3]).toEqual({ id: 'n1', code: 'A', qty: 1 })
   })
 })
+
+describe('datetime', () => {
+  it('düzenlenebilir: F2 sunucunun anıyla açar, onay yeni anı yazar', () => {
+    const at = '2026-11-24T11:30:00.000Z'
+    const onRowsChange = vi.fn()
+    const store = createSheetStore<{ at: string | null }>({
+      rows: [{ at }],
+      columns: [{ id: 'at', header: 'Zaman', type: 'datetime' }],
+      onRowsChange,
+    })
+    expect(store.isField(0)).toBe(true)
+    store.focus({ row: 0, col: 0 })
+    expect(store.startEdit()).toBe(true)
+    expect(store.editing()?.draft).toBe(at)
+    store.setDraft('2026-11-25T08:00:00.000Z')
+    store.commit()
+    expect(onRowsChange.mock.calls[0]![0]).toEqual([{ at: '2026-11-25T08:00:00.000Z' }])
+  })
+})

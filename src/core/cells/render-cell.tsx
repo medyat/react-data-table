@@ -192,10 +192,19 @@ function signed<Row extends object>(
   return (
     <span className={tone && `dt-sign-${SIGN_CLASS[sign!]}`}>
       {content}
-      {unit && <span className="dt-unit">{unit}</span>}
+      {unit && (
+        <>
+          <Gap />
+          <span className="dt-unit">{unit}</span>
+        </>
+      )}
     </span>
   )
 }
+
+/** Sayı ile birim / para kodu arasındaki boşluk metinde de olsun (tooltip, ekran okuyucu, seçip kopyalama); ekranda
+ *  aralığı CSS margin'i çizer, boşluk görünmez. */
+const Gap = () => <span className="dt-sr-only"> </span>
 
 /** `color` + `display: 'fill'`: hücre boyanır, yazı rengi kontrasta göre (03). */
 export function cellFillStyle<Row extends object>(def: ColumnDef<Row>, value: unknown): CSSProperties | undefined {
@@ -274,6 +283,7 @@ export function renderCellContent<Row extends object>(
         value,
         <>
           {fmt.decimal(decimalOf(value), decimalPlaces(def), def.signDisplay)}
+          <Gap />
           <span className="dt-ccy">{currencyCode(def, row)}</span>
         </>,
       )

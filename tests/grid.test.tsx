@@ -93,7 +93,7 @@ describe('roller ve yapı', () => {
     expect(primary.querySelector('a.dt-link')!.getAttribute('href')).toBe('/orders/1')
     const value = row.querySelector<HTMLElement>('[data-col="value"]')!
     expect([...value.classList]).toEqual(expect.arrayContaining(['is-right', 'is-numeric']))
-    expect(value.textContent).toBe('1,000.00TRY')
+    expect(value.textContent).toBe('1,000.00 TRY')
     expect(row.querySelector('[data-col="dueAt"]')!.textContent).toBe('Oct 18 · 3d late')
     vi.useRealTimers()
   })

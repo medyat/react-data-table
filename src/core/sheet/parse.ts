@@ -58,6 +58,24 @@ export function parseDateInput(text: string, env: ParseEnv): string | null {
   return null
 }
 
+/** Tarih-saat bir andır: değer ISO UTC metni, kullanıcı yerel gün ve saatle yazar (Swors `DateTimeField` ile aynı).
+ *  Bölgesi yazılı ISO (kendi kopyamız, sunucunun metni) anı olduğu gibi korur. Gün yazımları `date`'inkiler; saat
+ *  `14:30` ya da `14.30`, yoksa 00:00 (Excel gibi). */
+export function parseDateTimeInput(text: string, env: ParseEnv): string | null {
+  const s = text.trim()
+  if (/^\d{4}-\d{2}-\d{2}T.*(Z|[+-]\d{2}:?\d{2})$/i.test(s)) {
+    const d = new Date(s)
+    return Number.isNaN(d.getTime()) ? null : d.toISOString()
+  }
+  const m = /^(.*?)(?:[ T]+(\d{1,2})[:.](\d{2}))?$/.exec(s)!
+  const day = parseDateInput(m[1]!, env)
+  const h = m[2] ? +m[2] : 0
+  const min = m[3] ? +m[3] : 0
+  if (!day || h > 23 || min > 59) return null
+  const [y, mo, d] = day.split('-').map(Number)
+  return new Date(y!, mo! - 1, d!, h, min).toISOString()
+}
+
 /** Editör metni → hücre değeri. Boş → null; çözülemeyen → ham metin (tip hatası). */
 export function parseInput(def: ColumnDef, text: string, env: ParseEnv): unknown {
   const s = text.trim()
@@ -70,8 +88,9 @@ export function parseInput(def: ColumnDef, text: string, env: ParseEnv): unknown
   }
   switch (def.type) {
     case 'date':
-    case 'datetime':
       return parseDateInput(s, env) ?? s
+    case 'datetime':
+      return parseDateTimeInput(s, env) ?? s
     case 'select':
       return matchOption(def.options, s, env.locale)
     case 'multiselect':
@@ -95,6 +114,12 @@ export function parseInput(def: ColumnDef, text: string, env: ParseEnv): unknown
 export function inputText(def: ColumnDef, value: unknown): string {
   if (value === null || value === undefined) return ''
   if (def.type === 'select') return optionLabel(def.options, value)
+  if (def.type === 'datetime') {
+    const d = new Date(value as string | Date)
+    if (Number.isNaN(d.getTime())) return String(value)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${isoDay(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  }
   if (Array.isArray(value)) return value.join(', ')
   if (typeof value === 'object') return JSON.stringify(value)
   return String(value)

@@ -65,3 +65,28 @@ describe('parseInput', () => {
     expect(inputText(unit, null)).toBe('')
   })
 })
+
+describe('datetime: an (ISO UTC), kullanıcı yerel gün ve saatle yazar', () => {
+  const at: ColumnDef = { id: 'at', header: 'At', type: 'datetime' }
+  const local = (y: number, m: number, d: number, h = 0, min = 0) => new Date(y, m - 1, d, h, min).toISOString()
+  it('yerel gün + saat → UTC; saat yoksa 00:00; gün yazımları date ile aynı', () => {
+    expect(parseInput(at, '24.11.2026 14:30', tr)).toBe(local(2026, 11, 24, 14, 30))
+    expect(parseInput(at, '2026-11-24 09:05', env)).toBe(local(2026, 11, 24, 9, 5))
+    expect(parseInput(at, '24.11 14.30', tr)).toBe(local(2026, 11, 24, 14, 30))
+    expect(parseInput(at, '24.11.2026', tr)).toBe(local(2026, 11, 24))
+    expect(parseInput(at, 'bugün 08:00', tr)).toBe(local(2026, 10, 21, 8))
+  })
+  it('bölgesi yazılı ISO (kendi kopyamız, sunucu) anı korur', () => {
+    expect(parseInput(at, '2026-11-24T11:30:00.000Z', env)).toBe('2026-11-24T11:30:00.000Z')
+    expect(parseInput(at, '2026-11-24T14:30:00+03:00', env)).toBe('2026-11-24T11:30:00.000Z')
+  })
+  it('geçersiz saat ya da gün ham metin kalır (tip hatası)', () => {
+    expect(parseInput(at, '24.11.2026 25:00', tr)).toBe('24.11.2026 25:00')
+    expect(parseInput(at, '31.02.2026 10:00', tr)).toBe('31.02.2026 10:00')
+  })
+  it('editör metni yerel gün ve saat; geri çözülünce aynı an', () => {
+    const iso = local(2026, 11, 24, 14, 30)
+    expect(inputText(at, iso)).toBe('2026-11-24 14:30')
+    expect(parseInput(at, inputText(at, iso), env)).toBe(iso)
+  })
+})
