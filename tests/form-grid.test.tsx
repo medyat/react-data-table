@@ -1015,3 +1015,55 @@ describe('telefon (pano 3a, 3b)', () => {
     }
   })
 })
+
+describe('tarih-saat maskesi', () => {
+  function AtHarness({ onChange }: { onChange: (rows: Array<{ at: string | null }>) => void }) {
+    const [rows, setRows] = useState<Array<{ at: string | null }>>([
+      { at: new Date(2026, 10, 24, 14, 30).toISOString() },
+    ])
+    return (
+      <DataTableProvider locale="tr-TR">
+        <FormGrid
+          label="Satırlar"
+          rows={rows}
+          columns={[{ id: 'at', header: 'Zaman', type: 'datetime' }]}
+          onRowsChange={(next) => {
+            setRows(next)
+            onChange(next)
+          }}
+        />
+      </DataTableProvider>
+    )
+  }
+  it('F2 dilin biçiminde açar; yazılan rakama ayraç konur; kalıp ipucu boşken; canlı açıklama anlaşılanı söyler', async () => {
+    const onChange = vi.fn()
+    render(<AtHarness onChange={onChange} />)
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.keyDown(cell(0, 0), { key: 'F2' })
+    expect(editor()?.value).toBe('24.11.2026 14:30')
+    expect(editor()?.placeholder).toBe('gg.aa.yyyy ss:dd')
+    fireEvent.change(editor()!, { target: { value: '0112202609' } })
+    expect(editor()?.value).toBe('01.12.2026 09')
+    expect(document.querySelector('.dt-date-hint')?.textContent).toBe('Biçim: gg.aa.yyyy ss:dd')
+    fireEvent.change(editor()!, { target: { value: '01.12.2026 0915' } })
+    expect(editor()?.value).toBe('01.12.2026 09:15')
+    expect(document.querySelector('.dt-date-hint')?.textContent).toMatch(/1 Aralık 2026 Salı.*09:15/)
+    fireEvent.keyDown(editor()!, { key: 'Enter' })
+    await flush()
+    expect(onChange.mock.lastCall?.[0][0].at).toBe(new Date(2026, 11, 1, 9, 15).toISOString())
+  })
+  it('ayracın hemen ardında geri silme önündeki rakamı siler', async () => {
+    render(<AtHarness onChange={vi.fn()} />)
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.keyDown(cell(0, 0), { key: 'F2' })
+    const input = editor()!
+    // "24.|11.2026 14:30": ayraç silinir, maske onu geri koyardı; silinen ayraçtan önceki rakamdır.
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, '2411.2026 14:30')
+    input.setSelectionRange(2, 2)
+    fireEvent.input(input, { inputType: 'deleteContentBackward' })
+    expect(editor()?.value).toBe('21.12.0261 43:0')
+    expect(editor()?.selectionStart).toBe(1)
+  })
+})

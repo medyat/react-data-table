@@ -2,24 +2,31 @@
 import type { ColumnDef } from '../../types/columns'
 import { decimalOf, decimalPlaces, formatCell, isEmptyValue, optionLabel, type FormatEnv } from '../cells/format'
 import { toDate } from '../format'
+import { isoDay } from '../filters/model'
+import { localDateTime } from '../sheet/parse'
 
 /**
  * Düz metin: görüntülenen biçim, ama geri yapıştırılabilir/içe aktarılabilir (07 §7). Para kodu ve "—" yok,
  * tarihler ISO, listeler `; ` ile. Pano ve CSV bunu kullanır.
  */
+const asciiMinus = (s: string): string => s.replace(/\u2212/g, '-')
+
 export function plainText<Row extends object>(def: ColumnDef<Row>, row: Row, value: unknown, env: FormatEnv): string {
   if (isEmptyValue(value)) return ''
   switch (def.type) {
     // İşaret her zaman yazılır: `signDisplay: 'never'` yalnız ekranındır, kopyalanan değer geri yapıştırılınca aynı kalmalı.
+    // Eksi düz tiredir: Excel U+2212'yi eksi saymaz, sayıyı metin olarak yapıştırır.
     case 'currency':
-      return env.fmt.decimal(decimalOf(value), decimalPlaces(def))
+      return asciiMinus(env.fmt.decimal(decimalOf(value), decimalPlaces(def)))
     case 'int':
     case 'decimal':
     case 'percentage':
-      return formatCell({ ...def, signDisplay: 'auto' }, row, value, env)
+      return asciiMinus(formatCell({ ...def, signDisplay: 'auto' }, row, value, env))
+    // ISO: Excel her bölge ayarında tarih olarak tanır. Tarih-saat yerel ve bölgesizdir (kullanıcının gördüğü saat).
     case 'date':
+      return value instanceof Date ? isoDay(value) : String(value)
     case 'datetime':
-      return value instanceof Date ? value.toISOString() : String(value)
+      return localDateTime(value as string | Date)
     case 'multiselect':
       return (value as unknown[]).map((v) => optionLabel(def.options, v)).join('; ')
     case 'string':

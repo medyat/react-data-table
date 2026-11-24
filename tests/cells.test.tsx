@@ -251,3 +251,10 @@ describe('yapısal ve özel', () => {
     expect(w.find('b')!.dataset.d).toBe('standard')
   })
 })
+
+describe('geçersiz tarih metni (FormGrid’de yazılıp onaylanan)', () => {
+  it.each(['asd', '2026-11-20 23'])('"%s" çökmez, ham metin çizilir', (v) => {
+    expect(render(col('datetime'), v).text()).toBe(v)
+    expect(render(col('date'), v).text()).toBe(v)
+  })
+})

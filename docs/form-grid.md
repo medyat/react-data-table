@@ -291,6 +291,21 @@ F3 kararları:
 - ⌘D Excel'deki gibi: aralıkta ilk satır aşağı, tek satırda üstteki satır. Seri (1, 2, 3…) yok.
 - `maxRows`'u aşan yapıştırmanın alınmayan satır sayısı alt çubukta yazar, sonraki tuşta kalkar (pakette toast yok).
 - Menüden kopyala / yapıştır tarayıcının pano iznini ister; kısayollar izinsiz çalışır.
+- Pano Excel'le tür uyumludur. Kopyada tarih ISO gün (`2026-11-24`), tarih-saat yerel ve bölgesiz ISO
+  (`2026-11-24 14:30`, saniye varsa yazılır): Excel her bölge ayarında tarih olarak tanır; kullanıcının gördüğü saat
+  gider, UTC değil. Sayıda eksi düz tire (U+2212'yi Excel eksi saymaz). Aynı kural CSV dışa aktarmada da geçerli.
+- Yapıştırmada (ve yazarken) tarih dilin sırasıyla okunur (Intl): eğik çizgi ve tire en-US'te ay önde, tr / ru'da gün
+  önde; nokta her dilde gün önde. Ay adları dilin ve İngilizcenin kısa / uzun adlarıdır (`24 Kas 2026`, `Nov 24,
+  2026`, Excel'in `24-Nov-26`'sı). Saat `14:30`, `14:30:15`, `2:30 PM`; `date` sütununa saatli metinden gün alınır.
+  Dilin sırasında geçersiz tarih (`24/11/2026` en-US'te) çevrilmez, hücre hata gösterir: `03/04` sessizce yanlış
+  aya dönmesin. Varsayım: kullanıcının Excel'i tablonun dilindeki bölge ayarıyla çalışır.
+- İki haneli yıl kayan pencereyle okunur: bugünden en çok 20 yıl ileri, gerisi geçmiş yüzyıl (2026'da `97` → 1997,
+  `46` → 2046). Excel'in sabit 1930–2029 sınırı 2030'da bozulurdu.
+- Tarih ve tarih-saat editörü elle yazımı dilin kalıbıyla maskeler (`dateMask`, Intl sırası ve ayracı: tr / ru
+  `gg.aa.yyyy ss:dd`, en-US `mm/dd/yyyy hh:mm`): yalnız rakam girer, ayraç kendiliğinden gelir; ayracın ardında geri
+  silme önündeki rakamı siler. F2 değeri bu biçimde açar, boş kutuda kalıp placeholder'dır. Editöre yapıştırılan metin
+  süzülmez, çözümleyicinin kurallarıyla okunur. Izgarada hücrenin üstündeki balon yazılanın nasıl anlaşıldığını söyler
+  ("24 Kasım 2026 Salı 14:30"), anlaşılamazsa kalıbı. Değer ve pano kuralları değişmez; satır penceresinde balon yok.
 - ⌘F 1000×30'da tuş başına ~70 ms tarar (dev): kutu `useDeferredValue` ile takılmaz. Eşleşme mor; uyarı ve seçim
   üstüne binince onlar görünür.
 

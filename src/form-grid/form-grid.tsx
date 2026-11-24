@@ -99,8 +99,8 @@ function GridCell<Row extends object>({
     state & CELL.right && 'is-edge-r',
     issue && `is-${issue.level}`,
     found && 'is-found',
-    // İlk satırın balonu yapışkan başlığın altında kalmasın.
-    issue && index === 0 && 'is-tip-below',
+    // İlk satırın balonu (hata ya da tarih editörünün açıklaması) yapışkan başlığın altında kalmasın.
+    (issue || state & CELL.editing) && index === 0 && 'is-tip-below',
     ...pinClasses(col),
   ]
   const tipId = issue ? `dt-fg-tip-${store.rowId(index)}-${colIndex}` : undefined

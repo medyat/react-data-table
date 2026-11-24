@@ -7,7 +7,17 @@ import { Combobox } from '@base-ui/react/combobox'
 import { Popover } from '@base-ui/react/popover'
 import type { BaseUIEvent } from '@base-ui/react/types'
 import { CalendarBlankIcon } from '@phosphor-icons/react'
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+} from 'react'
 import type { ColumnDef, OptionDef } from '../../types/columns'
 import { decimalPlaces, isEmptyValue } from '../cells/format'
 import type { RemoteLabels } from '../cells/remote-labels'
@@ -16,7 +26,17 @@ import { useDelay } from '../interaction/use-delay'
 import { TYPE_SPECS } from '../cells/specs'
 import { cleanNumber, plainNumber } from '../format/parse'
 import { useDataTableContext } from '../provider'
-import { fold, inputText, parseInput, type ParseEnv } from './parse'
+import {
+  dateMask,
+  fillMask,
+  fold,
+  inputText,
+  maskText,
+  parseDateInput,
+  parseDateTimeInput,
+  parseInput,
+  type ParseEnv,
+} from './parse'
 import { columnName } from '../columns/column-name'
 
 // Takvim ayrı parçadır: tarih editörü açılınca yüklenir, popover açılmadan hazırdır. `lazy` yüklüyken de ilk çizimde
@@ -360,6 +380,13 @@ function AjaxCell<Row extends object>({
   )
 }
 
+const MASK_KEYS: Record<string, string> = {
+  dd: 'maskDay',
+  MM: 'maskMonth',
+  yyyy: 'maskYear',
+  HH: 'maskHour',
+  mm: 'maskMinute',
+}
 function DateCell<Row extends object>({
   def,
   text: start,
@@ -370,9 +397,14 @@ function DateCell<Row extends object>({
   id,
   invalid,
 }: CellEditorProps<Row>) {
-  const { i18n } = useDataTableContext()
+  const { i18n, locale } = useDataTableContext()
   const env = useParseEnv()
-  const [text, setText] = useState(() => start ?? inputText(def, value))
+  // Elle yazım dilin kalıbıyla maskelenir; değer ve yapıştırma çözümleyicinin kurallarıyla kalır.
+  const mask = dateMask(locale, def.type === 'datetime' ? 'datetime' : 'date')
+  const pattern = mask.replace(/dd|MM|yyyy|HH|mm/g, (tok) => i18n.t(`sheet.${MASK_KEYS[tok]}`))
+  const [text, setText] = useState(() => (start === undefined ? fillMask(mask, value) : maskText(start, mask)))
+  const caret = useRef<number | null>(null)
+  const hintId = useId()
   useEffect(() => void loadDate(), [])
   const Calendar = loadedDate ?? LazyDate
   const [open, setOpen] = useState(false)
@@ -386,13 +418,47 @@ function DateCell<Row extends object>({
   const clock = local.slice(11) || '00:00'
   useLayoutEffect(() => {
     if (!field) focusEnd(el.current)
-    if (start !== undefined) onDraft(draft, start)
+    if (start !== undefined) onDraft(draft, text)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+  useLayoutEffect(() => {
+    if (caret.current === null) return
+    el.current?.setSelectionRange(caret.current, caret.current)
+    caret.current = null
+  }, [text])
   const change = (t: string) => {
     setText(t)
     onDraft(parseInput(def, t, env), t)
   }
+  const onInput = (e: ChangeEvent<HTMLInputElement>) => {
+    const kind = (e.nativeEvent as InputEvent).inputType ?? ''
+    // Yapıştırılan metin süzülmez: Excel'in "Nov 24, 2026"'sı çözümleyicinin kurallarıyla okunur.
+    if (kind === 'insertFromPaste') return change(e.target.value)
+    const raw = e.target.value
+    const digitsOf = (s: string) => s.replace(/\D/g, '')
+    let digits = digitsOf(raw)
+    let pos = digitsOf(raw.slice(0, e.target.selectionStart ?? raw.length)).length
+    // Silinen ayraçsa maske onu geri koyardı: yerine silme yönündeki rakam gider.
+    if (kind.startsWith('delete') && digits.length === digitsOf(text).length) {
+      const drop = kind === 'deleteContentBackward' ? pos - 1 : pos
+      if (drop >= 0 && drop < digits.length) {
+        digits = digits.slice(0, drop) + digits.slice(drop + 1)
+        pos = drop
+      }
+    }
+    const next = maskText(digits, mask)
+    let at = 0
+    for (let n = 0; n < pos && at < next.length; at++) if (/\d/.test(next[at]!)) n++
+    caret.current = at
+    change(next)
+  }
+  const when = def.type === 'datetime' ? parseDateTimeInput(text, env) : parseDateInput(text, env)
+  const hint = when
+    ? new Intl.DateTimeFormat(locale, {
+        dateStyle: 'full',
+        timeStyle: def.type === 'datetime' ? 'short' : undefined,
+      }).format(def.type === 'datetime' ? new Date(when) : new Date(`${when}T00:00`))
+    : i18n.t('sheet.dateHint', { pattern })
   // ⌥↓ takvimi açar (combobox'la aynı tuş); takvim açıkken tuşlar ona gider.
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.altKey && e.key === 'ArrowDown') {
@@ -408,13 +474,21 @@ function DateCell<Row extends object>({
         type="text"
         autoComplete="off"
         value={text}
+        placeholder={pattern}
         aria-label={columnName(def)}
+        aria-describedby={field ? undefined : hintId}
         id={id}
         aria-invalid={invalid || undefined}
         aria-expanded={open}
-        onChange={(e) => change(e.target.value)}
+        onChange={onInput}
         onKeyDown={onKeyDown}
       />
+      {/* Yazılanın nasıl anlaşıldığı; ızgarada hücrenin üstünde, takvim açıkken gizli. */}
+      {!field && !open && text && (
+        <span id={hintId} className="dt-cell-tip is-warning dt-date-hint">
+          {hint}
+        </span>
+      )}
       <Popover.Root open={open} onOpenChange={setOpen}>
         <Popover.Trigger className="dt-cell-editor-btn" tabIndex={-1} aria-label={i18n.t('type.date')}>
           <CalendarBlankIcon size={14} aria-hidden="true" />
@@ -431,7 +505,7 @@ function DateCell<Row extends object>({
                   value={day}
                   onChange={(v) => {
                     // Tarih-saatte gün seçimi saati korur ve editör açık kalır: saat yazılabilsin.
-                    if (def.type === 'datetime') return change(`${v} ${clock}`)
+                    if (def.type === 'datetime') return change(fillMask(mask, parseDateTimeInput(`${v} ${clock}`, env)))
                     picked.current = true
                     onPick(v, false)
                   }}

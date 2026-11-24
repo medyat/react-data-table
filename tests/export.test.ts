@@ -66,7 +66,15 @@ async function unzip(blob: Blob) {
 describe('plainText', () => {
   it('signDisplay yalnız ekranındır: kopyalanan değer işaretini korur', () => {
     const balance: ColumnDef<P> = { id: 'price', header: 'B', type: 'decimal', signDisplay: 'never' }
-    expect(plainText(balance, rows[0]!, '-1200.5', en)).toBe('−1,200.50')
+    // Eksi düz tire: Excel U+2212'yi eksi saymaz, sayıyı metin olarak yapıştırırdı.
+    expect(plainText(balance, rows[0]!, '-1200.5', en)).toBe('-1,200.50')
+  })
+  it('tarih ISO gün, tarih-saat yerel ve bölgesiz ISO: Excel her bölgede tarih olarak tanır', () => {
+    const at: ColumnDef<P> = { id: 'at' as keyof P, header: 'At', type: 'datetime' }
+    const due: ColumnDef<P> = { id: 'due', header: 'Due', type: 'date' }
+    expect(plainText(due, rows[0]!, '2026-10-24', en)).toBe('2026-10-24')
+    expect(plainText(at, rows[0]!, new Date(2026, 10, 24, 14, 30).toISOString(), en)).toBe('2026-11-24 14:30')
+    expect(plainText(at, rows[0]!, new Date(2026, 10, 24, 14, 30, 15).toISOString(), en)).toBe('2026-11-24 14:30:15')
   })
 })
 

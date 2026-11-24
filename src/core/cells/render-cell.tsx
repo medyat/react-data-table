@@ -16,6 +16,7 @@ import {
   urlHost,
   type FormatEnv,
 } from './format'
+import { toDate } from '../format'
 
 export interface RenderEnv extends FormatEnv {
   density: Density
@@ -359,6 +360,8 @@ export function renderCellContent<Row extends object>(
     }
     case 'date':
     case 'datetime': {
+      // FormGrid'de çözülemeyen giriş ham metin olarak kalır (hücre hata gösterir); Intl onu biçimlerken fırlatır.
+      if (Number.isNaN(toDate(value as string | Date).getTime())) return String(value)
       const overdue = typeof def.overdue === 'function' ? def.overdue(row) : def.overdue
       const late = overdue ? fmt.daysLate(value as string | Date, env.today) : 0
       const tip = def.type === 'datetime' ? fmt.dateTimeFull(value as string | Date) : undefined

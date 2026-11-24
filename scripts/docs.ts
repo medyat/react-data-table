@@ -208,6 +208,13 @@ const REACT_ONLY_MESSAGES: Record<string, [string, string]> = {
   'sheet.newRow': ['New row', 'Yeni satır'],
   'sheet.edit': ['Edit', 'Düzenle'],
   'sheet.aboutField': ['About {label}', '{label} hakkında'],
+  // Tarih editörünün kalıp harfleri (placeholder) ve canlı açıklaması.
+  'sheet.maskDay': ['dd', 'gg'],
+  'sheet.maskMonth': ['mm', 'aa'],
+  'sheet.maskYear': ['yyyy', 'yyyy'],
+  'sheet.maskHour': ['hh', 'ss'],
+  'sheet.maskMinute': ['mm', 'dd'],
+  'sheet.dateHint': ['Format: {pattern}', 'Biçim: {pattern}'],
   'sheet.rowTitle': ['Row {n}', 'Satır {n}'],
   'sheet.prevRow': ['Previous row', 'Önceki satır'],
   'sheet.nextRow': ['Next row', 'Sonraki satır'],

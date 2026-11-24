@@ -703,3 +703,12 @@
   right: 2px;
   bottom: 2px;
 }
+
+/* Tarih editörünün canlı açıklaması: hücre ipucunun yerinde, düzenlerken görünür. */
+.dt-cell-tip.dt-date-hint {
+  display: block;
+}
+.dt-cell.is-tip-below .dt-date-hint {
+  bottom: auto;
+  top: calc(100% + 6px);
+}
