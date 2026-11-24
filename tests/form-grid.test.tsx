@@ -538,3 +538,107 @@ it('boş satırın hücrelerinde "Yeni satır" soluk yazar', async () => {
   expect(cell(1, 1).querySelector('.dt-cell-placeholder')?.textContent).toBe('Yeni satır')
   expect(cell(0, 0).querySelector('.dt-cell-placeholder')).toBeNull()
 })
+
+describe('sağ tık menüsü (pano ContextMenu)', () => {
+  type L = { code: string | null; lot: string | null }
+  const cols: Array<ColumnDef<L>> = [
+    { id: 'code', header: 'Ürün', type: 'string' },
+    { id: 'lot', header: 'Lot', type: 'string', editable: false },
+  ]
+  function Harness({ onChange }: { onChange: (rows: L[], c: FormGridChange) => void }) {
+    const [rows, setRows] = useState<L[]>([
+      { code: 'A', lot: 'L1' },
+      { code: 'B', lot: 'L2' },
+      { code: 'C', lot: 'L3' },
+    ])
+    return (
+      <DataTableProvider locale="tr-TR">
+        <FormGrid
+          label="Satırlar"
+          rows={rows}
+          columns={cols}
+          onRowsChange={(next, change) => {
+            setRows(next)
+            onChange(next, change)
+          }}
+        />
+      </DataTableProvider>
+    )
+  }
+  const open = async (at: HTMLElement) => {
+    fireEvent.contextMenu(at)
+    await flush()
+    return screen.getByRole('menu')
+  }
+
+  it('başlıklar hücre ve kilitli sayısını, satır sayısını yazar; sil ⌘⌫ taşır', async () => {
+    render(<Harness onChange={vi.fn()} />)
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.pointerDown(cell(1, 1), { button: 0, shiftKey: true })
+    const menu = await open(cell(1, 1))
+    expect(within(menu).getByText('4 hücre · 2 kilitli hücre atlanır')).toBeTruthy()
+    expect(within(menu).getByText('2 satır')).toBeTruthy()
+    const remove = within(menu).getByRole('menuitem', { name: /2 satırı sil/ })
+    expect(remove.textContent).toContain(/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘⌫' : 'Ctrl+Backspace')
+  })
+
+  it('seçimin hepsi kilitliyse Kes, Temizle ve Doldur pasif', async () => {
+    render(<Harness onChange={vi.fn()} />)
+    await flush()
+    fireEvent.pointerDown(cell(1, 1), { button: 0 })
+    const menu = await open(cell(1, 1))
+    for (const name of [/Kes/, /İçeriği temizle/, /Aşağı doldur/])
+      expect(within(menu).getByRole('menuitem', { name }).getAttribute('aria-disabled')).toBe('true')
+    expect(
+      within(menu)
+        .getByRole('menuitem', { name: /Kopyala/ })
+        .getAttribute('aria-disabled'),
+    ).toBeNull()
+  })
+
+  it('⌘⌫ seçili satırları siler', async () => {
+    const onChange = vi.fn()
+    render(<Harness onChange={onChange} />)
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.pointerDown(cell(1, 0), { button: 0, shiftKey: true })
+    const mod = /Mac|iPhone|iPad/.test(navigator.platform) ? { metaKey: true } : { ctrlKey: true }
+    fireEvent.keyDown(cell(1, 0), { key: 'Backspace', ...mod })
+    await flush()
+    expect(onChange.mock.lastCall).toEqual([[{ code: 'C', lot: 'L3' }], expect.objectContaining({ kind: 'remove' })])
+  })
+})
+
+describe('satır silince odak', () => {
+  const mod = () => (/Mac|iPhone|iPad/.test(navigator.platform) ? { metaKey: true } : { ctrlKey: true })
+  it('⌘⌫ sonrası odak yeni aktif hücrede, klavye çalışır', async () => {
+    await openGrid([
+      { code: 'A', qty: '1', unit: 'pc', gift: false },
+      { code: 'B', qty: '2', unit: 'm', gift: false },
+      { code: 'C', qty: '3', unit: 'm', gift: false },
+    ])
+    fireEvent.pointerDown(cell(1, 0), { button: 0 })
+    cell(1, 0).focus()
+    fireEvent.keyDown(cell(1, 0), { key: 'Backspace', ...mod() })
+    await flush()
+    expect(cell(1, 0).textContent).toBe('C')
+    expect(document.activeElement).toBe(cell(1, 0))
+  })
+  it('⋯ menüsünden silince odak aktif hücrede', async () => {
+    await openGrid([
+      { code: 'A', qty: '1', unit: 'pc', gift: false },
+      { code: 'B', qty: '2', unit: 'm', gift: false },
+    ])
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    const more = screen.getAllByRole('button', { name: /işlemleri/ })[0]!
+    fireEvent.focus(more)
+    fireEvent.click(more)
+    await flush()
+    fireEvent.click(screen.getByRole('menuitem', { name: /Satırı sil/ }))
+    await flush()
+    await flush()
+    expect(cell(0, 0).textContent).toBe('B')
+    expect(document.activeElement).toBe(cell(0, 0))
+  })
+})

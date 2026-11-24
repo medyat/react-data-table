@@ -29,7 +29,7 @@ import { RowMenu } from '../core/grid/row-menu'
 import { withFill } from '../core/grid/row'
 import { DelegatedTooltip } from '../core/grid/tooltip'
 import type { I18n } from '../core/i18n'
-import { mac } from '../core/interaction/kbd'
+import { mac, PASTE_KBD, REMOVE_KBD } from '../core/interaction/kbd'
 import { useDataTableContext } from '../core/provider'
 import { CellEditor, useParseEnv } from '../core/sheet/cell-editor'
 import { matrixFromClipboard, parseTsv, toHtml, toTsv } from '../core/sheet/clipboard'
@@ -305,6 +305,14 @@ export function FormGrid<Row extends object>({
       // Uzun metin kutusu portalda: odak oradayken de ızgaradadır.
       const inside = el?.contains(document.activeElement) || document.activeElement?.closest('.dt-text-pop')
       if (!a || !el || store.editing() || !(owned || inside)) return
+      // Odaktaki hücrenin satırı silindiyse (⌘⌫, geri al) satır çizimden sonra kalkar ve odak body'ye düşer: bir sonraki
+      // karede aktif hücreye döner.
+      if (inside)
+        requestAnimationFrame(() => {
+          const now = store.active()
+          if (document.activeElement !== document.body || !now) return
+          el.querySelector<HTMLElement>(`.dt-cell[data-row="${now.row}"][data-col="${now.col}"]`)?.focus()
+        })
       const cell = el.querySelector<HTMLElement>(`.dt-cell[data-row="${a.row}"][data-col="${a.col}"]`)
       // Arama kutusunda Enter: hücre görünür olur, odak kutuda kalır (sonraki Enter için).
       if (cell && document.activeElement?.closest('.dt-find'))
@@ -480,16 +488,23 @@ export function FormGrid<Row extends object>({
       if (cut) store.clear()
   }
   const menuPaste = async () => {
-    const text = await navigator.clipboard.readText().catch(() => '')
+    const text = await navigator.clipboard.readText().catch(() => null)
+    // İzin yoksa (ya da pano boşsa) kısayolu söyler: ⌘V her zaman çalışır.
     if (text) await paste(parseTsv(text))
+    else setNotice(ctx.i18n.t('sheet.pasteDenied', { kbd: PASTE_KBD }))
   }
   // Silme paketin eylemidir (form-grid.md §5): seçili satırlar birlikte; uygulamanın eylemleri üstünde.
   const removeAction: RowAction<Row> = {
     id: 'remove',
     label: '',
     icon: TrashIcon,
+    shortcut: REMOVE_KBD,
     destructive: true,
-    run: () => store.removeRows(),
+    // Menüden silinince odak menüdeydi; ⋯ düğmesi silinen satırla gider, Base UI odağı geri veremez.
+    run: () => {
+      store.removeRows()
+      focusActive()
+    },
   }
   const rowActionsFor = (count = removeCount(store, -1)) => [
     ...rowActions,
@@ -665,8 +680,26 @@ export function FormGrid<Row extends object>({
           selectRow: () => store.selectRow(),
           selectColumn: () => store.selectColumn(),
           selectAll: () => store.selectAll(),
-          row: () => store.rows()[store.active()?.row ?? -1],
-          rowActions: () => rowActionsFor(),
+          info: () => {
+            const r = store.range()
+            const last = Math.min(r?.bottom ?? -1, rows.length - 1)
+            let cells = 0
+            let locked = 0
+            if (r)
+              for (let i = r.top; i <= r.bottom; i++)
+                for (let c = r.left; c <= r.right; c++) {
+                  cells++
+                  if (!store.canEdit(i, c)) locked++
+                }
+            return {
+              cells,
+              locked,
+              rows: r ? Math.max(0, last - r.top + 1) : 0,
+              single: !!r && r.top === r.bottom,
+              row: store.rows()[store.active()?.row ?? -1],
+              rowActions: rowActionsFor(),
+            }
+          },
           onClose: focusActive,
         }}
         trigger={

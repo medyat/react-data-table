@@ -133,6 +133,8 @@ export function HeaderCell<Row extends object>({
     column.pinEdge && 'is-pin-edge',
     resizing >= 0 && 'is-resizing',
     menuOpen && 'is-menu-open',
+    // ⋯ yoksa (FormGrid) etiket ona yer açmak için kaymaz.
+    menu && 'has-menu',
   ]
 
   return (
@@ -237,11 +239,11 @@ export function HeaderCell<Row extends object>({
           )}
           <DtMenuItem onSelect={() => move(-1)}>
             {i18n.t('header.moveLeft')}
-            <kbd className="dt-kbd">{MOVE_KBD.left}</kbd>
+            <kbd className="dt-menu-kbd">{MOVE_KBD.left}</kbd>
           </DtMenuItem>
           <DtMenuItem onSelect={() => move(1)}>
             {i18n.t('header.moveRight')}
-            <kbd className="dt-kbd">{MOVE_KBD.right}</kbd>
+            <kbd className="dt-menu-kbd">{MOVE_KBD.right}</kbd>
           </DtMenuItem>
           <DtMenuSeparator />
           <DtMenuItem

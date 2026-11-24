@@ -60,7 +60,7 @@ export function RowMenu<Row extends object>({
             }}
           >
             {i18n.t('row.open')}
-            <kbd className="dt-kbd">↵</kbd>
+            <kbd className="dt-menu-kbd">↵</kbd>
           </Menu.LinkItem>
           <Menu.LinkItem className="dt-menu-item" href={href} target="_blank" rel="noopener" closeOnClick>
             {i18n.t('row.openNewTab')}
@@ -87,7 +87,7 @@ export function RowMenu<Row extends object>({
                 <span>{a.label}</span>
                 {sub && <span className="dt-menu-sub">{sub}</span>}
               </span>
-              {a.shortcut && <kbd className="dt-kbd">{a.shortcut}</kbd>}
+              {a.shortcut && <kbd className="dt-menu-kbd">{a.shortcut}</kbd>}
             </DtMenuItem>
           </Fragment>
         )

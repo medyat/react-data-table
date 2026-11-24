@@ -98,7 +98,7 @@ export function MoreMenu({
       {onRefresh && (
         <DtMenuItem onSelect={onRefresh}>
           {i18n.t('toolbar.refresh')}
-          <kbd className="dt-kbd">R</kbd>
+          <kbd className="dt-menu-kbd">R</kbd>
         </DtMenuItem>
       )}
       {autoRefresh && (

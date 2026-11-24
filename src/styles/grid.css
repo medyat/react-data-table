@@ -202,14 +202,14 @@
   width: var(--dt-control-h-2xs);
 }
 /* ⋯ görünürken etiket zemini ile ⋯ arasında 4 px (hücre gap 2 + 2; etiketin varsayılan −4 px sağ boşluğu yerine). */
-.dt-head-cell:is(:hover, :focus-within, .is-menu-open) .dt-head-label {
+.dt-head-cell.has-menu:is(:hover, :focus-within, .is-menu-open) .dt-head-label {
   margin-right: 2px;
 }
 @media (pointer: coarse) {
   .dt-head-cell .dt-head-menu {
     width: var(--dt-control-h-2xs);
   }
-  .dt-head-cell .dt-head-label {
+  .dt-head-cell.has-menu .dt-head-label {
     margin-right: 2px;
   }
   .dt-head-menu {

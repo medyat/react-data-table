@@ -197,8 +197,10 @@ Vue 08'in sheet klavyesi geçerli; farklar:
   Yazmaya başlamak, F2, çift tık ve hücredeki ⤢ kutuyu açar; kilitli hücrede ⤢ yalnız tam metni gösterir.
 - Izgara dışına tık onaylar (blur ile onay yok); listedeki ve takvimdeki tık dışarı sayılmaz (`dt-sheet-layer`).
 - Izgarada Kaydet kısayolu yok (formun işi).
-- Sağ tık menüsü: hücre grubu, "Seç ›" (satır ⇧Space, sütun ⌃Space, tümü ⌘A), satır grubu. ⋯ yalnız satır grubu.
-- F8 / ⇧F8 sonraki / önceki hata. Vue'daki ⌘− (satır sil) yok (sembol tuşu).
+- Sağ tık menüsü (pano ContextMenu): hücre grubu (başlıkta hücre ve atlanan kilitli hücre sayısı; seçim tamamen
+  kilitliyse Kes, Temizle, Doldur pasif), "Seç ›" (satır ⇧Space, sütun ⌃Space, tümü ⌘A), satır grubu (başlıkta satır
+  sayısı). ⋯ yalnız satır grubu. Menüden Yapıştır izin alamazsa alt çubukta "⌘V ile yapıştırın" yazar.
+- F8 / ⇧F8 sonraki / önceki hata. ⌘⌫ seçili satırları siler (Vue'daki ⌘− sembol tuşu olduğu için alınmadı).
 - ⌘Z yalnız kullanıcının yazdığını geri alır: hücre o adımdan sonra uygulama tarafından değiştirildiyse (ör. sunucudan
   gelen fiyat) o hücre atlanır, öbürleri geri alınır.
 

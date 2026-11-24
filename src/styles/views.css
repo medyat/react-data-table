@@ -153,9 +153,11 @@
 }
 .dt-btn-primary .dt-kbd {
   height: auto;
+  min-width: 0;
   padding: 0;
   background: transparent;
   color: inherit;
+  letter-spacing: 0.1em;
   opacity: 0.6;
 }
 .dt-view-new {

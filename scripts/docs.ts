@@ -206,11 +206,22 @@ const REACT_ONLY_MESSAGES: Record<string, [string, string]> = {
   'sheet.agg.max': ['Max', 'En büyük'],
   // FormGrid'in alttaki boş satırı: yazınca satır doğar (form-grid.md §5).
   'sheet.newRow': ['New row', 'Yeni satır'],
-  // FormGrid sağ tık menüsü (form-grid.md §8): "Seç ›" alt menüsü; silme seçili satırların hepsini alır (§5).
+  // FormGrid sağ tık menüsü (form-grid.md §8, pano ContextMenu): grup başlıkları, "Seç ›" alt menüsü; silme seçili
+  // satırların hepsini alır (§5).
+  'sheet.menu.cells.one': ['{count} cell', '{count} hücre'],
+  'sheet.menu.cells.other': ['{count} cells', '{count} hücre'],
+  'sheet.menu.lockedSkipped.one': ['{count} locked cell is skipped', '{count} kilitli hücre atlanır'],
+  'sheet.menu.lockedSkipped.other': ['{count} locked cells are skipped', '{count} kilitli hücre atlanır'],
+  'sheet.menu.rows.one': ['{count} row', '{count} satır'],
+  'sheet.menu.rows.other': ['{count} rows', '{count} satır'],
+  'sheet.menu.fillDownFirst': ['The first row is copied to the rows below.', 'İlk satırın değeri alttakilere yazılır.'],
+  'sheet.menu.fillDownAbove': ['The row above is copied here.', 'Üstteki satırın değeri yazılır.'],
   'sheet.menu.select': ['Select', 'Seç'],
-  'sheet.menu.selectRow': ['Row', 'Satır'],
-  'sheet.menu.selectColumn': ['Column', 'Sütun'],
-  'sheet.menu.selectAll': ['All', 'Tümü'],
+  'sheet.menu.selectRow': ['Select row', 'Satırı seç'],
+  'sheet.menu.selectColumn': ['Select column', 'Sütunu seç'],
+  'sheet.menu.selectAll': ['Select all', 'Tümünü seç'],
+  // Menüden yapıştırma tarayıcının pano iznini ister; izin yoksa kısayol söylenir.
+  'sheet.pasteDenied': ["Couldn't read the clipboard. Paste with {kbd}.", 'Pano okunamadı. {kbd} ile yapıştırın.'],
   'sheet.menu.removeRows.one': ['Delete row', 'Satırı sil'],
   'sheet.menu.removeRows.other': ['Delete {count} rows', '{count} satırı sil'],
   // R6: sistem görünümü olmayan ekranda varsayılandan dönmenin tek yolu.

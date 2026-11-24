@@ -32,6 +32,7 @@ export type Intent =
   | { type: 'redo' }
   | { type: 'error'; dir: 1 | -1 }
   | { type: 'fill' }
+  | { type: 'removeRows' }
   | { type: 'menu' }
 
 const DIR: Record<string, Direction> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }
@@ -77,7 +78,8 @@ export function keyIntent(e: KeyInput, ctx: { editing: boolean; multiline: boole
       return { type: 'toggle' }
     case 'Delete':
     case 'Backspace':
-      return { type: 'clear' }
+      // ⌘⌫ seçili satırları siler (pano ContextMenu); Vue'daki ⌘− sembol tuşu olduğu için alınmadı.
+      return mod && e.key === 'Backspace' ? { type: 'removeRows' } : { type: 'clear' }
     case 'Home':
     case 'End':
       return { type: 'edge', end: e.key === 'End', rows: mod, extend: e.shiftKey }
@@ -165,6 +167,9 @@ export function applyIntent<Row extends object>(
       return true
     case 'fill':
       store.fill()
+      return true
+    case 'removeRows':
+      store.removeRows()
       return true
     case 'error':
     case 'menu':

@@ -556,7 +556,7 @@
 .dt-bsheet .dt-view-edited {
   font-size: 13px;
 }
-.dt-bsheet .dt-kbd {
+.dt-bsheet :is(.dt-kbd, .dt-menu-kbd) {
   display: none;
 }
 .dt-bsheet .dt-pop-label {

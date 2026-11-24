@@ -219,16 +219,22 @@
   color: var(--dt-text);
 }
 
+/* Tuş kapağı, shadcn Kbd gibi: arayüz yazı tipi (mono'da ⌘ ⌫ küçük ve sıkışık kalıyordu). Menüdeki kısayol kapak değil,
+   düz yazıdır: .dt-menu-kbd. */
 .dt-kbd {
   display: inline-flex;
   align-items: center;
-  height: 18px;
-  padding: 0 5px;
+  justify-content: center;
+  gap: 4px;
+  height: 20px;
+  min-width: 20px;
+  padding: 0 4px;
+  box-sizing: border-box;
   border-radius: var(--dt-radius-xs);
   background: var(--dt-surface-3);
   color: var(--dt-text-2);
-  font-family: var(--dt-font-mono);
-  font-size: var(--dt-ui-fs-3xs);
+  font-family: var(--dt-font);
+  font-size: var(--dt-ui-fs-xs);
   font-weight: 500;
   line-height: 1;
 }
@@ -351,14 +357,45 @@
 .dt-menu-item.is-destructive {
   color: var(--dt-r-fg);
 }
-.dt-menu-caret {
-  margin-left: auto;
+.dt-menu-icon {
+  flex: none;
+  margin-top: 1px;
+  color: var(--dt-text-2);
+}
+.dt-menu-item[data-disabled] .dt-menu-icon {
   color: var(--dt-text-3);
 }
-.dt-menu-item .dt-kbd {
+/* Kısayol menüde çerçevesiz düz yazı, shadcn DropdownMenuShortcut gibi: arayüz yazı tipi, geniş harf aralığı (mono
+   yazı tipinde ⌘ ⌫ küçük ve sıkışık kalıyordu); .dt-kbd tuş kapağıdır. */
+.dt-menu-kbd {
+  flex: none;
   margin-left: auto;
-  background: transparent;
   color: var(--dt-text-3);
+  font-family: var(--dt-font);
+  font-size: var(--dt-ui-fs-xs);
+  letter-spacing: 0.1em;
+}
+.dt-menu-item[data-highlighted] .dt-menu-kbd {
+  color: var(--dt-text);
+}
+/* Grup başlığı: seçimin özeti ("3 hücre · 1 kilitli hücre atlanır"), tıklanmaz. */
+.dt-menu-head {
+  padding: 6px 8px 4px;
+  color: var(--dt-text-3);
+  font-size: var(--dt-ui-fs-xs);
+}
+.dt-grid-menu {
+  width: calc(290 * var(--dt-ui-fs) / 13);
+}
+/* Pano ContextMenu: öğe 7/8 px, simge ve kısayol ilk satırla hizalı (iki satırlı öğede de üstte). */
+.dt-grid-menu .dt-menu-item {
+  align-items: flex-start;
+  min-height: 0;
+  padding: 7px 8px;
+  line-height: 18px;
+}
+.dt-grid-menu .dt-menu-sub {
+  line-height: 1.35;
 }
 .dt-menu-sep,
 .dt-pop-sep {
