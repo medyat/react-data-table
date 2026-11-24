@@ -4,8 +4,8 @@
 // F2: Ürün sunucuda aranır (300 ms yapay gecikme), seçilince Ad ve Birim dolar (`onChange`); yeni satır KDV %20 ve
 // Adet ile başlar (`newRow`); boş Teslim belgenin tarihini soluk gösterir (`placeholder`), Promosyonlu satırda zorunlu;
 // Metre tek satırda seçilebilir (`optionEnabled`); "En çok 6 satır" `maxRows`.
-import { TrashIcon } from '@phosphor-icons/react'
-import { FormGrid, type ColumnDef, type OptionDef, type RowAction } from '@medyat/react-data-table'
+// F3: ⌘C/⌘X/⌘V (Excel'den kod yapıştırılınca Ad ve Birim üründen gelir, `remote.match`), ⌘D, sağ tık menüsü, ⌘F.
+import { FormGrid, type ColumnDef, type OptionDef } from '@medyat/react-data-table'
 import { useState } from 'react'
 
 interface Line {
@@ -84,6 +84,9 @@ const base: Array<ColumnDef<Line>> = [
         return { items, hasMore: false }
       },
       resolve: async (values) => catalog.filter((p) => values.includes(p.value)),
+      // Excel'den kod ya da tam ad yapıştırılır.
+      match: async (texts) =>
+        texts.map((t) => catalog.find((p) => p.value === t.toLocaleUpperCase('tr') || p.label === t) ?? null),
     },
     Item: ProductItem,
     // Hücre yalnız kodu gösterir (kod + ad uzun); ad Ad sütununa yazılır.
@@ -189,10 +192,6 @@ const big = (): Line[] =>
     return row
   })
 
-const actions: Array<RowAction<Line>> = [
-  { id: 'remove', label: 'Satırı sil', icon: TrashIcon, destructive: true, run: () => {} },
-]
-
 export function F1FormGrid() {
   const [size, setSize] = useState<'small' | 'big'>('small')
   const [rows, setRows] = useState<Line[]>(sample)
@@ -234,7 +233,6 @@ export function F1FormGrid() {
         label="Satırlar"
         rows={rows}
         columns={size === 'big' ? wide : base}
-        rowActions={actions}
         newRow={() => ({ vat: 20, unit: 'pcs' })}
         maxRows={limit ? 6 : undefined}
         errors={

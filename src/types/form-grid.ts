@@ -4,7 +4,7 @@ import type { ColumnDef } from './columns'
 import type { RowAction } from './list'
 
 export interface FormGridChange {
-  kind: 'edit' | 'undo' | 'redo'
+  kind: 'edit' | 'paste' | 'fill' | 'remove' | 'undo' | 'redo'
   /** Değişen hücreler: satır sırası (yeni dizide) ve sütun id. */
   cells: Array<{ row: number; column: string }>
 }
@@ -27,6 +27,8 @@ export interface FormGridProps<Row extends object> {
   newRow?: (rows: readonly Row[]) => Partial<Row>
   /** Satır sınırı: dolunca alttaki boş satır kaybolur. */
   maxRows?: number
+  /** false: ⌘F ızgara araması kapalı, tarayıcınınki çalışır (form-grid.md §8.1). */
+  search?: boolean
   /** ⋯ menüsü. */
   rowActions?: Array<RowAction<Row>>
   density?: Density

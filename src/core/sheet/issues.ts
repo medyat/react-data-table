@@ -52,7 +52,7 @@ export function collectIssues<Row extends object>(o: {
   return { cells, rows: o.errors.rows, order, errorRows }
 }
 
-/** Aktif hücreden sonraki (dir 1) ya da önceki (dir -1) hata; uçta başa döner. Hata yoksa null. */
+/** Aktif hücreden sonraki (dir 1) ya da önceki (dir -1) hata (⌘F'de eşleşme); uçta başa döner. Yoksa null. */
 export function nextError(order: readonly CellPos[], from: CellPos | null, dir: 1 | -1): CellPos | null {
   if (!order.length) return null
   if (!from) return dir === 1 ? order[0]! : order[order.length - 1]!

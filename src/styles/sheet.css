@@ -67,6 +67,10 @@
   pointer-events: none;
   z-index: 1;
 }
+/* Sarı uyarının, mavi seçimin; eşleşme mor (uyarı ve seçim üstüne binince onlar kazanır). */
+.dt-sheet-grid .dt-cell[data-col].is-found {
+  --dt-row-bg: var(--dt-v-bg);
+}
 .dt-sheet-grid .dt-cell[data-col].is-warning {
   --dt-row-bg: var(--dt-a-bg);
 }
@@ -341,7 +345,7 @@
 }
 /* Klavyeyle odaklanan hücre yapışkan başlığın ve alt çubuğun altında kalmaz. */
 .dt-form-grid .dt-cell[data-row] {
-  scroll-margin: var(--dt-head-h) 0 calc(var(--dt-control-h) + 12px);
+  scroll-margin: var(--dt-fg-head-h, var(--dt-head-h)) 0 var(--dt-fg-foot-h, 48px);
 }
 .dt-fg-foot {
   position: sticky;
@@ -409,6 +413,38 @@
 }
 .dt-status .dt-mark.is-error {
   background: var(--dt-r-dot);
+}
+/* ⌘F kutusu (form-grid.md §8.1): yapışkan başlığın sağ üstünde, satırları örtmeden. */
+.dt-find {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  height: 0;
+}
+.dt-find-box {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: var(--dt-space);
+  padding: 4px 10px 4px 4px;
+  border-radius: var(--dt-radius-pop);
+  background: var(--dt-surface);
+  box-shadow: var(--dt-shadow-pop);
+}
+.dt-find-box .dt-input {
+  width: 200px;
+  height: var(--dt-control-h-sm);
+}
+.dt-find-count {
+  color: var(--dt-text-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* Izgaranın kendi bildirimi (yapıştırmada alınmayan satırlar); bir sonraki tuşta kalkar. */
+.dt-status-notice {
+  color: var(--dt-a-fg);
 }
 .dt-status-errors {
   display: inline-flex;

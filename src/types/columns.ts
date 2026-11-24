@@ -59,6 +59,11 @@ export interface RemoteOptions<O extends OptionDef = OptionDef, Row = unknown> {
    * Konum satırdaki ürünün raflarını ister (form-grid.md §3.2). Liste filtresinde `row` yoktur.
    */
   search(q: string, page: number, ctx: { signal: AbortSignal; row?: Row }): Promise<{ items: O[]; hasMore: boolean }>
+  /**
+   * FormGrid yapıştırması: Excel'den gelen metinler (ürün kodu, ad) seçeneğe; dönen dizi aynı sıradadır, bulunamayan
+   * `null`. Paket 100'erlik parçalarla sorar. Verilmezse yapıştırılan metin olduğu gibi değer olur (değer kodsa yeter).
+   */
+  match?(texts: string[], ctx: { signal: AbortSignal }): Promise<Array<O | null>>
   /** Kayıtlı filtre değerlerinin, yapıştırılan değerlerin ve hücre değerlerinin etiketlerini çözer. */
   resolve: (values: Array<string | number>, ctx: { signal: AbortSignal }) => Promise<O[]>
   pageSize?: number

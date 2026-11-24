@@ -14,7 +14,7 @@ export interface CellPos {
 export type Direction = 'up' | 'down' | 'left' | 'right'
 
 export interface SheetChange {
-  kind: 'edit' | 'undo' | 'redo'
+  kind: 'edit' | 'paste' | 'fill' | 'remove' | 'undo' | 'redo'
   /** Değişen hücreler: satır sırası (değişiklikten sonraki dizide) ve sütun id. */
   cells: Array<{ row: number; column: string }>
 }
@@ -69,6 +69,8 @@ interface Step {
   patches: Patch[]
   /** Bu adımda doğan satırlar: geri alınınca kalkar, yinelenince `newRow`'un verdiğiyle geri gelir. */
   added: Array<{ id: string; base: object }>
+  /** Bu adımda silinen satırlar (silinmeden önceki sırayla): geri alınınca yerlerine döner. */
+  removed: Array<{ id: string; row: object; index: number }>
 }
 
 const HISTORY = 100
@@ -132,6 +134,8 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
   }
   const full = () => o.maxRows !== undefined && rows.length >= o.maxRows
   const rowCount = () => rows.length + (full() ? 0 : 1)
+  // Tümü / sütun seçimi son dolu satırda biter: boş satır veri değil, giriş yeri (satır menüsü ona düşmesin).
+  const lastRow = () => Math.max(rows.length, 1) - 1
   const colCount = () => o.columns.length
   const clampPos = (p: CellPos): CellPos => ({
     row: Math.min(Math.max(p.row, 0), rowCount() - 1),
@@ -168,12 +172,16 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
   const write = (
     cells: Array<{ row: number; col: number; value: unknown }>,
     kind: SheetChange['kind'],
-    record = true,
+    // Yapıştırma boş Excel satırını da satır yapar: yoksa ardındaki satırların sırası kayar ve hepsi düşerdi.
+    create = false,
   ) => {
     const next = [...rows]
     const patches: Patch[] = []
     const added: Step['added'] = []
     const changed: SheetChange['cells'] = []
+    // Aynı işlemde `onChange`'in yazdığı alanı boş bir hücre ezmez: Excel'den kod + boş Ad yapıştırılınca Ad üründen
+    // gelir; dolu Ad yazılanı ezer.
+    const derived = new Set<string>()
     const put = (index: number, path: string, value: unknown) => {
       const row = next[index]!
       const id = idOf(row)
@@ -181,14 +189,14 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
       if (!o.getRowId) tempIds.set(updated, id)
       next[index] = updated
       patches.push({ id, col: path, before: readPath(row, path), after: value })
-      changed.push({ row: index, column: path })
+      if (!changed.some((c) => c.row === index && c.column === path)) changed.push({ row: index, column: path })
     }
     for (const c of cells) {
       const def = o.columns[c.col]
       if (!def) continue
       let row = next[c.row]
       if (!row) {
-        if (c.row !== next.length || isEmptyValue(c.value)) continue
+        if (c.row !== next.length || (!create && isEmptyValue(c.value))) continue
         if (o.maxRows !== undefined && next.length >= o.maxRows) continue
         // Doğan satır `newRow`'un alanlarıyla başlar; onlar patch değil satırın tabanıdır (geri al satırı kaldırır).
         const base = { ...o.newRow?.(next) }
@@ -196,21 +204,26 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
         added.push({ id: idOf(row), base })
         next.push(row)
       } else if (same(readPath(row, def.id), c.value)) continue
+      else if (isEmptyValue(c.value) && derived.has(`${c.row}:${def.id}`)) continue
       put(c.row, def.id, c.value)
       const extra = def.onChange?.(next[c.row]!, c.value, { option: o.optionOf?.(def, c.value), rows: next })
-      for (const [path, value] of Object.entries(extra ?? {}))
+      for (const [path, value] of Object.entries(extra ?? {})) {
+        derived.add(`${c.row}:${path}`)
         if (!same(readPath(next[c.row], path), value)) put(c.row, path, value)
+      }
     }
-    if (!patches.length) return false
+    if (!patches.length && !added.length) return false
     rows = next
-    if (record) {
-      undoStack.push({ patches, added })
-      if (undoStack.length > HISTORY) undoStack.shift()
-      redoStack.length = 0
-    }
+    record({ patches, added, removed: [] })
     o.onRowsChange(next, { kind, cells: changed })
     emit()
     return true
+  }
+
+  const record = (step: Step) => {
+    undoStack.push(step)
+    if (undoStack.length > HISTORY) undoStack.shift()
+    redoStack.length = 0
   }
 
   const colIndex = (id: string) => o.columns.findIndex((c) => c.id === id)
@@ -245,12 +258,20 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
       const drop = new Set(step.added.map((a) => a.id))
       next = next.filter((r) => !drop.has(idOf(r)))
     }
+    if (step.removed.length) {
+      if (dir === 'undo') for (const r of step.removed) next.splice(Math.min(r.index, next.length), 0, r.row as Row)
+      else {
+        const drop = new Set(step.removed.map((r) => r.id))
+        next = next.filter((r) => !drop.has(idOf(r)))
+      }
+      first ??= { row: Math.min(step.removed[0]!.index, Math.max(next.length - 1, 0)), col: active?.col ?? 0 }
+    }
     rows = next
     if (first) {
       active = clampPos(first)
       anchor = null
     }
-    if (changed.length || step.added.length) o.onRowsChange(next, { kind: dir, cells: changed })
+    if (changed.length || step.added.length || step.removed.length) o.onRowsChange(next, { kind: dir, cells: changed })
     emit()
   }
 
@@ -357,7 +378,7 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
     },
     selectAll() {
       anchor = { row: 0, col: 0 }
-      active = { row: rowCount() - 1, col: colCount() - 1 }
+      active = { row: lastRow(), col: colCount() - 1 }
       emit()
     },
     selectRow() {
@@ -369,7 +390,7 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
     selectColumn() {
       const a = active ?? { row: 0, col: 0 }
       anchor = { row: 0, col: a.col }
-      active = { row: rowCount() - 1, col: a.col }
+      active = { row: lastRow(), col: a.col }
       emit()
     },
     /** Esc: seçim aktif hücreye daralır. */
@@ -404,6 +425,73 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
     /** Tek hücreye yazar (balondaki yakın seçenek önerisi); tek geri al adımı. */
     set(pos: CellPos, value: unknown) {
       if (canEdit(pos.row, pos.col)) write([{ ...pos, value }], 'edit')
+    },
+    /**
+     * Yapıştırma (Vue 07 §7): aktif hücreden başlar; tek değer + aralık seçiliyse aralığın hepsine yazılır. Kilitli hücre
+     * atlanır, alttan taşan satırlar yeni satır olur; `maxRows`'u aşanlar alınmaz ve sayısı döner. Tek geri al adımı;
+     * yapıştırılan alan seçili kalır. `value` metni sütunun değerine çevirir (çözümleme, `ajax` eşleşmesi).
+     */
+    paste(matrix: string[][], value: (def: ColumnDef<Row>, text: string) => unknown): { skipped: number } {
+      if (editing || !active || !matrix.length) return { skipped: 0 }
+      const r = range()!
+      const single = matrix.length === 1 && matrix[0]!.length === 1
+      const height = single && anchor ? r.bottom - r.top + 1 : matrix.length
+      const width = single && anchor ? r.right - r.left + 1 : Math.max(...matrix.map((m) => m.length))
+      const limit = o.maxRows ?? Infinity
+      const cells: Array<{ row: number; col: number; value: unknown }> = []
+      let skipped = 0
+      for (let i = 0; i < height; i++) {
+        const row = r.top + i
+        if (row >= limit) {
+          skipped++
+          continue
+        }
+        for (let j = 0; j < width; j++) {
+          const col = r.left + j
+          const def = o.columns[col]
+          const text = single ? matrix[0]![0] : matrix[i]![j]
+          if (!def || text === undefined || !canEdit(row, col)) continue
+          cells.push({ row, col, value: value(def, text) })
+        }
+      }
+      write(cells, 'paste', true)
+      const bottom = Math.min(r.top + height - skipped, rows.length + 1) - 1
+      anchor = { row: r.top, col: r.left }
+      active = clampPos({ row: Math.max(bottom, r.top), col: r.left + width - 1 })
+      emit()
+      return { skipped }
+    },
+    /**
+     * ⌘D (Excel): aralıkta ilk satır altındakilere kopyalanır; tek satırda üstteki satır aşağı gelir. Kilitli hücre
+     * atlanır; tek geri al adımı.
+     */
+    fill() {
+      const r = range()
+      if (!r || editing) return
+      const source = r.top === r.bottom ? r.top - 1 : r.top
+      if (source < 0 || source >= rows.length) return
+      const cells: Array<{ row: number; col: number; value: unknown }> = []
+      for (let row = source + 1; row <= Math.min(r.bottom, rows.length - 1); row++)
+        for (let col = r.left; col <= r.right; col++)
+          if (canEdit(row, col)) cells.push({ row, col, value: readPath(rows[source]!, o.columns[col]!.id) })
+      write(cells, 'fill')
+    },
+    /** Seçimdeki satırları siler (menü); geri alınınca yerlerine döner. Boş satır silinmez. */
+    removeRows() {
+      const r = range()
+      if (!r) return
+      const indexes: number[] = []
+      for (let i = r.top; i <= Math.min(r.bottom, rows.length - 1); i++) indexes.push(i)
+      if (!indexes.length) return
+      editing = null
+      const removed = indexes.map((index) => ({ id: idOf(rows[index]!), row: rows[index]!, index }))
+      const drop = new Set(indexes)
+      rows = rows.filter((_, i) => !drop.has(i))
+      record({ patches: [], added: [], removed })
+      anchor = null
+      active = clampPos({ row: r.top, col: active?.col ?? 0 })
+      o.onRowsChange([...rows], { kind: 'remove', cells: [] })
+      emit()
     },
     /** Space: boolean hücresini çevirir. */
     toggle() {

@@ -91,9 +91,9 @@ describe('seçim ve hareket', () => {
     store.selectRow()
     expect(store.range()).toEqual({ top: 1, bottom: 1, left: 0, right: 4 })
     store.selectColumn()
-    expect(store.range()).toEqual({ top: 0, bottom: 2, left: 4, right: 4 })
+    expect(store.range()).toEqual({ top: 0, bottom: 1, left: 4, right: 4 })
     store.selectAll()
-    expect(store.range()).toEqual({ top: 0, bottom: 2, left: 0, right: 4 })
+    expect(store.range()).toEqual({ top: 0, bottom: 1, left: 0, right: 4 })
     store.edge(false, true)
     expect(store.active()).toEqual({ row: 0, col: 0 })
     store.edge(true, false)
@@ -320,7 +320,7 @@ describe('keyIntent', () => {
     expect(keyIntent(key(' ', { shiftKey: true }), mac)).toEqual({ type: 'selectRow' })
     expect(keyIntent(key(' ', { ctrlKey: true }), mac)).toEqual({ type: 'selectColumn' })
     expect(keyIntent(key('F8', { shiftKey: true }), mac)).toEqual({ type: 'error', dir: -1 })
-    expect(keyIntent(key('d', { metaKey: true }), mac)).toBeNull()
+    expect(keyIntent(key('d', { metaKey: true }), mac)).toEqual({ type: 'fill' })
   })
   it('düzenlemede: Tab/Enter onaylayıp geçer, Esc iptal; text hücresinde ⇧↵ ve ⌥↵ editöre kalır; IME bekler', () => {
     const ed = { ...mac, editing: true }
@@ -448,5 +448,147 @@ describe('F2: newRow, maxRows, onChange, ajax', () => {
     store.commit()
     render()
     expect(rows()[0]!.product).toBe(7)
+  })
+})
+
+describe('F3: yapıştır, doldur, satır sil', () => {
+  type P = { product: string | null; title: string | null; qty: string | null; lock?: string | null }
+  const cols: Array<ColumnDef<P>> = [
+    {
+      id: 'product',
+      header: 'Ürün',
+      type: 'string',
+      onChange: (_r, v) => ({ title: v ? `Ad ${String(v)}` : null }),
+    },
+    { id: 'title', header: 'Ad', type: 'string' },
+    { id: 'qty', header: 'Miktar', type: 'decimal' },
+    { id: 'lock', header: 'Kilit', type: 'string', editable: false },
+  ]
+  function make(initial: P[] = [], maxRows?: number) {
+    let rows = initial
+    const changes: SheetChange[] = []
+    const base = {
+      columns: cols,
+      maxRows,
+      onRowsChange: (next: P[], change: SheetChange) => {
+        rows = next
+        changes.push(change)
+      },
+    }
+    const store = createSheetStore<P>({ ...base, rows })
+    const render = () => store.sync({ ...base, rows })
+    return { store, rows: () => rows, changes, render }
+  }
+  const asText = (_d: ColumnDef<P>, t: string) => (t === '' ? null : t)
+
+  it('aktif hücreden yapıştırır, alttan taşanlar yeni satır, kilitli hücre atlanır; boş Ad onChange değerini ezmez', () => {
+    const { store, rows, changes, render } = make([{ product: 'A', title: 'Ad A', qty: '1', lock: 'x' }])
+    store.focus({ row: 0, col: 0 })
+    const r = store.paste(
+      [
+        ['B', '', '2', 'y'],
+        ['C', 'Özel', '3', 'y'],
+        ['', '', '', ''],
+        ['D', '', '4', ''],
+      ],
+      asText,
+    )
+    render()
+    expect(r.skipped).toBe(0)
+    expect(rows()).toEqual([
+      { product: 'B', title: 'Ad B', qty: '2', lock: 'x' },
+      { product: 'C', title: 'Özel', qty: '3' },
+      { product: null },
+      { product: 'D', title: 'Ad D', qty: '4' },
+    ])
+    expect(changes.at(-1)!.kind).toBe('paste')
+    expect(changes.at(-1)!.cells.filter((c) => c.row === 1 && c.column === 'title')).toHaveLength(1)
+    expect(store.range()).toEqual({ top: 0, bottom: 3, left: 0, right: 3 })
+    store.undo()
+    render()
+    expect(rows()).toEqual([{ product: 'A', title: 'Ad A', qty: '1', lock: 'x' }])
+  })
+
+  it('tek değer seçili aralığın hepsine yazılır', () => {
+    const { store, rows, render } = make([
+      { product: 'A', title: null, qty: '1' },
+      { product: 'B', title: null, qty: '2' },
+    ])
+    store.focus({ row: 0, col: 2 })
+    store.focus({ row: 1, col: 2 }, true)
+    store.paste([['9']], asText)
+    render()
+    expect(rows().map((r) => r.qty)).toEqual(['9', '9'])
+  })
+
+  it('maxRows: sığmayan satırlar alınmaz, sayısı döner', () => {
+    const { store, rows, render } = make([{ product: 'A', title: null, qty: '1' }], 2)
+    store.focus({ row: 1, col: 2 })
+    const r = store.paste([['5'], ['6'], ['7']], asText)
+    render()
+    expect(r.skipped).toBe(2)
+    expect(rows()).toHaveLength(2)
+    expect(rows()[1]!.qty).toBe('5')
+  })
+
+  it('⌘D: aralıkta ilk satır aşağı, tek satırda üstteki satır gelir; kilitli atlanır', () => {
+    const { store, rows, changes, render } = make([
+      { product: 'A', title: 'x', qty: '1', lock: 'k' },
+      { product: 'B', title: 'y', qty: '2', lock: 'm' },
+      { product: 'C', title: 'z', qty: '3', lock: 'n' },
+    ])
+    store.focus({ row: 0, col: 2 })
+    store.focus({ row: 2, col: 3 }, true)
+    store.fill()
+    render()
+    expect(rows().map((r) => [r.qty, r.lock])).toEqual([
+      ['1', 'k'],
+      ['1', 'm'],
+      ['1', 'n'],
+    ])
+    expect(changes.at(-1)!.kind).toBe('fill')
+    store.focus({ row: 2, col: 1 })
+    store.fill()
+    render()
+    expect(rows()[2]!.title).toBe('y')
+  })
+
+  it('satır sil: seçili satırlar gider, geri al yerlerine koyar, yinele yine siler', () => {
+    const a = { product: 'A', title: null, qty: '1' }
+    const b = { product: 'B', title: null, qty: '2' }
+    const c = { product: 'C', title: null, qty: '3' }
+    const { store, rows, changes, render } = make([a, b, c])
+    store.focus({ row: 0, col: 0 })
+    store.focus({ row: 1, col: 0 }, true)
+    store.removeRows()
+    render()
+    expect(rows()).toEqual([c])
+    expect(changes.at(-1)!.kind).toBe('remove')
+    store.undo()
+    render()
+    expect(rows()).toEqual([a, b, c])
+    store.redo()
+    render()
+    expect(rows()).toEqual([c])
+  })
+})
+
+describe('tümü / sütun seçimi boş satırı almaz', () => {
+  type P = { a: string | null }
+  const make = (rows: P[]) =>
+    createSheetStore<P>({ rows, columns: [{ id: 'a', header: 'A', type: 'string' }], onRowsChange: () => {} })
+  it('son dolu satırda biter, aktif hücre dolu satırdadır', () => {
+    const store = make([{ a: '1' }, { a: '2' }])
+    store.focus({ row: 0, col: 0 })
+    store.selectAll()
+    expect(store.range()).toEqual({ top: 0, bottom: 1, left: 0, right: 0 })
+    expect(store.active()).toEqual({ row: 1, col: 0 })
+    store.selectColumn()
+    expect(store.range()).toEqual({ top: 0, bottom: 1, left: 0, right: 0 })
+  })
+  it('hiç satır yoksa boş satır seçilir', () => {
+    const store = make([])
+    store.selectAll()
+    expect(store.range()).toEqual({ top: 0, bottom: 0, left: 0, right: 0 })
   })
 })

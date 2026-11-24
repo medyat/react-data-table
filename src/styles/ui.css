@@ -351,6 +351,10 @@
 .dt-menu-item.is-destructive {
   color: var(--dt-r-fg);
 }
+.dt-menu-caret {
+  margin-left: auto;
+  color: var(--dt-text-3);
+}
 .dt-menu-item .dt-kbd {
   margin-left: auto;
   background: transparent;

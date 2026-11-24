@@ -44,14 +44,14 @@ oradaki kodlardır (1a, F3a, G1a…).
 
 - **Kontrollü ve RHF'den bağımsız.** Paket veri çekmez (D18) ve form kütüphanesi seçmez. Swors'ta
   `src/components/form/` altında `useController` ile bağlayan bir alan bileşeni durur; değer RHF'de kalır.
-- **`change`** neyin değiştiğini söyler (`{ kind: 'edit' | 'paste' | 'fill' | 'undo' | 'redo' | 'insert' | 'remove', cells }`):
+- **`change`** neyin değiştiğini söyler (`{ kind: 'edit' | 'paste' | 'fill' | 'undo' | 'redo' | 'remove', cells }`):
   uygulama örneğin yalnız Ürün değişince fiyat ister.
 - **Satır kimliği:** `getRowId(row)` verilmezse paket satıra geçici kimlik verir (seçim ve geri al için); kimlik
   `rows`'a yazılmaz. Uygulama bir satırı yeni nesneyle değiştirince (sunucudan gelen fiyat, form kütüphanesinin
   kopyası) kimlik aynı sıradaki eski nesneden devralınır; `getRowId` bu yüzden isteğe bağlıdır. Devralma, satırların
   sırası değiştirilip aynı anda kopyalandığında tutmaz: sıralanabilir ızgarada (`reorderable`) `getRowId` verilir.
-- Boş satıra yazınca doğan satır `kind: 'edit'` bildirilir (kullanıcı için düzenlemedir); `insert` yapıştırma ve menü
-  içindir.
+- Boş satıra yazınca doğan satır `kind: 'edit'`, yapıştırmayla doğanlar `'paste'` bildirilir. "Araya ekle" yalnız
+  `reorderable` ile gelir (§5); o gelince `'insert'` eklenir.
 
 ## 3. Sütunlar: tek sözleşme
 
@@ -97,6 +97,7 @@ Her biri bir panodan çıktı; pano yoksa alan da yok.
 | `required` | `boolean \| (row) => boolean` | Vue'da yalnız `boolean`. Çıkış konumu yalnız Stok takipli satırda zorunlu (S1a). Fonksiyonsa header yıldız taşımaz. |
 | `optionEnabled` | `rows` üçüncü parametre | Taksit her satırda bir kez (G1a). |
 | `remote.search` | `ctx.row` eklenir | Konum seçicisi satırdaki ürünün stoklu raflarını ister (1h, S1a). Boş satırda `row` yok. |
+| `remote.match` | `(texts, { signal }) => Promise<(O \| null)[]>` | Excel'den ürün kodu ya da adı yapıştırılır; seçenek `onChange`'e gider, boş yapıştırılan Ad üründen dolar (1b). Paket 100'erlik sorar; bulunamayan metin değer olarak kalır, sunucu reddeder. Verilmezse metin değerdir. |
 | `placeholder` | `(row) => string \| null` | Boş hücrede başka yerden gelen değer soluk yazılır, değer olmaz: talebin İhtiyaç tarihi (T1a). |
 | `onChange` | `(row, value, { option, rows }) => Partial<Row> \| void` | Aynı satıra yazma: tek çekimde Taksitle aktarım kapanır (G1a), Ürün seçilince Ad ve Birim dolar (1b). `option` seçilen seçenektir; `ajax`'ta aramanın döndürdüğü nesne, ek alanlarıyla (ürünün birimi). Yazılanlar aynı geri al adımına girer; onların `onChange`'i çağrılmaz. |
 | `group` | `string \| string[]` | İç içe başlık: İndirim → Oran \| Tutar, ek vergiler grup → vergi → Oran \| Tutar, İhracat (F1a, F1b, F3a). Grup başlığı rengi yalnız başlık hücresinde. |
@@ -141,7 +142,8 @@ Tek düzen; belgede de form içinde de aynı (POS tablosu için ayrı "gömülü
   alttan satır ekler.
 - **`maxRows`:** dolunca boş satır kaybolur; sınırı aşan yapıştırma fazla satırı almaz ve kaç satırın alınmadığını
   söyler. `minRows` yok: en az bir satır kuralı sunucunun hatasıdır, alanın altında yazar.
-- **Silme:** ⋯ ve sağ tık menüsünde; seçili satırlar birlikte.
+- **Silme:** ⋯ ve sağ tık menüsünde; seçili satırlar birlikte ("3 satırı sil"); seçim dışındaki satırın ⋯'u yalnız
+  o satırı siler. Paketin öğesidir, `rowActions`'ın altında; geri al satırları yerine koyar.
 - **Sıra:** `reorderable` kapalıyken sürükleme ve "araya ekle" yok, yeni satır sona (belge satırlarında `sq` yok).
 - **Boyut:** 1000 satır × 30 sütunda donmaz. Satırlar sanal (sabit satır yüksekliği), sütunlar değil; aktif hücre
   ve seçim satır dışı depoda, hücre yalnız kendi durumunu dinler; geri al değişiklik farkı tutar; kopyala, seçim
@@ -236,10 +238,22 @@ Her faz playground'da bir senaryo sayfası ve `pnpm check` ile biter. Swors'ta i
 
 Ölçüm `e2e/form-grid-perf.spec.ts`: olaydan DOM'un güncellenip yerleşimin bittiği ana kadar (boyama hariç), ortanca
 bütçeyle karşılaştırılır. 2026-11-24, Apple Silicon, Chrome: ilk çizim ~110 ms (en kötü ~250), ok tuşu ~0,3 ms (yalnız
-iki hücre yeniden çizilir), hücre onayı ~22 ms (en kötü ~73; onay bütün satırların sorunlarını yeniden hesaplar).
+iki hücre yeniden çizilir), hücre onayı ~22 ms (en kötü ~73; onay bütün satırların sorunlarını yeniden hesaplar). F3'ten sonra
+(her satırın ⋯'u seçimi dinler): ilk çizim ~131 ms, ok tuşu ~0,3 ms, hücre onayı ~28 ms (en kötü ~71).
 
 F1 adımları: A saf katman (tipler, ayrıştırma, hata eşleme, seçim özeti, doğrulama) · B depo ve klavye · C iskelet ·
 D düzenleme ve editörler · E hatalar ve alt çubuk · F ölçüm.
+
+F3 kararları:
+- Kopya görünen biçimdedir (`1.200,50`, seçeneğin adı), TSV + HTML tablosu; yapıştırma sütunun ayrıştırmasından
+  geçer, böylece kopyalanan geri yapıştırılır. Tek değer + aralık: aralığın hepsine. Kilitli hücre atlanır.
+- Aynı yapıştırmada `onChange`'in yazdığı alanı boş hücre ezmez (kod + boş Ad → Ad üründen), dolu hücre ezer.
+- Yapıştırmadaki boş Excel satırı da satır olur: atılsaydı alttaki satırlar yukarı kayardı.
+- ⌘D Excel'deki gibi: aralıkta ilk satır aşağı, tek satırda üstteki satır. Seri (1, 2, 3…) yok.
+- `maxRows`'u aşan yapıştırmanın alınmayan satır sayısı alt çubukta yazar, sonraki tuşta kalkar (pakette toast yok).
+- Menüden kopyala / yapıştır tarayıcının pano iznini ister; kısayollar izinsiz çalışır.
+- ⌘F 1000×30'da tuş başına ~70 ms tarar (dev): kutu `useDeferredValue` ile takılmaz. Eşleşme mor; uyarı ve seçim
+  üstüne binince onlar görünür.
 
 **Uygulama notları**
 

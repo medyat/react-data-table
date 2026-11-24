@@ -35,7 +35,7 @@ export interface CellEditorProps<Row extends object> {
   onPick: (value: unknown, down: boolean) => void
 }
 
-function useParseEnv(): ParseEnv {
+export function useParseEnv(): ParseEnv {
   const { i18n, locale } = useDataTableContext()
   return {
     locale,

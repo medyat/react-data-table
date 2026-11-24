@@ -1,18 +1,21 @@
 // FormGrid (R34, docs/form-grid.md): formun içindeki satırları Excel gibi düzenleyen ızgara. Veri uygulamanın;
 // seçim, düzenleme ve geri al hücre motorunda (core/sheet). Izgara kendi içinde dikey kaymaz, sayfayla kayar;
 // başlık ve alt çubuk yapışkan, yatay kaydırma kendi çizdiğimiz çubukla (§4).
-import { WarningCircleIcon } from '@phosphor-icons/react'
+import { TrashIcon, WarningCircleIcon } from '@phosphor-icons/react'
 import {
+  useDeferredValue,
   useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
   type CSSProperties,
+  type ClipboardEvent,
   type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
 } from 'react'
-import type { ColumnDef } from '../types/columns'
+import type { ColumnDef, OptionDef } from '../types/columns'
+import type { RowAction } from '../types/list'
 import type { FormGridProps } from '../types/form-grid'
 import { decimalPlaces, isEmptyValue } from '../core/cells/format'
 import { RemoteLabels } from '../core/cells/remote-labels'
@@ -28,12 +31,16 @@ import { DelegatedTooltip } from '../core/grid/tooltip'
 import type { I18n } from '../core/i18n'
 import { mac } from '../core/interaction/kbd'
 import { useDataTableContext } from '../core/provider'
-import { CellEditor } from '../core/sheet/cell-editor'
+import { CellEditor, useParseEnv } from '../core/sheet/cell-editor'
+import { matrixFromClipboard, parseTsv, toHtml, toTsv } from '../core/sheet/clipboard'
+import { GridContextMenu } from './grid-menu'
+import { plainText } from '../core/export/cells'
+import { fold, parseInput } from '../core/sheet/parse'
 import { ScrollBar, useHorizontalScroll } from '../core/sheet/h-scroll'
 import { mapErrors } from '../core/sheet/errors'
 import { collectIssues, nextError } from '../core/sheet/issues'
 import { applyIntent, keyIntent } from '../core/sheet/keyboard'
-import { CELL, createSheetStore, type SheetStore } from '../core/sheet/store'
+import { CELL, createSheetStore, type CellPos, type SheetStore } from '../core/sheet/store'
 import { summarize } from '../core/sheet/summary'
 import { scrollParent, usePageRows } from '../core/sheet/use-page-rows'
 import type { Issue } from '../core/sheet/validate'
@@ -52,6 +59,7 @@ function GridCell<Row extends object>({
   row,
   env,
   issue,
+  found,
   onPicked,
 }: {
   store: SheetStore<Row>
@@ -61,6 +69,8 @@ function GridCell<Row extends object>({
   row: Row | undefined
   env: RenderEnv
   issue: Issue | undefined
+  /** ⌘F eşleşmesi. */
+  found: boolean
   /** Listeden / takvimden seçim onaylandı: odak portaldaydı, aktif hücreye döner. */
   onPicked: () => void
 }) {
@@ -82,6 +92,7 @@ function GridCell<Row extends object>({
     state & CELL.left && 'is-edge-l',
     state & CELL.right && 'is-edge-r',
     issue && `is-${issue.level}`,
+    found && 'is-found',
     // İlk satırın balonu yapışkan başlığın altında kalmasın.
     issue && index === 0 && 'is-tip-below',
     ...pinClasses(col),
@@ -120,7 +131,14 @@ function GridCell<Row extends object>({
           }}
         />
       ) : (
-        row && <span className="dt-cell-content">{content(def, row, value, env)}</span>
+        <span className="dt-cell-content">
+          {row ? (
+            content(def, row, value, env)
+          ) : (
+            // Boş satıra yazınca satır doğar (form-grid.md §5).
+            <span className="dt-cell-placeholder">{env.i18n.t('sheet.newRow')}</span>
+          )}
+        </span>
       )}
       {issue && (
         <span id={tipId} className={`dt-cell-tip is-${issue.level}`} role="tooltip">
@@ -151,6 +169,7 @@ export function FormGrid<Row extends object>({
   newRow,
   maxRows,
   rowActions = [],
+  search = true,
   density = 'compact',
 }: FormGridProps<Row>) {
   const ctx = useDataTableContext()
@@ -204,7 +223,7 @@ export function FormGrid<Row extends object>({
   }
 
   const [metrics, setMetrics] = useState({ row: FALLBACK_ROW_H, head: FALLBACK_HEAD_H, foot: FALLBACK_FOOT_H })
-  const menuW = rowActions.length ? 'calc(16px + var(--dt-control-h-sm))' : '0px'
+  const menuW = 'calc(16px + var(--dt-control-h-sm))'
   const startW = () => GUTTER_W + layout.start.reduce((w, c) => w + layout.widthOf(c.id), 0)
   const hs = useHorizontalScroll([body, head], () => ({
     start: startW(),
@@ -287,8 +306,14 @@ export function FormGrid<Row extends object>({
       const inside = el?.contains(document.activeElement) || document.activeElement?.closest('.dt-text-pop')
       if (!a || !el || store.editing() || !(owned || inside)) return
       const cell = el.querySelector<HTMLElement>(`.dt-cell[data-row="${a.row}"][data-col="${a.col}"]`)
-      if (cell) {
-        if (document.activeElement !== cell) cell.focus()
+      // Arama kutusunda Enter: hücre görünür olur, odak kutuda kalır (sonraki Enter için).
+      if (cell && document.activeElement?.closest('.dt-find'))
+        cell.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+      else if (cell) {
+        // focus() hücre pencerede görünüyorsa kaydırmaz, yapışkan alt çubuğun örttüğünü bilmez (yeni satır onun
+        // altında kalıyordu); scrollIntoView `scroll-margin`'e uyar.
+        if (document.activeElement !== cell) cell.focus({ preventScroll: true })
+        cell.scrollIntoView({ block: 'nearest', inline: 'nearest' })
       } else if (!pending) {
         pending = true
         virtual.scrollTo(a.row)
@@ -328,6 +353,27 @@ export function FormGrid<Row extends object>({
     focusActive()
   }
 
+  // ⌘F (form-grid.md §8.1): görünen metinde arar, satır gizlemez. null: kutu kapalı.
+  const [find, setFind] = useState<string | null>(null)
+  // 1000×30'da tarama ~70 ms: kutu hemen yazar, eşleşmeler ertelenmiş değerle gelir.
+  const deferred = useDeferredValue(find)
+  const query = deferred ? fold(deferred, ctx.locale) : ''
+  const found: CellPos[] = []
+  if (query)
+    for (let r = 0; r < rows.length; r++)
+      for (let c = 0; c < defs.length; c++)
+        if (fold(plainText(defs[c]!, rows[r]!, store.read(r, defs[c]!), env), ctx.locale).includes(query))
+          found.push({ row: r, col: c })
+  const foundKeys = new Set(found.map((p) => `${p.row}:${p.col}`))
+  const goToMatch = (dir: 1 | -1) => {
+    const to = nextError(found, store.active(), dir)
+    if (to) store.focus(to)
+  }
+  const closeFind = () => {
+    setFind(null)
+    focusActive()
+  }
+
   const posOf = (target: EventTarget | null) => {
     const cell = (target as HTMLElement | null)?.closest<HTMLElement>('.dt-cell[data-row][data-col]')
     return cell ? { row: Number(cell.dataset.row), col: Number(cell.dataset.col) } : null
@@ -364,7 +410,110 @@ export function FormGrid<Row extends object>({
     store.focus(pos)
     if (!store.startEdit()) store.toggle()
   }
+  // Pano (Vue 07 §7): kopyada görünen biçim (geri yapıştırılabilir), yapıştırmada sütunun çözümlemesi. Editör açıkken
+  // olay editörün input'unundur.
+  const parseEnv = useParseEnv()
+  const [notice, setNotice] = useState<string | null>(null)
+  const selection = () => {
+    const r = store.range()
+    const matrix: string[][] = []
+    if (!r || store.editing()) return matrix
+    for (let i = r.top; i <= Math.min(r.bottom, rows.length - 1); i++) {
+      const line: string[] = []
+      for (let c = r.left; c <= r.right; c++) line.push(plainText(defs[c]!, rows[i]!, store.read(i, defs[c]!), env))
+      matrix.push(line)
+    }
+    return matrix
+  }
+  const onCopy = (e: ClipboardEvent, cut = false) => {
+    const matrix = posOf(e.target) ? selection() : []
+    if (!matrix.length) return
+    e.preventDefault()
+    e.clipboardData?.setData('text/plain', toTsv(matrix))
+    e.clipboardData?.setData('text/html', toHtml(matrix))
+    if (cut) store.clear()
+  }
+  const paste = async (matrix: string[][]) => {
+    const at = store.range()
+    if (!at || !matrix.length) return
+    // `ajax` sütununa gelen metinler (kod) uygulamanın `match`'iyle seçeneğe çevrilir; seçenek `onChange`'e de gider.
+    const found = new Map<number, Map<string, OptionDef | null>>()
+    const width = Math.max(...matrix.map((m) => m.length))
+    for (let j = 0; j < width; j++) {
+      const def = defs[at.left + j]
+      if (def?.type !== 'ajax' || !def.remote.match) continue
+      const texts = [...new Set(matrix.map((m) => m[j]?.trim() ?? '').filter(Boolean))]
+      const map = new Map<string, OptionDef | null>()
+      for (let k = 0; k < texts.length; k += 100) {
+        const part = texts.slice(k, k + 100)
+        const options = await def.remote.match(part, { signal: new AbortController().signal }).catch(() => [])
+        part.forEach((t, n) => map.set(t, options[n] ?? null))
+      }
+      labels.seed(
+        def.id,
+        [...map.values()].filter((o): o is OptionDef => !!o),
+      )
+      found.set(at.left + j, map)
+    }
+    const { skipped } = store.paste(matrix, (def, text) => {
+      const hit = found.get(defs.indexOf(def))?.get(text.trim())
+      if (hit) return hit.value
+      return def.type === 'ajax' ? text.trim() || null : parseInput(def as ColumnDef, text, parseEnv)
+    })
+    setNotice(skipped ? ctx.i18n.t('sheet.pasteSkipped', { count: skipped, max: maxRows ?? 0 }) : null)
+    focusActive()
+  }
+  // Menüden pano: tarayıcı izin isteyebilir; reddedilirse bir şey olmaz (kısayollar izinsiz çalışır).
+  const menuCopy = async (cut = false) => {
+    const matrix = selection()
+    if (!matrix.length) return
+    const item = new ClipboardItem({
+      'text/plain': new Blob([toTsv(matrix)], { type: 'text/plain' }),
+      'text/html': new Blob([toHtml(matrix)], { type: 'text/html' }),
+    })
+    if (
+      await navigator.clipboard.write([item]).then(
+        () => true,
+        () => false,
+      )
+    )
+      if (cut) store.clear()
+  }
+  const menuPaste = async () => {
+    const text = await navigator.clipboard.readText().catch(() => '')
+    if (text) await paste(parseTsv(text))
+  }
+  // Silme paketin eylemidir (form-grid.md §5): seçili satırlar birlikte; uygulamanın eylemleri üstünde.
+  const removeAction: RowAction<Row> = {
+    id: 'remove',
+    label: '',
+    icon: TrashIcon,
+    destructive: true,
+    run: () => store.removeRows(),
+  }
+  const rowActionsFor = (count = removeCount(store, -1)) => [
+    ...rowActions,
+    { ...removeAction, label: ctx.i18n.t('sheet.menu.removeRows', { count }) },
+  ]
+  // ⋯ ya da sağ tık seçimin dışındaysa önce oraya gider: menü tıklanan satır(lar) için.
+  const focusFor = (pos: { row: number; col: number }) => {
+    const r = store.range()
+    if (!r || pos.row < r.top || pos.row > r.bottom || pos.col < r.left || pos.col > r.right) store.focus(pos)
+  }
+  const onPaste = (e: ClipboardEvent) => {
+    if (store.editing() || !posOf(e.target)) return
+    e.preventDefault()
+    void paste(matrixFromClipboard(e.clipboardData))
+  }
+
   const onKeyDown = (e: KeyboardEvent) => {
+    setNotice(null)
+    if (search && (mac ? e.metaKey : e.ctrlKey) && e.key.toLowerCase() === 'f' && posOf(e.target) && !store.editing()) {
+      e.preventDefault()
+      setFind((f) => f ?? '')
+      requestAnimationFrame(() => root.current?.querySelector<HTMLInputElement>('.dt-find input')?.select())
+      return
+    }
     // Yalnız hücrenin kendisinde: ⋯ düğmesi ve başlık kendi tuşlarını kullanır.
     if (!posOf(e.target) && !store.editing()) return
     const ed = store.editing()
@@ -425,14 +574,18 @@ export function FormGrid<Row extends object>({
             row={row}
             env={env}
             issue={rowIssues?.get(col.id)}
+            found={foundKeys.has(`${index}:${c}`)}
             onPicked={focusActive}
           />
         ))}
-        {rowActions.length > 0 && (
-          <div className="dt-cell dt-cell-menu is-pinned-end is-pin-edge" style={{ right: 0 }} role="gridcell">
-            {row && <RowMenu row={row} label={String(index + 1)} actions={rowActions} reserve onOpen={() => {}} />}
-          </div>
-        )}
+        <div
+          className="dt-cell dt-cell-menu is-pinned-end is-pin-edge"
+          style={{ right: 0 }}
+          role="gridcell"
+          onFocus={() => focusFor({ row: index, col: store.active()?.col ?? 0 })}
+        >
+          {row && <SelectionRowMenu store={store} row={row} index={index} actions={rowActionsFor} />}
+        </div>
       </div>
     )
   }
@@ -445,18 +598,47 @@ export function FormGrid<Row extends object>({
   return (
     <div
       ref={root}
+      style={{ '--dt-fg-head-h': `${metrics.head}px`, '--dt-fg-foot-h': `${metrics.foot}px` } as CSSProperties}
       className={cls.filter(Boolean).join(' ')}
       role="grid"
       aria-label={label}
       aria-rowcount={count + 1}
-      aria-colcount={shown.length + 1 + (rowActions.length ? 1 : 0)}
+      aria-colcount={shown.length + 2}
       data-density={density}
       onPointerDown={onPointerDown}
       onPointerOver={onPointerOver}
       onKeyDown={onKeyDown}
       onDoubleClick={onDoubleClick}
+      onCopy={(e) => onCopy(e)}
+      onCut={(e) => onCopy(e, true)}
+      onPaste={onPaste}
       onClick={onClick}
     >
+      {find !== null && (
+        <div className="dt-find">
+          <div className="dt-find-box">
+            <span className="dt-input">
+              <input
+                value={find}
+                aria-label={ctx.i18n.t('sheet.find')}
+                placeholder={ctx.i18n.t('sheet.find')}
+                onChange={(e) => setFind(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    goToMatch(e.shiftKey ? -1 : 1)
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    closeFind()
+                  }
+                }}
+              />
+            </span>
+            {query && <FindCount store={store} found={found} i18n={ctx.i18n} />}
+          </div>
+        </div>
+      )}
       <div ref={head} className="dt-fg-head">
         <div className="dt-head" role="row" aria-rowindex={1}>
           <div className="dt-head-cell dt-gutter is-pinned-start" style={{ left: 0 }} role="columnheader">
@@ -465,20 +647,43 @@ export function FormGrid<Row extends object>({
           {withFill(shown, (col) => (
             <HeaderCell key={col.id} column={col} layout={layout} onMoved={() => {}} menu={false} />
           ))}
-          {rowActions.length > 0 && (
-            <div
-              className="dt-head-cell dt-cell-menu is-pinned-end is-pin-edge"
-              style={{ right: 0 }}
-              role="columnheader"
-            />
-          )}
+          <div
+            className="dt-head-cell dt-cell-menu is-pinned-end is-pin-edge"
+            style={{ right: 0 }}
+            role="columnheader"
+          />
         </div>
       </div>
-      <div ref={body} className="dt-fg-body">
-        <div className="dt-body" role="rowgroup" style={{ height: virtual.total }}>
-          {virtual.items.map((item) => rowEl(item.index, item.start))}
-        </div>
-      </div>
+      <GridContextMenu
+        i18n={ctx.i18n}
+        commands={{
+          cut: () => void menuCopy(true),
+          copy: () => void menuCopy(),
+          paste: () => void menuPaste(),
+          fill: () => store.fill(),
+          clear: () => store.clear(),
+          selectRow: () => store.selectRow(),
+          selectColumn: () => store.selectColumn(),
+          selectAll: () => store.selectAll(),
+          row: () => store.rows()[store.active()?.row ?? -1],
+          rowActions: () => rowActionsFor(),
+          onClose: focusActive,
+        }}
+        trigger={
+          <div
+            ref={body}
+            className="dt-fg-body"
+            onContextMenu={(e) => {
+              const pos = posOf(e.target)
+              if (pos && !store.editing()) focusFor(pos)
+            }}
+          >
+            <div className="dt-body" role="rowgroup" style={{ height: virtual.total }}>
+              {virtual.items.map((item) => rowEl(item.index, item.start))}
+            </div>
+          </div>
+        }
+      />
       <div className="dt-fg-foot">
         <ScrollBar metrics={hs.metrics} onScroll={hs.scrollTo} />
         <div className="dt-status" role="status" aria-label={ctx.i18n.t('sheet.statusAria')}>
@@ -489,6 +694,7 @@ export function FormGrid<Row extends object>({
               {ctx.i18n.t('sheet.errorsGoTo', { count: issues.errorRows })}
             </button>
           )}
+          {notice && <span className="dt-status-notice">{notice}</span>}
           <SelectionSummary store={store} columns={defs} fmt={env.fmt} i18n={ctx.i18n} />
         </div>
       </div>
@@ -507,6 +713,50 @@ function content<Row extends object>(def: ColumnDef<Row>, row: Row, value: unkno
  * Alt çubuğun seçim özeti (form-grid.md §4): iki ve daha çok hücre seçiliyken. Seçimi kendisi dinler; ok tuşunda
  * ızgara yeniden çizilmez. Değerler veriden, sayılar seçimdeki sütunların en çok hanesiyle biçimlenir.
  */
+/** "3 / 12": aktif hücre kaçıncı eşleşme (değilse 0); seçime abone, ızgara yeniden çizilmez. */
+function FindCount<Row extends object>({
+  store,
+  found,
+  i18n,
+}: {
+  store: SheetStore<Row>
+  found: CellPos[]
+  i18n: I18n
+}) {
+  const index = useSyncExternalStore(store.subscribe, () => {
+    const a = store.active()
+    return a ? found.findIndex((p) => p.row === a.row && p.col === a.col) + 1 : 0
+  })
+  return (
+    <span className="dt-find-count" aria-live="polite">
+      {i18n.t('sheet.findCount', { index, total: found.length })}
+    </span>
+  )
+}
+
+/** Silinecek satır sayısı: `index` seçimdeyse seçimdeki dolu satırlar, değilse 1 (-1: seçime bakar). */
+function removeCount<Row extends object>(store: SheetStore<Row>, index: number) {
+  const r = store.range()
+  if (!r || (index >= 0 && (index < r.top || index > r.bottom))) return 1
+  return Math.max(1, Math.min(r.bottom, store.rows().length - 1) - r.top + 1)
+}
+
+// ⋯ seçime abone: "N satırı sil" etiketi menü açılmadan doğru olmalı; yalnız bu satırın sayısı değişince çizilir.
+function SelectionRowMenu<Row extends object>({
+  store,
+  row,
+  index,
+  actions,
+}: {
+  store: SheetStore<Row>
+  row: Row
+  index: number
+  actions: (count: number) => Array<RowAction<Row>>
+}) {
+  const count = useSyncExternalStore(store.subscribe, () => removeCount(store, index))
+  return <RowMenu row={row} label={String(index + 1)} actions={actions(count)} reserve onOpen={() => {}} />
+}
+
 function SelectionSummary<Row extends object>({
   store,
   columns,

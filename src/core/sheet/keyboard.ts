@@ -31,6 +31,7 @@ export type Intent =
   | { type: 'undo' }
   | { type: 'redo' }
   | { type: 'error'; dir: 1 | -1 }
+  | { type: 'fill' }
   | { type: 'menu' }
 
 const DIR: Record<string, Direction> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }
@@ -89,6 +90,8 @@ export function keyIntent(e: KeyInput, ctx: { editing: boolean; multiline: boole
   if (mod) {
     const k = e.key.toLowerCase()
     if (k === 'a' && !e.shiftKey) return { type: 'selectAll' }
+    // ⌘D aşağı doldurur (Excel); tarayıcının yer imi kısayolu çalışmaz. ⌘C / ⌘X / ⌘V pano olaylarıyla gelir.
+    if (k === 'd' && !e.shiftKey) return { type: 'fill' }
     if (k === 'z') return { type: e.shiftKey ? 'redo' : 'undo' }
     if (k === 'y' && !ctx.mac) return { type: 'redo' }
     return null
@@ -159,6 +162,9 @@ export function applyIntent<Row extends object>(
       return true
     case 'redo':
       store.redo()
+      return true
+    case 'fill':
+      store.fill()
       return true
     case 'error':
     case 'menu':

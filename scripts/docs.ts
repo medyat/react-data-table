@@ -152,6 +152,14 @@ const KEPT_KEYS = [
   'sheet.agg.count',
   'sheet.agg.sum',
   'sheet.agg.avg',
+  // F3: pano ve sağ tık menüsü.
+  'sheet.menu.cut',
+  'sheet.menu.copy',
+  'sheet.menu.paste',
+  'sheet.menu.fillDown',
+  'sheet.menu.clear',
+  'sheet.find',
+  'sheet.findCount',
 ]
 
 // React'in bilinçli sapmaları (Vue'ya taşınmaz; docs/react-kararlar.md · Faz 7c): anahtar → [EN, TR], dokümandakini ezer.
@@ -186,7 +194,25 @@ const REACT_ONLY_MESSAGES: Record<string, [string, string]> = {
   'sheet.rows.one': ['{count} row', '{count} satır'],
   'sheet.rows.other': ['{count} rows', '{count} satır'],
   'sheet.agg.min': ['Min', 'En küçük'],
+  // FormGrid `maxRows` (form-grid.md §5): sığmayan yapıştırma satırları alınmaz; Vue'da yapıştırma hiç uygulanmıyordu.
+  'sheet.pasteSkipped.one': [
+    "{count} row wasn't pasted: the limit is {max} rows",
+    '{count} satır yapıştırılmadı: en çok {max} satır',
+  ],
+  'sheet.pasteSkipped.other': [
+    "{count} rows weren't pasted: the limit is {max} rows",
+    '{count} satır yapıştırılmadı: en çok {max} satır',
+  ],
   'sheet.agg.max': ['Max', 'En büyük'],
+  // FormGrid'in alttaki boş satırı: yazınca satır doğar (form-grid.md §5).
+  'sheet.newRow': ['New row', 'Yeni satır'],
+  // FormGrid sağ tık menüsü (form-grid.md §8): "Seç ›" alt menüsü; silme seçili satırların hepsini alır (§5).
+  'sheet.menu.select': ['Select', 'Seç'],
+  'sheet.menu.selectRow': ['Row', 'Satır'],
+  'sheet.menu.selectColumn': ['Column', 'Sütun'],
+  'sheet.menu.selectAll': ['All', 'Tümü'],
+  'sheet.menu.removeRows.one': ['Delete row', 'Satırı sil'],
+  'sheet.menu.removeRows.other': ['Delete {count} rows', '{count} satırı sil'],
   // R6: sistem görünümü olmayan ekranda varsayılandan dönmenin tek yolu.
   'views.removeDefault': ['Remove default', 'Varsayılanı kaldır'],
   // Sütun menüsünden Columns dialog'u: Display popover'ına gitmeden.
