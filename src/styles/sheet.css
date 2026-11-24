@@ -273,6 +273,8 @@
 }
 /* "Yeni kayıt": listenin altında yapışık, üstünde çizgi (Swors SourcePicker'ın alt şeridi). */
 .dt-cell-create {
+  /* Negatif kenar boşluğuyla iki kenara uzanır; `.dt-pop-item`in %100 genişliği sağda kısa bırakırdı. */
+  width: auto;
   position: sticky;
   bottom: -4px;
   margin: 4px -4px -4px;
@@ -281,6 +283,13 @@
   border-top: 1px solid var(--dt-line);
   border-radius: 0;
   background: var(--dt-surface);
+}
+.dt-cell-create .dt-cell-option-enter {
+  margin-left: auto;
+}
+/* Klavyeyle inilen seçenek yapışık "yeni kayıt" şeridinin altına kaymasın. */
+.dt-cell-list:has(.dt-cell-create) {
+  scroll-padding-bottom: 40px;
 }
 /* Sonraki sayfa yolda (Swors SourcePicker'la aynı): altta ortada soluk dönen ikon. */
 .dt-cell-list-more {
@@ -293,7 +302,8 @@
   min-height: 30px;
   justify-content: space-between;
 }
-.dt-cell-option[data-highlighted] {
+.dt-cell-option[data-highlighted],
+.dt-cell-create[data-highlighted] {
   background: var(--dt-surface-3);
 }
 .dt-cell-option-enter {
@@ -319,7 +329,7 @@
   color: var(--dt-text-3);
   font-style: italic;
 }
-.dt-cell-option[data-highlighted] .dt-cell-option-enter {
+.dt-cell-option-enter:is(.dt-cell-option[data-highlighted] *, .dt-cell-create[data-highlighted] *) {
   visibility: visible;
 }
 

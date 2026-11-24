@@ -265,8 +265,8 @@ function OptionCell<Row extends object>({
                   </kbd>
                 </Combobox.Item>
               ))}
+              {shown.length === 0 && <div className="dt-options-empty">{i18n.t('remote.noResults')}</div>}
             </Combobox.List>
-            {shown.length === 0 && <div className="dt-options-empty">{i18n.t('remote.noResults')}</div>}
           </Combobox.Popup>
         </Combobox.Positioner>
       </Combobox.Portal>
@@ -353,7 +353,8 @@ function AjaxCell<Row extends object>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const items = found?.items ?? []
-  // "Yeni kayıt" listenin son öğesi: ↓ ile ulaşılır (ızgarada Tab hücre değiştirir), altta yapışık durur.
+  // "Yeni kayıt" listenin son öğesi: ↓ ile ulaşılır (ızgarada Tab hücre değiştirir), altta yapışık durur. Listenin
+  // içinde çizilir: dışındaki öğeye klavye gezintisi inmez.
   const creatable = !!remote.create && found !== null
   const create = () => {
     const typed = text.trim() === labelOf(value) ? '' : text.trim()
@@ -428,22 +429,25 @@ function AjaxCell<Row extends object>({
                   </kbd>
                 </Combobox.Item>
               ))}
+              {found === null && <div className="dt-options-empty">{i18n.t('remote.searching')}</div>}
+              {found?.items.length === 0 && <div className="dt-options-empty">{i18n.t('remote.noResults')}</div>}
+              {more && (
+                <div className="dt-cell-list-more" role="status" aria-label={i18n.t('common.loading')}>
+                  <SpinnerGapIcon size={16} className="dt-spin" aria-hidden="true" />
+                </div>
+              )}
+              {creatable && (
+                <Combobox.Item value={CREATE} className="dt-pop-item dt-cell-create">
+                  <PlusIcon size={16} aria-hidden="true" />
+                  {text.trim() && text.trim() !== labelOf(value)
+                    ? i18n.t('remote.createWith', { text: text.trim() })
+                    : i18n.t('remote.create')}
+                  <kbd className="dt-kbd dt-cell-option-enter" aria-hidden="true">
+                    ↵
+                  </kbd>
+                </Combobox.Item>
+              )}
             </Combobox.List>
-            {found === null && <div className="dt-options-empty">{i18n.t('remote.searching')}</div>}
-            {found?.items.length === 0 && <div className="dt-options-empty">{i18n.t('remote.noResults')}</div>}
-            {more && (
-              <div className="dt-cell-list-more" role="status" aria-label={i18n.t('common.loading')}>
-                <SpinnerGapIcon size={16} className="dt-spin" aria-hidden="true" />
-              </div>
-            )}
-            {creatable && (
-              <Combobox.Item value={CREATE} className="dt-pop-item dt-cell-create">
-                <PlusIcon size={16} aria-hidden="true" />
-                {text.trim() && text.trim() !== labelOf(value)
-                  ? i18n.t('remote.createWith', { text: text.trim() })
-                  : i18n.t('remote.create')}
-              </Combobox.Item>
-            )}
           </Combobox.Popup>
         </Combobox.Positioner>
       </Combobox.Portal>

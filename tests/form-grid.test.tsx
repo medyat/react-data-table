@@ -1112,6 +1112,72 @@ describe('ajax listesi', () => {
     expect(cell(0, 0).textContent).toContain('YENİ-1')
   })
 
+  it('↓ son seçenekten "yeni"ye iner', async () => {
+    type P = { product: string | null }
+    const cols: Array<ColumnDef<P>> = [
+      {
+        id: 'product',
+        header: 'Ürün',
+        type: 'ajax',
+        remote: {
+          search: async () => ({ items: [{ value: 'p1', label: 'Mercimek' }], hasMore: false }),
+          resolve: async () => [],
+          create: async () => null,
+        },
+      },
+    ]
+    render(
+      <DataTableProvider locale="tr-TR">
+        <FormGrid label="Satırlar" rows={[]} columns={cols} onRowsChange={() => {}} />
+      </DataTableProvider>,
+    )
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.keyDown(cell(0, 0), { key: 'm' })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 300))
+    })
+    await flush()
+    const highlighted = () => document.querySelector('[role=option][data-highlighted]')?.textContent
+    fireEvent.keyDown(editor()!, { key: 'ArrowDown' })
+    await flush()
+    expect(highlighted()).toContain('Mercimek')
+    fireEvent.keyDown(editor()!, { key: 'ArrowDown' })
+    await flush()
+    expect(highlighted()).toContain('yeni kayıt')
+  })
+
+  it('sonuç yokken ↓ "yeni"yi vurgular, Enter yazılanla açar', async () => {
+    const create = vi.fn(async () => null)
+    type P = { product: string | null }
+    const cols: Array<ColumnDef<P>> = [
+      {
+        id: 'product',
+        header: 'Ürün',
+        type: 'ajax',
+        remote: { search: async () => ({ items: [], hasMore: false }), resolve: async () => [], create },
+      },
+    ]
+    render(
+      <DataTableProvider locale="tr-TR">
+        <FormGrid label="Satırlar" rows={[]} columns={cols} onRowsChange={() => {}} />
+      </DataTableProvider>,
+    )
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.keyDown(cell(0, 0), { key: 'm' })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 300))
+    })
+    await flush()
+    fireEvent.keyDown(editor()!, { key: 'ArrowDown' })
+    await flush()
+    expect(document.querySelector('[role=option][data-highlighted]')?.textContent).toContain('yeni kayıt')
+    fireEvent.keyDown(editor()!, { key: 'Enter' })
+    await flush()
+    expect(create).toHaveBeenCalledWith('m')
+  })
+
   it('create yoksa "yeni" öğesi yok', async () => {
     type P = { product: string | null }
     const cols: Array<ColumnDef<P>> = [
