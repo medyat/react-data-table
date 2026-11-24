@@ -28,7 +28,7 @@ import { HeaderCell } from '../core/grid/header-cell'
 import { pinClasses, pinStyle } from '../core/grid/pin'
 import { RowMenu } from '../core/grid/row-menu'
 import { HeaderGroups, headStyle } from '../core/grid/header-groups'
-import { withFill } from '../core/grid/row'
+import { actionsClasses, actionsStyle, withFill } from '../core/grid/row'
 import { DelegatedTooltip } from '../core/grid/tooltip'
 import type { I18n } from '../core/i18n'
 import { mac, PASTE_KBD, REMOVE_KBD, ROW_EDIT_KBD } from '../core/interaction/kbd'
@@ -106,6 +106,11 @@ function GridCell<Row extends object>({
   const tipId = issue ? `dt-fg-tip-${store.rowId(index)}-${colIndex}` : undefined
   const style: CSSProperties = { ...pinStyle(col), ...(row ? cellFillStyle(def, value) : undefined) }
   const edit = state & CELL.editing ? store.editing() : null
+  // Düğme yoksa yer de yok: düzenlerken (editör hücrenin tamamını alır) ve boş satırda.
+  if (row && !edit) {
+    Object.assign(style, actionsStyle(def))
+    cls.push(...actionsClasses(def))
+  }
   // Pencere türünde kalem paketindir (§7), uygulamanın aksiyonlarından önce.
   const actions: Array<CellAction<Row>> =
     def.editor?.window && editable

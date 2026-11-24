@@ -454,6 +454,18 @@ oturunca çıkar.
 - `unit` fonksiyonu (satır bazında birim) artık hücrede sayının yanına soluk yazılır (`.dt-unit`); tip bunu söylüyordu ama
   çizilmiyordu, uygulama birimi yazmak için hücreyi elle kuruyordu.
 
+## R37 · Hücre aksiyonları değerin üstüne binmez (03 · actions'ı değiştirir)
+
+- 03'te aksiyonlar hover'da hücrenin sağ ucuna, solan zeminle değerin üstüne biniyordu: sağa yaslı sayı (birim fiyat,
+  tutar) tam onların altında kalıyordu. Artık hücre sağda düğmeler kadar yer açar (`actionsWidth`: en çok 2 düğme,
+  28 px + 2 px ara, 6 px kenar, 6 px metne; FormGrid pencere kalemi de sayılır).
+- Hover'da görünen düğmede yer hover / odakta açılır, değer sola kayar: kalıcı ayrılan yer hover dışında sağda boş
+  duruyordu. Dar sütunda değer kesilir; kesilen hücrenin tam metni zaten tooltip'te.
+- Hep görünen düğmede (`reveal: 'always'`) yer kalıcıdır ve sütunun varsayılan genişliğine (`width` dahil) eklenir;
+  sağa yaslı sütunda başlık da aynı yerde biter.
+- Resize ikisinde de en çok düğmeler + 50 px'e iner. `when` bir satırda düğmeyi gizlese de yer açılır: hizalar aynı.
+- Düğmeleri sağa yaslı sütunda sola almak seçilmedi: aksiyonların yeri sütundan sütuna değişirdi.
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

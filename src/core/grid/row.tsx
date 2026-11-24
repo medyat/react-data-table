@@ -3,10 +3,11 @@
 // (05 §4, §6–7, D28, D35, D36).
 import { CaretRightIcon, DotsSixVerticalIcon, WarningCircleIcon } from '@phosphor-icons/react'
 import type { CSSProperties, MouseEvent, ReactNode } from 'react'
+import type { ColumnDef } from '../../types/columns'
 import type { RowAction } from '../../types/list'
 import { CellActions } from '../cells/cell-actions'
 import { cellFillStyle, renderCellContent, type RenderEnv } from '../cells/render-cell'
-import { alignOf, isNumericType } from '../cells/specs'
+import { actionsReserved, actionsWidth, alignOf, isNumericType } from '../cells/specs'
 import type { LayoutColumn } from '../columns/use-column-layout'
 import { readPath } from '../columns/read-path'
 import { inlineActionsOf, inlineClass } from './inline-actions'
@@ -28,6 +29,12 @@ export function withFill<Row extends object>(
     ...columns.slice(at).map((c, i) => render(c, at + i)),
   ]
 }
+
+/** Aksiyonlu hücre: düğmelerin yeri `--dt-actions-w`'da; CSS hep (`is-reserved`) ya da hover / odakta açar. */
+export const actionsStyle = (def: ColumnDef): CSSProperties | undefined =>
+  actionsWidth(def) ? ({ '--dt-actions-w': `${actionsWidth(def)}px` } as CSSProperties) : undefined
+export const actionsClasses = (def: ColumnDef): string[] =>
+  actionsWidth(def) ? (actionsReserved(def) ? ['has-actions', 'is-reserved'] : ['has-actions']) : []
 
 /** Birincil hücredeki chevron (05 §7): `canExpand` değilse aynı genişlikte boşluk (hizalama). */
 interface Expand {
@@ -72,8 +79,9 @@ function Cell<Row extends object>({
     def.primary && 'is-primary',
     (expand || lead) && 'has-expand',
     ...pinClasses(col),
+    ...actionsClasses(def),
   ]
-  const style: CSSProperties = { ...pinStyle(col), ...cellFillStyle(def, value) }
+  const style: CSSProperties = { ...pinStyle(col), ...cellFillStyle(def, value), ...actionsStyle(def) }
   const main = (
     <>
       <span className="dt-cell-content">{content}</span>

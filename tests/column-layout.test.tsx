@@ -173,3 +173,32 @@ describe('iç içe başlık (group, F5)', () => {
     expect(none.groups).toEqual([])
   })
 })
+
+describe('hücre aksiyonlarına ayrılan yer', () => {
+  const icon = () => null
+  const withActions: Array<ColumnDef<Order>> = [
+    { id: 'number', header: 'Order no.', type: 'id', primary: true },
+    {
+      id: 'value',
+      header: 'Value',
+      type: 'currency',
+      currency: 'TRY',
+      width: 128,
+      // 3 aksiyon: 1 düğme + ⋯ = 2 düğme → 2 × 30 + 10 = 70 px.
+      actions: ['a', 'b', 'c'].map((id) => ({ id, label: id, icon, run: () => {} })),
+    },
+  ]
+  it('hover: genişlik aynı kalır; resize en çok düğmeler + 50 px', () => {
+    const api = renderHook(() => useColumnLayout<Order>({ columns: withActions })).result.current
+    expect(api.widthOf('value')).toBe(128)
+    act(() => api.setWidth('value', 40))
+    expect(api.widthOf('value')).toBe(70 + 50)
+  })
+  it('always: yer varsayılan genişliğe eklenir', () => {
+    const always = withActions.map((c) =>
+      c.actions ? { ...c, actions: c.actions.map((a) => ({ ...a, reveal: 'always' as const })) } : c,
+    )
+    const api = renderHook(() => useColumnLayout<Order>({ columns: always })).result.current
+    expect(api.widthOf('value')).toBe(128 + 70)
+  })
+})

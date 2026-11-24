@@ -81,6 +81,19 @@ export function defaultTrack(def: ColumnDef): Track {
   return TYPE_SPECS[def.type].width
 }
 
+/** Aksiyon düğmelerinin hücrede açtığı sağ boşluk: değer düğmenin altında kalmaz. En çok 2 düğme görünür (fazlası ⋯);
+ *  FormGrid pencere sütununun kalemi de bir düğmedir. 28 px düğme + 2 px ara, 6 px kenar, 6 px metne. */
+export const actionsWidth = (def: ColumnDef): number => {
+  const n = Math.min(2, (def.actions?.length ?? 0) + (def.editor?.window ? 1 : 0))
+  return n ? n * 30 + 10 : 0
+}
+/** Hep görünen düğme (`reveal: 'always'`) yeri kalıcı ayırır, sütun o kadar genişler; hover'da görünen düğme yeri hover'da
+ *  açar, değer sola kayar (sağda boş alan durmaz). `when` bir satırda düğmeyi gizlese de yer kalır: sayılar hizalı. */
+export const actionsReserved = (def: ColumnDef): boolean => !!def.actions?.some((a) => a.reveal === 'always')
+
+/** Aksiyonlu sütunun en az genişliği: düğmeler + değere 50 px. */
+export const ACTIONS_MIN_TEXT = 50
+
 export const isNumericType = (type: ColumnType): boolean => TYPE_SPECS[type].numeric
 
 export function alignOf(def: ColumnDef): 'left' | 'right' | 'center' {

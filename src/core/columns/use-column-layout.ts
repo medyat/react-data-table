@@ -23,7 +23,7 @@ import {
 import { useState } from 'react'
 import type { ColumnDef } from '../../types/columns'
 import type { ColumnLayout } from '../../types/query'
-import { defaultTrack, type Track } from '../cells/specs'
+import { actionsReserved, actionsWidth, ACTIONS_MIN_TEXT, defaultTrack, type Track } from '../cells/specs'
 import { groupPath } from './column-name'
 import { readPath } from './read-path'
 
@@ -113,11 +113,19 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
   const [phone, setPhone] = useState(false)
   const fixed = defs.filter((d) => d.primary).map((d) => d.id as string)
 
+  // Aksiyonlu sütun resize ile en çok düğmeler + 50 px'e iner. Hep görünen düğmelerin yeri varsayılan genişliğe
+  // (`width` dahil) eklenir, değer tipin genişliğini korur. Düğmeler ölçeklenmez.
+  const actionsMin = (d: ColumnDef<Row>): number => {
+    const w = actionsWidth(d)
+    return w && w + ACTIONS_MIN_TEXT
+  }
   const trackFor = (d: ColumnDef<Row>): Track => {
     const t = defaultTrack(d)
-    return typeof t === 'number' ? Math.round(t * scale) : { ...t, min: Math.round(t.min * scale) }
+    const extra = actionsReserved(d) ? actionsWidth(d) : 0
+    return typeof t === 'number' ? Math.round(t * scale) + extra : { ...t, min: Math.round(t.min * scale) + extra }
   }
-  const minOf = (d: ColumnDef<Row>): number => Math.min(d.minWidth ?? MIN_COLUMN_WIDTH, trackMin(trackFor(d)))
+  const minOf = (d: ColumnDef<Row>): number =>
+    Math.max(actionsMin(d), Math.min(d.minWidth ?? MIN_COLUMN_WIDTH, trackMin(trackFor(d))))
   /** Kaydedilen / uygulanan genişlik sütunun min–max aralığında (05 · Resize: min 80). */
   const clampWidth = (id: string, px: number): number => {
     const def = defById.get(id)

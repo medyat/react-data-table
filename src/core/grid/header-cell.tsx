@@ -10,7 +10,7 @@ import {
   type MouseEvent,
   type TouchEvent,
 } from 'react'
-import { alignOf, isNumericType, typeLabelKey } from '../cells/specs'
+import { actionsReserved, actionsWidth, alignOf, isNumericType, typeLabelKey } from '../cells/specs'
 import type { ColumnLayoutApi, LayoutColumn } from '../columns/use-column-layout'
 import { MOVE_KBD } from '../interaction/kbd'
 import { useDataTableContext } from '../provider'
@@ -141,7 +141,12 @@ export function HeaderCell<Row extends object>({
   return (
     <div
       className={cls.filter(Boolean).join(' ')}
-      style={pinStyle(column)}
+      // Sağa yaslı, düğmeleri hep görünen sütunda başlık değerin bittiği yerde biter (hücre düğmelere yer ayırır).
+      style={
+        alignOf(def) === 'right' && actionsReserved(def)
+          ? { ...pinStyle(column), paddingRight: actionsWidth(def) }
+          : pinStyle(column)
+      }
       role="columnheader"
       aria-sort={ariaSort}
       data-col={column.id}

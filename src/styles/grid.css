@@ -391,7 +391,13 @@
   box-shadow: var(--dt-shadow-tip);
 }
 
-/* Hücre aksiyonları (03 · actions, T7): satır zemini üzerinde, 12 px solma, hover ve focus-within'de. */
+/* Hücre aksiyonları (03 · actions, T7, R37): hover ve focus-within'de. Değerin üstüne binmezler: hücre sağda düğmeler
+   kadar yer açar, hep görünende kalıcı, hover'da görünende hover / odakta (değer sola kayar). */
+.dt-cell.has-actions.is-reserved,
+.dt-row:hover .dt-cell.has-actions,
+.dt-cell.has-actions:focus-within {
+  padding-right: var(--dt-actions-w);
+}
 .dt-cell-actions {
   position: absolute;
   top: 0;
@@ -400,8 +406,8 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 0 6px 0 12px;
-  background: linear-gradient(to right, transparent, var(--dt-row-bg) 12px);
+  padding: 0 6px 0 0;
+  background: var(--dt-row-bg);
   opacity: 0;
   pointer-events: none;
   transition: opacity 120ms ease;
