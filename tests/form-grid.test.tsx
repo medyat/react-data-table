@@ -503,6 +503,21 @@ describe('ajax yapıştırma', () => {
       { product: 'YOK-1', title: 'Elle' },
     ])
     expect(cell(0, 0).textContent).toBe('Vida, 6 mm')
+
+    // Kopya etiketi değil değeri taşır; aynı sütuna geri yapıştırılınca değer ve seçeneği gelir.
+    const data: Record<string, string> = {}
+    const clipboardData = {
+      setData: (type: string, value: string) => (data[type] = value),
+      getData: (type: string) => data[type] ?? '',
+    }
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.copy(cell(0, 0), { clipboardData })
+    expect(data['text/plain']).toBe('7')
+    fireEvent.pointerDown(cell(1, 0), { button: 0 })
+    fireEvent.paste(cell(1, 0), { clipboardData })
+    await flush()
+    expect(onChange.mock.lastCall?.[0][1]).toEqual({ product: 7, title: 'Vida, 6 mm' })
+    expect(cell(1, 0).textContent).toBe('Vida, 6 mm')
   })
 })
 

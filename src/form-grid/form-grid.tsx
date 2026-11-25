@@ -499,19 +499,28 @@ export function FormGrid<Row extends object>({
     if (!r || store.editing()) return matrix
     for (let i = r.top; i <= Math.min(r.bottom, rows.length - 1); i++) {
       const line: string[] = []
-      for (let c = r.left; c <= r.right; c++) line.push(plainText(defs[c]!, rows[i]!, store.read(i, defs[c]!), env))
+      for (let c = r.left; c <= r.right; c++) {
+        const def = defs[c]!
+        const value = store.read(i, def)
+        // `ajax` hücresi etiketini değil değerini (kimlik) taşır.
+        line.push(
+          def.type === 'ajax' ? (isEmptyValue(value) ? '' : String(value)) : plainText(def, rows[i]!, value, env),
+        )
+      }
       matrix.push(line)
     }
     return matrix
   }
-  // Son kopyanın ham değerleri: aynı metin geri yapıştırılınca pencere sütununun nesnesi bütün gelir (§7).
-  const copied = useRef<{ tsv: string; values: unknown[][] } | null>(null)
+  // Son kopyanın ham değerleri: aynı metin geri yapıştırılınca pencere sütununun nesnesi bütün gelir (§7). `ajax`
+  // değeri de aynı sütuna kopyadan gelir: metin onun kimliğidir, `match` kodu arar, kimliği bulamaz.
+  const copied = useRef<{ tsv: string; values: unknown[][]; ids: string[] } | null>(null)
   const remember = (matrix: string[][]) => {
     const r = store.range()!
     const tsv = toTsv(matrix)
     copied.current = {
       tsv,
       values: matrix.map((line, i) => line.map((_, j) => store.read(r.top + i, defs[r.left + j]!))),
+      ids: defs.slice(r.left, r.right + 1).map((d) => d.id),
     }
     return tsv
   }
@@ -549,6 +558,7 @@ export function FormGrid<Row extends object>({
     }
     const { skipped } = store.paste(matrix, (def, text, i, j) => {
       if (def.editor?.window) return own ? copied.current!.values[i]?.[j] : undefined
+      if (own && def.type === 'ajax' && copied.current!.ids[j] === def.id) return copied.current!.values[i]?.[j]
       const hit = found.get(defs.indexOf(def))?.get(text.trim())
       if (hit) return hit.value
       return def.type === 'ajax' ? text.trim() || null : parseInput(def as ColumnDef, text, parseEnv)

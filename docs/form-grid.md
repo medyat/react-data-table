@@ -292,6 +292,8 @@ D düzenleme ve editörler · E hatalar ve alt çubuk · F ölçüm.
 F3 kararları:
 - Kopya görünen biçimdedir (`1.200,50`, seçeneğin adı), TSV + HTML tablosu; yapıştırma sütunun ayrıştırmasından
   geçer, böylece kopyalanan geri yapıştırılır. Tek değer + aralık: aralığın hepsine. Kilitli hücre atlanır.
+- `ajax` hücresinin kopyası değeridir (kimlik), etiketi değil. Izgaranın kendi kopyası aynı sütuna geri yapıştırılınca
+  değer seçeneğiyle gelir; dışarıdan gelen metin `match`'ten geçer (kod), kimlik sunucuya sorulmaz.
 - Aynı yapıştırmada `onChange`'in yazdığı alanı boş hücre ezmez (kod + boş Ad → Ad üründen), dolu hücre ezer.
 - Yapıştırmadaki boş Excel satırı da satır olur: atılsaydı alttaki satırlar yukarı kayardı.
 - ⌘D Excel'deki gibi: aralıkta ilk satır aşağı, tek satırda üstteki satır. Seri (1, 2, 3…) yok.
