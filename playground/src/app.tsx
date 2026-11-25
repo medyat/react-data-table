@@ -11,6 +11,7 @@ import { T7Actions } from './pages/t7-actions'
 import { T8Cells } from './pages/t8-cells'
 import { R21Reorder } from './pages/r21-reorder'
 import { F1FormGrid } from './pages/f1-form-grid'
+import { R41ReadOnly } from './pages/r41-read-only'
 import { applySettings, loadSettings, type Settings, type Theme } from './settings'
 
 const THEMES: Theme[] = ['light', 'dark-class', 'dark-attr']
@@ -24,6 +25,7 @@ const PAGES: Array<{ id: string; title: string; render: (s: Settings) => ReactNo
   { id: 't8', title: 'T8 · Cell types', render: (s) => <T8Cells density={s.density} /> },
   { id: 'r21', title: 'R21 · Reorder', render: (s) => <R21Reorder density={s.density} /> },
   { id: 'f1', title: 'F1 · FormGrid', render: () => <F1FormGrid /> },
+  { id: 'r41', title: 'R41 · Read-only grid', render: () => <R41ReadOnly /> },
 ]
 
 const queryClient = new QueryClient()

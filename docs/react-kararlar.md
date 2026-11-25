@@ -492,6 +492,30 @@ oturunca çıkar.
   Liste tablosu 48 px'te kalır. Satır yüksekliği `--dt-row-h`'den okunur, sanal kaydırma aynı sayıyı kullanır.
 - Kalem ve ⋯ arası 2 px (tek düğme grubu); üzerine gelince ⋯ de kalem gibi ghost zemin alır.
 
+## R41 · FormGrid gösterimi: `readOnly`, `onRowOpen`, `rowHeight="auto"` (form-grid.md §1 ve §9'u değiştirir)
+
+- Kaydedilmiş belgenin satırları `DataTable` istemci modunda değil, `FormGrid`'in gösterim hâlinde çizilir: belge
+  satırı liste değildir (araç çubuğu, sayfalama, görünüm gereksiz), kullanıcı 300–500 satırlık belgede Excel gibi
+  seçip kopyalamak ister. Dördüncü bileşen açılmaz: hücre motoru aynıdır, yazan yollar kapanır (form-grid.md §11).
+- Depo `readOnly` ile boş satır vermez, hiçbir hücreyi düzenlenebilir saymaz; yapıştırma, silme, çoğaltma çalışmaz.
+  Seçim ve kopya depodan okunduğu için değişmez.
+- Satır penceresinin yerini `onRowOpen` alır (› düğmesi, ⌘↵, çift tık): detay uygulamanın ekranıdır.
+- `rowHeight="auto"` yalnız gösterimde: belge satırının açıklaması, teslim tarihi ve seçenek özeti ayrı satırlarda
+  durur. Sanal satırlar TanStack Virtual'ın ölçümüyle (`measureElement`) çizilir; liste tablosunun açılan detayıyla aynı
+  yol. Düzenlenen ızgarada sabit yükseklik kalır (R40).
+- `frame={false}` çerçeveyi ve köşe yuvarlaklığını kaldırır: ızgara bir kartın içinde (belge detayı) kenardan kenara
+  durur. Yalnız gösterime bağlı değildir.
+- Gösterimde seçim Excel'deki kadar belirgin değildir: hücre düzenlenmez, seçim kopya ve toplam içindir. Zemin
+  accent-soft'un yarısı, kenar ve aktif hücre 1 px soluk accent. Alt çubuğun yazısı bir kademe küçük ve soluktur.
+
+## R42 · Başlık, satır no ve alt çubuk zemini: `--dt-head-bg`, `--dt-gutter-bg`, `--dt-foot-bg`
+
+- Belge kartının içindeki çerçevesiz ızgarada (R41) gri başlık, satır no sütunu ve alt çubuk kartın bölümlerinden ayrı
+  bir kutu gibi duruyordu. Uygulama üçünün zeminini kartın rengine eşitleyebilir.
+- `--dt-surface-2` değiştirilmez: alt çubuk, menüler ve kilitli hücre de onu kullanır. İki token `tokens.css`'te
+  tanımlı değildir (dosya Vue spesifikasyonundan üretilir); kullanıldıkları yerde `--dt-surface-2`'ye düşer.
+- Saydam değil, kartın rengi: başlık yapışkan, satır no sütunu sabit; saydam zeminde altından geçen satır görünür.
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

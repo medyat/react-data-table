@@ -42,6 +42,8 @@ export interface PageRowsOptions {
   footHeight: number
   /** Aktif satır: görünür alanın dışında da çizilir (odak kaybolmaz). */
   keepIndex: () => number
+  /** Satırlar içerik kadar uzar (R41): çizilen satır ölçülür, çizilmeyen `itemHeight` sayılır. */
+  measure?: boolean
 }
 
 export function usePageRows(o: PageRowsOptions) {
@@ -96,5 +98,7 @@ export function usePageRows(o: PageRowsOptions) {
     total: v.getTotalSize(),
     /** Çizilmemiş satıra gider (klavyeyle görünür alanın dışına çıkınca). */
     scrollTo: (index: number) => v.scrollToIndex(index, { align: 'auto' }),
+    /** `measure` açıkken satırın ref'i; satır `data-index` taşır. */
+    measureElement: o.measure ? v.measureElement : undefined,
   }
 }

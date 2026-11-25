@@ -29,6 +29,8 @@ export interface SheetStoreOptions<Row extends object> {
   newRow?: (rows: readonly Row[]) => Partial<Row>
   /** Dolunca boş satır yok. */
   maxRows?: number
+  /** Gösterim (R41): boş satır yok, hiçbir hücre yazılmaz, satır silinmez ve çoğaltılmaz; seçim ve kopya kalır. */
+  readOnly?: boolean
   /** `onChange`'e verilecek seçenek: `select`'te sütunun listesi, `ajax`'ta etiket önbelleği. */
   optionOf?: (def: ColumnDef<Row>, value: unknown) => OptionDef | undefined
 }
@@ -133,7 +135,7 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
   const emit = () => {
     for (const l of listeners) l()
   }
-  const full = () => o.maxRows !== undefined && rows.length >= o.maxRows
+  const full = () => !!o.readOnly || (o.maxRows !== undefined && rows.length >= o.maxRows)
   const rowCount = () => rows.length + (full() ? 0 : 1)
   // Tümü / sütun seçimi son dolu satırda biter: boş satır veri değil, giriş yeri (satır menüsü ona düşmesin).
   const lastRow = () => Math.max(rows.length, 1) - 1
@@ -164,6 +166,7 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
   const isField = (col: number): boolean => {
     const def = o.columns[col]
     return (
+      !o.readOnly &&
       !!def &&
       !def.accessor &&
       def.editable !== false &&
@@ -468,7 +471,7 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
       matrix: string[][],
       value: (def: ColumnDef<Row>, text: string, i: number, j: number) => unknown,
     ): { skipped: number } {
-      if (editing || !active || !matrix.length) return { skipped: 0 }
+      if (o.readOnly || editing || !active || !matrix.length) return { skipped: 0 }
       const r = range()!
       const single = matrix.length === 1 && matrix[0]!.length === 1
       const height = single && anchor ? r.bottom - r.top + 1 : matrix.length
@@ -517,7 +520,7 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
     /** Seçimdeki satırları siler (menü); geri alınınca yerlerine döner. Boş satır silinmez. */
     removeRows() {
       const r = range()
-      if (!r) return
+      if (!r || o.readOnly) return
       const indexes: number[] = []
       for (let i = r.top; i <= Math.min(r.bottom, rows.length - 1); i++) indexes.push(i)
       if (!indexes.length) return
@@ -538,7 +541,7 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
      */
     duplicate() {
       const r = range()
-      if (!r || editing) return
+      if (!r || editing || o.readOnly) return
       const room = (o.maxRows ?? Infinity) - rows.length
       const copies: Row[] = []
       for (let i = r.top; i <= Math.min(r.bottom, rows.length - 1) && copies.length < room; i++) {

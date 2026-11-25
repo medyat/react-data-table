@@ -30,7 +30,8 @@
   top: 0;
   z-index: 3;
   height: var(--dt-head-h);
-  background: var(--dt-surface-2);
+  /* --dt-head-bg, --dt-gutter-bg (R42): uygulama başlığın ve satır no sütununun zeminini verebilir; yoksa surface-2. */
+  background: var(--dt-head-bg, var(--dt-surface-2));
   border-bottom: 1px solid var(--dt-line);
 }
 .dt-body {
@@ -186,8 +187,9 @@
    Yapraklar ve dolgu alt satırda, ön / son hücreler (tutamaç, seçim, satır no, menü) bütün satırları kaplar. */
 .dt-head {
   --dt-group-h: calc(var(--dt-head-h) * 0.7);
-  /* Açık tek satır: aşağıdaki satır numaraları grupsuz başlıkta da o satırı gösterir (grup varken satırlar inline). */
-  grid-template-rows: var(--dt-head-h);
+  /* Açık tek satır: aşağıdaki satır numaraları grupsuz başlıkta da o satırı gösterir (grup varken satırlar inline).
+     1fr: başlığın yüksekliği alt çizgiyi içerir; satıra token verilirse hücreler 1 px taşıp çizgiyi örter. */
+  grid-template-rows: 1fr;
 }
 .dt-head > .dt-head-cell[data-col],
 .dt-head > .dt-cell-fill {
@@ -219,7 +221,7 @@
 
 /* Header hücresi (05 §4 · Header, T4). */
 .dt-head-cell {
-  --dt-row-bg: var(--dt-surface-2);
+  --dt-row-bg: var(--dt-head-bg, var(--dt-surface-2));
   gap: 2px;
   font-size: var(--dt-fs-head);
   font-weight: 500;

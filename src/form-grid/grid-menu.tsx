@@ -45,11 +45,12 @@ export interface GridMenuInfo<Row> {
 }
 
 export interface GridMenuCommands<Row> {
-  cut: () => void
+  /** Gösterimde (R41) yazan komutlar verilmez, menüde çizilmez. */
+  cut?: () => void
   copy: () => void
-  paste: () => void
-  fill: () => void
-  clear: () => void
+  paste?: () => void
+  fill?: () => void
+  clear?: () => void
   selectRow: () => void
   selectColumn: () => void
   selectAll: () => void
@@ -121,18 +122,22 @@ export function GridContextMenu<Row extends object>({
                     ? `${t('cells', { count: info.cells })} · ${t('lockedSkipped', { count: info.locked })}`
                     : t('cells', { count: info.cells })}
                 </div>
-                <Item icon={ScissorsIcon} label={t('cut')} kbd={CUT_KBD} disabled={allLocked} run={c.cut} />
+                {c.cut && <Item icon={ScissorsIcon} label={t('cut')} kbd={CUT_KBD} disabled={allLocked} run={c.cut} />}
                 <Item icon={CopyIcon} label={t('copy')} kbd={COPY_KBD} run={c.copy} />
-                <Item icon={ClipboardTextIcon} label={t('paste')} kbd={PASTE_KBD} run={c.paste} />
-                <Item icon={BackspaceIcon} label={t('clear')} kbd={CLEAR_KBD} disabled={allLocked} run={c.clear} />
-                <Item
-                  icon={ArrowDownIcon}
-                  label={t('fillDown')}
-                  sub={t(info.single ? 'fillDownAbove' : 'fillDownFirst')}
-                  kbd={FILL_KBD}
-                  disabled={allLocked}
-                  run={c.fill}
-                />
+                {c.paste && <Item icon={ClipboardTextIcon} label={t('paste')} kbd={PASTE_KBD} run={c.paste} />}
+                {c.clear && (
+                  <Item icon={BackspaceIcon} label={t('clear')} kbd={CLEAR_KBD} disabled={allLocked} run={c.clear} />
+                )}
+                {c.fill && (
+                  <Item
+                    icon={ArrowDownIcon}
+                    label={t('fillDown')}
+                    sub={t(info.single ? 'fillDownAbove' : 'fillDownFirst')}
+                    kbd={FILL_KBD}
+                    disabled={allLocked}
+                    run={c.fill}
+                  />
+                )}
                 <Menu.SubmenuRoot>
                   <Menu.SubmenuTrigger className="dt-menu-item">
                     <TableIcon size={16} className="dt-menu-icon" aria-hidden="true" />

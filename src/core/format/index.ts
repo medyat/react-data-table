@@ -81,7 +81,9 @@ export function createFormat(locale: string) {
     /** 68 → "68%" (tr: "%68"). */
     percent: (n: number | string, dp = 0, sign: SignDisplay = 'auto', min = dp): string =>
       minus(
-        percentFmt(dp, sign, min).format(typeof n === 'string' ? (toDecimal(n).div(100).toFixed() as `${number}`) : n / 100),
+        percentFmt(dp, sign, min).format(
+          typeof n === 'string' ? (toDecimal(n).div(100).toFixed() as `${number}`) : n / 100,
+        ),
       ),
     /** Çip özetleri: 250000 → "250K" (tr: "250 B"). */
     compact: (n: number): string => minus(nf({ notation: 'compact', maximumFractionDigits: 0 }).format(n)),

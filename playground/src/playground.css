@@ -349,3 +349,24 @@ body {
 .pg-lots > .dt-btn {
   justify-self: start;
 }
+
+/* R41 · gösterim sayfası */
+.pg-toggle {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.pg-note {
+  margin: 0 0 12px;
+  color: var(--dt-text-2);
+}
+.pg-line {
+  display: grid;
+  gap: 2px;
+}
+.pg-line-code,
+.pg-line-note {
+  color: var(--dt-text-3);
+  font-size: var(--dt-ui-fs-xs);
+}

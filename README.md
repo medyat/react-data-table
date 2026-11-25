@@ -222,6 +222,17 @@ paketi ezsin:
 @layer theme, base, medyat-dt, components, utilities;
 ```
 
+Başlığın, FormGrid'in satır no sütununun ve alt çubuğunun zemini `--dt-head-bg`, `--dt-gutter-bg` ve `--dt-foot-bg` ile
+verilebilir (R42); verilmezse `--dt-surface-2`. Saydam verilmez: başlık ve alt çubuk yapışkan, satır no sütunu sabittir,
+altlarından satırlar geçer. Bir kartın içindeki
+ızgarada kartın rengi verilir:
+
+```tsx
+<div className="[--dt-foot-bg:var(--card)] [--dt-gutter-bg:var(--card)] [--dt-head-bg:var(--card)]">
+  <FormGrid readOnly frame={false} … />
+</div>
+```
+
 Tema `.dark` sınıfı ya da `data-theme="dark"` ile değişir. Yoğunluk kullanıcının Display › Density seçiminden gelir;
 `useDataTable({ density })` onu sabitler ve seçiciyi gizler.
 

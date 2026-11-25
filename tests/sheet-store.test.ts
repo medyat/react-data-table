@@ -691,3 +691,28 @@ describe('datetime', () => {
     expect(onRowsChange.mock.calls[0]![0]).toEqual([{ at: '2026-11-25T08:00:00.000Z' }])
   })
 })
+
+describe('gösterim (R41)', () => {
+  it('boş satır yok; hiçbir hücre düzenlenmez; yazma, yapıştırma, silme ve çoğaltma bir şey değiştirmez', () => {
+    const onRowsChange = vi.fn()
+    const rows: Line[] = [
+      { code: 'A', qty: 1, unit: 'pcs' },
+      { code: 'B', qty: 2, unit: null },
+    ]
+    const store = createSheetStore<Line>({ rows, columns, onRowsChange, readOnly: true })
+    expect(store.rowCount()).toBe(2)
+    store.focus({ row: 0, col: 1 })
+    expect(store.canEdit(0, 1)).toBe(false)
+    expect(store.startEdit()).toBe(false)
+    store.set({ row: 0, col: 1 }, 5)
+    store.paste([['9'], ['8'], ['7']], () => 9)
+    store.clear()
+    store.fill()
+    store.removeRows()
+    store.duplicate()
+    expect(onRowsChange).not.toHaveBeenCalled()
+    // Seçim kalır: kopya ve alt çubuk onu okur; son satırın altına inilmez.
+    store.focus({ row: 5, col: 1 }, true)
+    expect(store.range()).toEqual({ top: 0, bottom: 1, left: 1, right: 1 })
+  })
+})

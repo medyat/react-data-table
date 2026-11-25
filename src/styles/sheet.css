@@ -18,7 +18,7 @@
 /* Gutter (06 §5): 56 px, --dt-surface-2, satır no mono 11 sağda. Başlıktaki köşe başlık satırıyla aynı zeminde
    (06'daki koyu köşe göze batıyordu). */
 .dt-gutter {
-  --dt-row-bg: var(--dt-surface-2);
+  --dt-row-bg: var(--dt-gutter-bg, var(--dt-surface-2));
   flex-direction: row;
   align-items: center;
   gap: 4px;
@@ -30,6 +30,7 @@
   cursor: default;
 }
 .dt-head-cell.dt-gutter {
+  --dt-row-bg: var(--dt-head-bg, var(--dt-surface-2));
   justify-content: flex-end;
   font-family: var(--dt-font);
   font-size: var(--dt-fs-head);
@@ -391,9 +392,72 @@
   position: sticky;
   bottom: var(--dt-sticky-bottom, 0px);
   z-index: 4;
-  background: var(--dt-surface-2);
+  background: var(--dt-foot-bg, var(--dt-surface-2));
   border-top: 1px solid var(--dt-line);
   border-radius: 0 0 var(--dt-radius-card) var(--dt-radius-card);
+}
+
+/* Gösterim (R41): hücre düzenlenmez, seçim yalnız kopya ve toplam içindir; Excel'deki kadar belirgin değil. Zemin
+   accent-soft'un yarısı, kenar 1 px soluk accent; aktif hücre 1 px. Alt çubuk bir kademe küçük ve soluk. */
+.dt-form-grid.is-readonly .dt-cell[data-col].is-selected {
+  --dt-row-bg: color-mix(in oklab, var(--dt-accent-soft) 55%, var(--dt-surface));
+  box-shadow:
+    inset calc(min(var(--dt-sel-l), 1) * 1px) 0 0 0 var(--dt-fg-sel-line),
+    inset calc(min(var(--dt-sel-r), 1) * -1px) 0 0 0 var(--dt-fg-sel-line),
+    inset 0 calc(min(var(--dt-sel-t), 1) * 1px) 0 0 var(--dt-fg-sel-line),
+    inset 0 calc(min(var(--dt-sel-b), 1) * -1px) 0 0 var(--dt-fg-sel-line);
+}
+.dt-form-grid.is-readonly {
+  --dt-fg-sel-line: color-mix(in oklab, var(--dt-accent) 45%, transparent);
+}
+.dt-form-grid.is-readonly .dt-cell[data-col].is-active {
+  box-shadow: inset 0 0 0 1px var(--dt-fg-sel-line);
+}
+.dt-form-grid.is-readonly .dt-status {
+  font-size: var(--dt-ui-fs-xs);
+}
+.dt-form-grid.is-readonly .dt-status-rows {
+  color: inherit;
+}
+.dt-form-grid.is-readonly .dt-status-summary b {
+  font-weight: 500;
+}
+
+/* `frame={false}` (R41): kartın içinde kenardan kenara; yapışkan başlık ve alt çubuğun köşesi de düz. */
+.dt-form-grid.is-frameless,
+.dt-form-grid.is-frameless .dt-fg-head,
+.dt-form-grid.is-frameless .dt-fg-foot {
+  border: 0;
+  border-radius: 0;
+}
+.dt-form-grid.is-frameless .dt-fg-foot {
+  border-top: 1px solid var(--dt-line);
+}
+
+/* Gösterim (R41), `rowHeight="auto"`: satır içeriği kadar uzar, en az yoğunluğun satırı. Hücre içeriği üstten başlar;
+   tek satırlık hücrenin metni çok satırlı komşusunun ilk satırıyla aynı hizada. Metin kaydırılır, sayı kaydırılmaz. */
+.dt-form-grid.is-auto-height .dt-row {
+  height: auto;
+  min-height: calc(var(--dt-row-h) + 1px);
+}
+.dt-form-grid.is-auto-height .dt-cell[data-row] {
+  justify-content: flex-start;
+  padding-block: calc((var(--dt-row-h) - 1lh) / 2);
+}
+.dt-form-grid.is-auto-height .dt-row > .dt-gutter {
+  align-items: flex-start;
+  padding-top: calc((var(--dt-row-h) - 1lh) / 2);
+}
+.dt-form-grid.is-auto-height .dt-row > .dt-cell-menu {
+  align-items: flex-start;
+  padding-top: calc((var(--dt-row-h) - var(--dt-control-h-sm)) / 2);
+}
+.dt-form-grid.is-auto-height .dt-cell[data-col] .dt-cell-content {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.dt-form-grid.is-auto-height .dt-cell[data-col].is-numeric .dt-cell-content {
+  white-space: nowrap;
 }
 
 /* Her zaman görünen yatay çubuk: kayan bölümün altında, 10 px. */

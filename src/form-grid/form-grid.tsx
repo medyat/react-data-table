@@ -1,7 +1,14 @@
 // FormGrid (R34, docs/form-grid.md): formun içindeki satırları Excel gibi düzenleyen ızgara. Veri uygulamanın;
 // seçim, düzenleme ve geri al hücre motorunda (core/sheet). Izgara kendi içinde dikey kaymaz, sayfayla kayar;
 // başlık ve alt çubuk yapışkan, yatay kaydırma kendi çizdiğimiz çubukla (§4).
-import { CopySimpleIcon, PencilSimpleIcon, PlusIcon, TrashIcon, WarningCircleIcon } from '@phosphor-icons/react'
+import {
+  CaretRightIcon,
+  CopySimpleIcon,
+  PencilSimpleIcon,
+  PlusIcon,
+  TrashIcon,
+  WarningCircleIcon,
+} from '@phosphor-icons/react'
 import {
   useDeferredValue,
   useLayoutEffect,
@@ -17,7 +24,7 @@ import {
 import type { CellAction, ColumnDef, OptionDef } from '../types/columns'
 import type { RowAction } from '../types/list'
 import type { FormGridProps } from '../types/form-grid'
-import { decimalPlaces, isEmptyValue } from '../core/cells/format'
+import { decimalPlaces, isEmptyValue, minDecimalPlaces } from '../core/cells/format'
 import { RemoteLabels } from '../core/cells/remote-labels'
 import { CellActionMenu, CellActions } from '../core/cells/cell-actions'
 import { cellFillStyle, renderCellContent, type RenderEnv } from '../core/cells/render-cell'
@@ -66,7 +73,10 @@ function GridCell<Row extends object>({
   found,
   onPicked,
   onWindow,
+  showing,
 }: {
+  /** Gösterim (R41): hücreler kilitli görünmez, hepsi okunur. */
+  showing: boolean
   store: SheetStore<Row>
   col: LayoutColumn<Row>
   index: number
@@ -90,7 +100,7 @@ function GridCell<Row extends object>({
     'dt-cell',
     `is-${alignOf(def)}`,
     isNumericType(def.type) && 'is-numeric',
-    !editable && 'is-readonly',
+    !editable && !showing && 'is-readonly',
     state & CELL.active && 'is-active',
     state & CELL.editing && 'is-editing',
     state & CELL.selected && 'is-selected',
@@ -190,14 +200,22 @@ export function FormGrid<Row extends object>({
   maxRows,
   rowActions = [],
   search = true,
-  rowDialog = true,
+  rowDialog: dialog = true,
   density = 'standard',
+  frame = true,
+  readOnly = false,
+  onRowOpen,
+  rowHeight,
 }: FormGridProps<Row>) {
   const ctx = useDataTableContext()
   const root = useRef<HTMLDivElement>(null)
   const head = useRef<HTMLDivElement>(null)
   const body = useRef<HTMLDivElement>(null)
-  const [store] = useState(() => createSheetStore({ rows, columns, onRowsChange, getRowId }))
+  // Gösterimde (R41) satır penceresi yok: satır uygulamanın detayında açılır (`onRowOpen`).
+  const rowDialog = dialog && !readOnly
+  const [store] = useState(() =>
+    createSheetStore({ rows, columns, onRowsChange: onRowsChange ?? (() => {}), getRowId, readOnly }),
+  )
   // Birinci sütun ve satır no solda sabit (§4); kullanıcı sütun düzenini değiştirmez.
   const layout = useColumnLayout({
     columns,
@@ -209,10 +227,11 @@ export function FormGrid<Row extends object>({
   store.sync({
     rows,
     columns: defs,
-    onRowsChange,
+    onRowsChange: onRowsChange ?? (() => {}),
     getRowId,
     newRow,
     maxRows,
+    readOnly,
     optionOf: (def, value) => {
       if (isEmptyValue(value)) return undefined
       if (def.type === 'select') return def.options.find((o) => String(o.value) === String(value))
@@ -260,8 +279,10 @@ export function FormGrid<Row extends object>({
   }
 
   const [metrics, setMetrics] = useState({ row: FALLBACK_ROW_H, head: FALLBACK_HEAD_H, foot: FALLBACK_FOOT_H })
-  // ⋯ ve satır penceresinin kalemi; aralarında 2 px (sheet.css `.dt-form-grid .dt-cell-menu`).
-  const menuW = rowDialog ? 'calc(16px + 2 * var(--dt-control-h-sm) + 2px)' : 'calc(16px + var(--dt-control-h-sm))'
+  // ⋯ ve satır penceresinin kalemi (gösterimde aç düğmesi); aralarında 2 px (sheet.css `.dt-form-grid .dt-cell-menu`).
+  // Gösterimde düğme yoksa sütun da yok.
+  const buttons = readOnly ? Number(!!onRowOpen) + Number(rowActions.length > 0) : rowDialog ? 2 : 1
+  const menuW = buttons ? `calc(16px + ${buttons} * var(--dt-control-h-sm) + ${buttons - 1} * 2px)` : null
   const startW = () => GUTTER_W + layout.start.reduce((w, c) => w + layout.widthOf(c.id), 0)
   const hs = useHorizontalScroll([body, head], () => ({
     start: startW(),
@@ -276,6 +297,7 @@ export function FormGrid<Row extends object>({
     headHeight: metrics.head,
     footHeight: metrics.foot,
     keepIndex: () => store.active()?.row ?? -1,
+    measure: rowHeight === 'auto',
   })
 
   // Genişlikler ve sabit ofsetler React dışında (use-column-layout · subscribeSizing), liste ızgarasıyla aynı.
@@ -283,8 +305,8 @@ export function FormGrid<Row extends object>({
     const el = root.current
     if (!el) return
     const write = () => {
-      el.style.setProperty('--cols', [`${GUTTER_W}px`, layout.cols(), menuW].join(' '))
-      el.style.setProperty('--dt-min-w', `calc(${layout.minWidth() + GUTTER_W}px + ${menuW})`)
+      el.style.setProperty('--cols', [`${GUTTER_W}px`, layout.cols(), menuW].filter(Boolean).join(' '))
+      el.style.setProperty('--dt-min-w', `calc(${layout.minWidth() + GUTTER_W}px + ${menuW ?? '0px'})`)
       for (const [name, value] of Object.entries(layout.offsets()))
         el.style.setProperty(
           name,
@@ -468,6 +490,13 @@ export function FormGrid<Row extends object>({
       if (at) setRowAt(at.row)
       return
     }
+    // Gösterimde dokunmatik ekranda seçim yerine satır açılır.
+    if (touch && readOnly) {
+      const at = !(e.target as HTMLElement).closest('button') && posOf(e.target)
+      const row = at ? store.rows()[at.row] : undefined
+      if (row) onRowOpen?.(row)
+      return
+    }
     if (store.editing() || e.shiftKey) return
     const pos = posOf(e.target)
     if (!pos) return
@@ -483,6 +512,11 @@ export function FormGrid<Row extends object>({
     if (phone) return
     const pos = posOf(e.target)
     if (!pos || store.editing()) return
+    if (readOnly) {
+      const row = store.rows()[pos.row]
+      if (row) onRowOpen?.(row)
+      return
+    }
     if (openWindow(pos)) return
     store.focus(pos)
     if (!store.startEdit()) store.toggle()
@@ -601,32 +635,35 @@ export function FormGrid<Row extends object>({
       focusActive()
     },
   }
-  const rowActionsFor = (count = removeCount(store, -1)) => [
-    ...(rowDialog
-      ? [
+  const rowActionsFor = (count = removeCount(store, -1)): Array<RowAction<Row>> =>
+    readOnly
+      ? rowActions
+      : [
+          ...(rowDialog
+            ? [
+                {
+                  id: 'edit',
+                  label: ctx.i18n.t('sheet.menu.editRow'),
+                  icon: PencilSimpleIcon,
+                  shortcut: ROW_EDIT_KBD,
+                  run: () => setRowAt(store.active()?.row ?? 0),
+                },
+              ]
+            : []),
+          // Paketin satır eylemleri (pano 1e): düzenle, çoğalt; uygulamanınkiler; en altta sil.
           {
-            id: 'edit',
-            label: ctx.i18n.t('sheet.menu.editRow'),
-            icon: PencilSimpleIcon,
-            shortcut: ROW_EDIT_KBD,
-            run: () => setRowAt(store.active()?.row ?? 0),
+            id: 'duplicate',
+            label: ctx.i18n.t('sheet.menu.duplicateRows', { count }),
+            icon: CopySimpleIcon,
+            disabled: () => maxRows !== undefined && store.rows().length >= maxRows,
+            run: () => {
+              store.duplicate()
+              focusActive()
+            },
           },
+          ...rowActions,
+          { ...removeAction, label: ctx.i18n.t('sheet.menu.removeRows', { count }) },
         ]
-      : []),
-    // Paketin satır eylemleri (pano 1e): düzenle, çoğalt; uygulamanınkiler; en altta sil.
-    {
-      id: 'duplicate',
-      label: ctx.i18n.t('sheet.menu.duplicateRows', { count }),
-      icon: CopySimpleIcon,
-      disabled: () => maxRows !== undefined && store.rows().length >= maxRows,
-      run: () => {
-        store.duplicate()
-        focusActive()
-      },
-    },
-    ...rowActions,
-    { ...removeAction, label: ctx.i18n.t('sheet.menu.removeRows', { count }) },
-  ]
   // ⋯ ya da sağ tık seçimin dışındaysa önce oraya gider: menü tıklanan satır(lar) için.
   const focusFor = (pos: { row: number; col: number }) => {
     const r = store.range()
@@ -660,6 +697,14 @@ export function FormGrid<Row extends object>({
     const def = ed ? (shown[ed.pos.col]?.def as ColumnDef<Row> | undefined) : undefined
     const intent = keyIntent(e, { editing: !!ed, multiline: def?.type === 'text', mac })
     if (!intent) return
+    if (readOnly && intent.type === 'rowDialog') {
+      const row = store.rows()[store.active()?.row ?? -1]
+      if (row && onRowOpen) {
+        e.preventDefault()
+        onRowOpen(row)
+      }
+      return
+    }
     if (rowDialog && (intent.type === 'rowDialog' || (phone && (intent.type === 'edit' || intent.type === 'type')))) {
       e.preventDefault()
       setRowAt(store.active()?.row ?? 0)
@@ -698,6 +743,8 @@ export function FormGrid<Row extends object>({
     return (
       <div
         key={blank ? '__blank' : (store.rowId(index) ?? index)}
+        ref={virtual.measureElement}
+        data-index={index}
         className={blank ? 'dt-row is-blank' : 'dt-row'}
         role="row"
         aria-rowindex={index + 2}
@@ -728,28 +775,45 @@ export function FormGrid<Row extends object>({
             found={foundKeys.has(`${index}:${c}`)}
             onPicked={focusActive}
             onWindow={openWindow}
+            showing={readOnly}
           />
         ))}
-        <div
-          className="dt-cell dt-cell-menu is-pinned-end is-pin-edge"
-          style={{ right: 0 }}
-          role="gridcell"
-          onFocus={() => focusFor({ row: index, col: store.active()?.col ?? 0 })}
-        >
-          {row && rowDialog && (
-            <button
-              type="button"
-              className="dt-row-more dt-row-edit"
-              tabIndex={-1}
-              aria-label={ctx.i18n.t('sheet.menu.editRow')}
-              data-dt-tip={`${ctx.i18n.t('sheet.menu.editRow')} ${ROW_EDIT_KBD}`}
-              onClick={() => setRowAt(index)}
-            >
-              <PencilSimpleIcon size={16} aria-hidden="true" />
-            </button>
-          )}
-          {row && <SelectionRowMenu store={store} row={row} index={index} actions={rowActionsFor} />}
-        </div>
+        {menuW && (
+          <div
+            className="dt-cell dt-cell-menu is-pinned-end is-pin-edge"
+            style={{ right: 0 }}
+            role="gridcell"
+            onFocus={() => focusFor({ row: index, col: store.active()?.col ?? 0 })}
+          >
+            {row && readOnly && onRowOpen && (
+              <button
+                type="button"
+                className="dt-row-more"
+                tabIndex={-1}
+                aria-label={ctx.i18n.t('row.open')}
+                data-dt-tip={`${ctx.i18n.t('row.open')} ${ROW_EDIT_KBD}`}
+                onClick={() => onRowOpen(row)}
+              >
+                <CaretRightIcon size={16} aria-hidden="true" />
+              </button>
+            )}
+            {row && rowDialog && (
+              <button
+                type="button"
+                className="dt-row-more dt-row-edit"
+                tabIndex={-1}
+                aria-label={ctx.i18n.t('sheet.menu.editRow')}
+                data-dt-tip={`${ctx.i18n.t('sheet.menu.editRow')} ${ROW_EDIT_KBD}`}
+                onClick={() => setRowAt(index)}
+              >
+                <PencilSimpleIcon size={16} aria-hidden="true" />
+              </button>
+            )}
+            {row && (!readOnly || rowActions.length > 0) && (
+              <SelectionRowMenu store={store} row={row} index={index} actions={rowActionsFor} />
+            )}
+          </div>
+        )}
       </div>
     )
   }
@@ -759,6 +823,9 @@ export function FormGrid<Row extends object>({
     hs.scrolled.start && 'is-scrolled-start',
     hs.scrolled.end && 'is-scrolled-end',
     phone && 'is-touch',
+    readOnly && 'is-readonly',
+    rowHeight === 'auto' && 'is-auto-height',
+    !frame && 'is-frameless',
   ]
   return (
     <div
@@ -768,15 +835,16 @@ export function FormGrid<Row extends object>({
       role="grid"
       aria-label={label}
       aria-rowcount={count + 1}
-      aria-colcount={shown.length + 2}
+      aria-colcount={shown.length + (menuW ? 2 : 1)}
+      aria-readonly={readOnly || undefined}
       data-density={density}
       onPointerDown={onPointerDown}
       onPointerOver={onPointerOver}
       onKeyDown={onKeyDown}
       onDoubleClick={onDoubleClick}
       onCopy={(e) => onCopy(e)}
-      onCut={(e) => onCopy(e, true)}
-      onPaste={onPaste}
+      onCut={readOnly ? undefined : (e) => onCopy(e, true)}
+      onPaste={readOnly ? undefined : onPaste}
       onClick={onClick}
     >
       {find !== null && (
@@ -813,11 +881,13 @@ export function FormGrid<Row extends object>({
           {withFill(shown, (col) => (
             <HeaderCell key={col.id} column={col} layout={layout} onMoved={() => {}} menu={false} />
           ))}
-          <div
-            className="dt-head-cell dt-cell-menu is-pinned-end is-pin-edge"
-            style={{ right: 0 }}
-            role="columnheader"
-          />
+          {menuW && (
+            <div
+              className="dt-head-cell dt-cell-menu is-pinned-end is-pin-edge"
+              style={{ right: 0 }}
+              role="columnheader"
+            />
+          )}
         </div>
       </div>
       {rowAt !== null && (
@@ -862,11 +932,14 @@ export function FormGrid<Row extends object>({
       <GridContextMenu
         i18n={ctx.i18n}
         commands={{
-          cut: () => void menuCopy(true),
           copy: () => void menuCopy(),
-          paste: () => void menuPaste(),
-          fill: () => store.fill(),
-          clear: () => store.clear(),
+          // Gösterimde yalnız kopya ve seçim.
+          ...(!readOnly && {
+            cut: () => void menuCopy(true),
+            paste: () => void menuPaste(),
+            fill: () => store.fill(),
+            clear: () => store.clear(),
+          }),
           selectRow: () => store.selectRow(),
           selectColumn: () => store.selectColumn(),
           selectAll: () => store.selectAll(),
@@ -879,7 +952,8 @@ export function FormGrid<Row extends object>({
               for (let i = r.top; i <= r.bottom; i++)
                 for (let c = r.left; c <= r.right; c++) {
                   cells++
-                  if (!store.canEdit(i, c)) locked++
+                  // Gösterimde her hücre okunur: "atlanır" diyecek yazma komutu yok.
+                  if (!readOnly && !store.canEdit(i, c)) locked++
                 }
             return {
               cells,
@@ -1041,15 +1115,20 @@ function SelectionSummary<Row extends object>({
   const [top, bottom, left, right] = key.split(':').map(Number) as [number, number, number, number]
   const cells: Array<readonly [unknown, boolean]> = []
   let dp = 0
+  // Sondaki sıfırlar sütunun en az ondalığına kadar (hücredeki gibi): "250", "250,0000" değil.
+  let min = 0
   for (let c = left; c <= right; c++) {
     const def = columns[c]
     if (!def) continue
     const numeric = isNumericType(def.type)
-    if (numeric) dp = Math.max(dp, decimalPlaces(def as ColumnDef))
+    if (numeric) {
+      dp = Math.max(dp, decimalPlaces(def as ColumnDef))
+      min = Math.max(min, minDecimalPlaces(def as ColumnDef))
+    }
     for (let r = top; r <= Math.min(bottom, store.rows().length - 1); r++) cells.push([store.read(r, def), numeric])
   }
   const s = summarize(cells)
-  const num = (v: string) => fmt.decimal(v, dp)
+  const num = (v: string) => fmt.decimal(v, dp, 'auto', min)
   return (
     <span className="dt-status-summary" aria-label={i18n.t('sheet.selectionSummary')}>
       <span>
@@ -1064,7 +1143,7 @@ function SelectionSummary<Row extends object>({
           </span>
           <span>
             {i18n.t('sheet.agg.avg')}
-            <b>{fmt.decimal(s.numbers.average, Math.max(dp, 2))}</b>
+            <b>{fmt.decimal(s.numbers.average, Math.max(dp, 2), 'auto', Math.max(min, 2))}</b>
           </span>
           <span>
             {i18n.t('sheet.agg.min')}

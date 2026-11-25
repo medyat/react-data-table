@@ -9,10 +9,8 @@ export interface FormGridChange {
   cells: Array<{ row: number; column: string }>
 }
 
-export interface FormGridProps<Row extends object> {
+interface FormGridBase<Row extends object> {
   rows: Row[]
-  /** Her düzenleme, geri al ve yinele yeni diziyle tek çağrı; eski dizi değişmez. */
-  onRowsChange: (rows: Row[], change: FormGridChange) => void
   columns: Array<ColumnDef<Row>>
   /** role=grid aria-label. */
   label: string
@@ -35,7 +33,33 @@ export interface FormGridProps<Row extends object> {
   rowActions?: Array<RowAction<Row>>
   /** Varsayılan `standard` (formda 42 px satır, R40). */
   density?: Density
+  /** false: çerçeve ve köşe yuvarlaklığı yok; ızgara içinde durduğu kartın kenarına oturur (belge detayı, R41). */
+  frame?: boolean
 }
+
+/** Düzenlenen satırlar. */
+interface FormGridEditing<Row extends object> extends FormGridBase<Row> {
+  readOnly?: false
+  /** Her düzenleme, geri al ve yinele yeni diziyle tek çağrı; eski dizi değişmez. */
+  onRowsChange: (rows: Row[], change: FormGridChange) => void
+  onRowOpen?: undefined
+  rowHeight?: undefined
+}
+
+/**
+ * Gösterim (R41): belgenin kaydedilmiş satırları. Boş satır, düzenleyici, yapıştırma, silme, doldurma ve satır
+ * penceresi yok; seçim, kopya, ⌘F ve alt çubuğun seçim özeti kalır.
+ */
+interface FormGridShowing<Row extends object> extends FormGridBase<Row> {
+  readOnly: true
+  onRowsChange?: undefined
+  /** Verilirse satırda aç düğmesi ve ⌘↵ satırı açar (satır detayı uygulamanın). */
+  onRowOpen?: (row: Row) => void
+  /** `auto`: satır içeriği kadar uzar (çok satırlı hücre); varsayılan yoğunluğun sabit yüksekliği. */
+  rowHeight?: 'auto'
+}
+
+export type FormGridProps<Row extends object> = FormGridEditing<Row> | FormGridShowing<Row>
 
 /** Satır penceresinin bir alanı (`renderField`); değer taslaktır, Tamam'a kadar satıra yazılmaz. */
 export interface RowFieldProps {

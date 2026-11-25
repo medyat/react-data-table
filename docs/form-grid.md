@@ -22,7 +22,10 @@ oradaki kodlardır (1a, F3a, G1a…).
 
 - Satırlar bir kaydın parçasıysa ve kayıtla birlikte tek istekte gidiyorsa: `FormGrid`.
 - Satırlar kendi başına kayıtsa ve çoğu aynı anda değişiyorsa (fiyat listesi, ürün kartları): `DataSheet`.
-- Yalnızca gösteriliyorsa: `DataTable` (istemci modunda) ya da uygulamanın kendi tablosu (D31).
+- Bir kaydın satırları yalnızca gösteriliyorsa (kaydedilmiş belgenin detayı): `FormGrid` `readOnly` (§11, R41).
+  Belge satırı bir liste değil: araç çubuğu, sayfalama ve kayıtlı görünüm gerekmez; hücre seçimi, kopya ve seçim
+  özeti gerekir.
+- Kendi başına kayıtların sayfalı listesi: `DataTable`.
 
 ## 2. API
 
@@ -248,8 +251,9 @@ DataSheet'e ait olanlar `FormGrid`'de yok: anahtar sütun ve upsert, Excel içe 
 Errors süzgeci, formula bar, `onSave` / `applyResult`, header'dan sıralama ve filtre (satır gizlemek yapıştırmayı,
 doldurmayı ve hataya gitmeyi bozar; bulmak için §8.1).
 
-Swors'ta sipariş ve teklif satırları da `FormGrid` kullanmaz: önce kayıt açılır, satır Sheet'te tek tek girilir
-(ürün kararı, 2026-11-23). `FormGrid` Sevk belgesi, fatura, stok fişi, satın alma talebi ve form içi tablolar içindir.
+Swors'ta sipariş ve teklif satırları `FormGrid`'de düzenlenmez: önce kayıt açılır, satır Sheet'te tek tek girilir
+(ürün kararı, 2026-11-23). Düzenlenen `FormGrid` Sevk belgesi, fatura, stok fişi, satın alma talebi ve form içi
+tablolar içindir; bütün belgelerin detayı (sipariş ve teklif dahil) gösterim hâlini kullanır (§11).
 
 ## 10. Uygulama sırası
 
@@ -352,3 +356,39 @@ F4 kararları:
 Alt çubuk en yakın kaydırma kutusuna yapışır; kutunun iç boşluğu varsa çubuk o boşluğun kenarında durur ve altındaki
 şeritte satırlar görünür. Uygulama kutunun alt boşluğunu eksi olarak `--dt-sticky-bottom`'a verir (Swors Sheet gövdesi:
 `-18px`).
+
+## 11. Gösterim (R41)
+
+Kaydedilmiş belgenin satırları aynı ızgarayla gösterilir: Excel'deki gibi seçilir, kopyalanır, aranır; yazılmaz.
+
+```tsx
+<FormGrid
+  readOnly
+  rows={lines}
+  columns={columns}
+  label="Satırlar"
+  getRowId={(line) => line.id}
+  onRowOpen={(line) => openLine(line)} // verilirse satırda › düğmesi, çift tık ve ⌘↵ satırı açar
+  rowActions={rowActions}              // verilirse ⋯ (yalnız uygulamanın eylemleri)
+  rowHeight="auto"                     // verilirse satır içeriği kadar uzar
+  frame={false}                        // çerçevesiz: içinde durduğu kartın kenarına oturur
+/>
+```
+
+- **Kalanlar:** seçim (fare, ⇧, ok tuşları, ⌘A, satır / sütun seçimi), ⌘C (görünen biçim, TSV + HTML), ⌘F arama, alt
+  çubuk (satır sayısı, seçim özeti), sol sabit `#` ve ilk sütun, sanal satırlar, hücre aksiyonları.
+- **Kalkanlar:** boş satır, düzenleyiciler (yazmak, F2, çift tıkla düzenleme), yapıştırma, kesme, temizleme, doldurma,
+  geri al, satır silme ve çoğaltma, satır penceresi, pencere düzenleyici. Sağ tık menüsünde Kopyala, Seç ve
+  uygulamanın satır eylemleri kalır. Hücreler kilitli zeminle çizilmez: gösterimde her hücre okunur.
+- **`onRowOpen`:** satırın detayı uygulamanındır (Swors'ta satır detayı Sheet'i). Satır penceresinin yerini alır:
+  aynı yer (kalemin yerinde ›), aynı kısayol (⌘↵); çift tık da açar (düzenleme olmadığı için boşta). Dokunmatikte
+  satıra dokunmak açar.
+- **`frame={false}`:** ızgara kendi çerçevesini ve köşe yuvarlaklığını çizmez; belge kartının bölümleri arasında
+  kenardan kenara durur (kart içinde kart olmaz). Düzenlenen ızgarada da geçerlidir.
+- **Seçim soluk:** zemin yarı tonda, kenar ve aktif hücre 1 px; alt çubuğun yazısı bir kademe küçük. Seçim yalnız kopya
+  ve toplam içindir.
+- **`⋯` sütunu** yalnız düğmesi varsa çizilir: `onRowOpen` ve / veya `rowActions`.
+- **`rowHeight="auto"`:** sabit satır yüksekliği (§4, R40) gösterimde kalkabilir; düzenleyici, yapıştırmayla doğan
+  satır ve doldurma tutamacı sabit yüksekliğe göre kurulu olduğu için düzenlenen ızgarada yok. Çizilen satır ölçülür,
+  çizilmeyen yoğunluğun satır yüksekliği sayılır: ⌘↓ ile uzağa atlarken kaydırma çubuğu ölçüm bitene kadar oynayabilir.
+  Hücre içeriği üstten başlar; metin kaydırılır, sayı kaydırılmaz.

@@ -1518,3 +1518,111 @@ describe('tarih-saat maskesi', () => {
     expect(editor()?.selectionStart).toBe(1)
   })
 })
+
+describe('gösterim (R41)', () => {
+  const mod = () => (/Mac|iPhone|iPad/.test(navigator.platform) ? { metaKey: true } : { ctrlKey: true })
+  function Showing({ onOpen, actions }: { onOpen?: (row: Line) => void; actions?: Array<RowAction<Line>> }) {
+    return (
+      <DataTableProvider locale="tr-TR">
+        <FormGrid
+          readOnly
+          label="Satırlar"
+          rows={initial}
+          columns={columns}
+          rowActions={actions}
+          onRowOpen={onOpen}
+          rowHeight="auto"
+        />
+      </DataTableProvider>
+    )
+  }
+
+  it('boş satır yok; hücreler kilitli görünmez; yazmak ve Delete değeri değiştirmez', async () => {
+    render(<Showing />)
+    await flush()
+    const grid = screen.getByRole('grid', { name: 'Satırlar' })
+    expect(grid.getAttribute('aria-readonly')).toBe('true')
+    expect(grid.classList.contains('is-auto-height')).toBe(true)
+    expect(grid.classList.contains('is-frameless')).toBe(false)
+    expect(
+      within(grid)
+        .getAllByRole('rowheader')
+        .map((c) => c.textContent),
+    ).toEqual(['1', '2'])
+    expect(grid.querySelector('.dt-cell.is-readonly')).toBeNull()
+    fireEvent.pointerDown(cell(0, 1), { button: 0 })
+    fireEvent.keyDown(cell(0, 1), { key: '7' })
+    fireEvent.keyDown(cell(0, 1), { key: 'Delete' })
+    await flush()
+    expect(cell(0, 1).querySelector('input')).toBeNull()
+    expect(cell(0, 1).textContent).toBe('1,00')
+  })
+
+  it('aç düğmesi, çift tık ve ⌘↵ satırı açar', async () => {
+    const onOpen = vi.fn()
+    render(<Showing onOpen={onOpen} />)
+    await flush()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Aç' })[1]!)
+    fireEvent.doubleClick(cell(0, 0))
+    fireEvent.pointerDown(cell(1, 1), { button: 0 })
+    fireEvent.keyDown(cell(1, 1), { key: 'Enter', ...mod() })
+    expect(onOpen.mock.calls.map(([row]) => (row as Line).code)).toEqual(['B', 'A', 'B'])
+  })
+
+  it('sağ tık menüsünde yalnız Kopyala, Seç ve uygulamanın satır eylemleri; düğme yoksa ⋯ sütunu da yok', async () => {
+    render(<Showing actions={[{ id: 'x', label: 'Kodu kopyala', run: () => {} }]} />)
+    await flush()
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.contextMenu(cell(0, 0))
+    await flush()
+    const menu = screen.getByRole('menu')
+    expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map((i) => i.textContent),
+    ).toEqual([expect.stringContaining('Kopyala'), expect.stringContaining('Seç'), 'Kodu kopyala'])
+    expect(within(menu).getByText('1 hücre')).toBeTruthy()
+    cleanup()
+    render(<Showing />)
+    await flush()
+    expect(document.querySelector('.dt-form-grid .dt-cell-menu')).toBeNull()
+  })
+
+  it('frame={false} çerçevesiz sınıfı yazar', async () => {
+    render(
+      <DataTableProvider locale="tr-TR">
+        <FormGrid readOnly frame={false} label="Satırlar" rows={initial} columns={columns} />
+      </DataTableProvider>,
+    )
+    await flush()
+    expect(screen.getByRole('grid', { name: 'Satırlar' }).classList.contains('is-frameless')).toBe(true)
+  })
+})
+
+it('seçim özeti sütunun en az ondalığına uyar: 4 hane, en az 0 → "3", "3,0000" değil', async () => {
+  type Q = { id: string; qty: number }
+  render(
+    <DataTableProvider locale="tr-TR">
+      <FormGrid
+        readOnly
+        label="Satırlar"
+        rows={[
+          { id: 'a', qty: 1 },
+          { id: 'b', qty: 2 },
+        ]}
+        columns={
+          [{ id: 'qty', header: 'Miktar', type: 'decimal', decimalPlaces: 4, minDecimalPlaces: 0 }] as Array<
+            ColumnDef<Q>
+          >
+        }
+      />
+    </DataTableProvider>,
+  )
+  await flush()
+  fireEvent.pointerDown(cell(0, 0), { button: 0 })
+  fireEvent.pointerDown(cell(1, 0), { button: 0, shiftKey: true })
+  await flush()
+  const values = [...document.querySelectorAll('.dt-status-summary b')].map((b) => b.textContent)
+  // Hücre, Toplam, Ortalama (en az 2 hane), En küçük, En büyük
+  expect(values).toEqual(['2', '3', '1,50', '1', '2'])
+})
