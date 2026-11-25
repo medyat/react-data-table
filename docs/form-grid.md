@@ -143,7 +143,7 @@ Tek düzen; belgede de form içinde de aynı (POS tablosu için ayrı "gömülü
 - Yatay kaydırma tablonun kendi çubuğuyla değil, alt çubuğun hemen üstündeki her zaman görünen çubukla;
   ikisi birlikte yapışkan alt. Satır no ve birinci sütun solda sabit.
 - Altta her zaman bir boş satır (`maxRows` dolana kadar).
-- **Alt çubuk** tablonundur: solda satır sayısı + "N hata — git"; iki ve daha çok hücre seçiliyse sağda Hücre,
+- **Alt çubuk** tablonundur: solda "N hata — git" (satır sayısı yazmaz, tablo zaten gösteriyor); iki ve daha çok hücre seçiliyse sağda Hücre,
   Toplam, Ortalama, En küçük, En büyük. Ekrana özel metin yazılmaz.
 - Telefonda aynı sütunlar, yatay kayar; hücre içi düzenleme yok, satıra dokunmak satır penceresini açar (3a, 3b).
   Dokunmatik `pointer: coarse` ile anlaşılır (ekran genişliğiyle değil: tablette de parmak). Satırlar 52 px, yazılacak
@@ -225,9 +225,9 @@ Vue 08'in sheet klavyesi geçerli; farklar:
   Yazmaya başlamak, F2, çift tık ve hücredeki ⤢ kutuyu açar; kilitli hücrede ⤢ yalnız tam metni gösterir.
 - Izgara dışına tık onaylar (blur ile onay yok); listedeki ve takvimdeki tık dışarı sayılmaz (`dt-sheet-layer`).
 - Izgarada Kaydet kısayolu yok (formun işi).
-- Sağ tık menüsü (pano ContextMenu): hücre grubu (başlıkta hücre ve atlanan kilitli hücre sayısı; seçim tamamen
-  kilitliyse Kes, Temizle, Doldur pasif), "Seç ›" (satır ⇧Space, sütun ⌃Space, tümü ⌘A), satır grubu (başlıkta satır
-  sayısı). ⋯ yalnız satır grubu. Menüden Yapıştır izin alamazsa alt çubukta "⌘V ile yapıştırın" yazar.
+- Sağ tık menüsü (pano ContextMenu): üstte satır grubu, çizginin altında hücre grubu (seçim tamamen kilitliyse Kes,
+  Temizle, Doldur pasif) ve "Seç ›" (satır ⇧Space, sütun ⌃Space, tümü ⌘A). Grupların sayı başlığı yok, yalnız çizgi:
+  menü çoğu zaman satıra bir şey yapmak için açılır, "1 hücre / 1 satır" bilgi vermiyordu. ⋯ yalnız satır grubu. Menüden Yapıştır izin alamazsa alt çubukta "⌘V ile yapıştırın" yazar.
 - Satır grubunda paketin eylemleri: Satırı düzenle (⌘↵), "N satırı çoğalt", uygulamanın `rowActions`'ı, en altta
   sil. Çoğaltma kopyaları sona ekler (sıralanmayan ızgarada araya ekleme yok); kopya `newRow`'un tabanına yalnız
   sütunların alanlarını alır, satır kimliği ve sütunu olmayan alanlar (kaynak bağı) taşınmaz.
@@ -376,7 +376,7 @@ Kaydedilmiş belgenin satırları aynı ızgarayla gösterilir: Excel'deki gibi 
 ```
 
 - **Kalanlar:** seçim (fare, ⇧, ok tuşları, ⌘A, satır / sütun seçimi), ⌘C (görünen biçim, TSV + HTML), ⌘F arama, alt
-  çubuk (satır sayısı, seçim özeti), sol sabit `#` ve ilk sütun, sanal satırlar, hücre aksiyonları.
+  çubuk (seçim özeti), sol sabit `#` ve ilk sütun, sanal satırlar, hücre aksiyonları.
 - **Kalkanlar:** boş satır, düzenleyiciler (yazmak, F2, çift tıkla düzenleme), yapıştırma, kesme, temizleme, doldurma,
   geri al, satır silme ve çoğaltma, satır penceresi, pencere düzenleyici. Sağ tık menüsünde Kopyala, Seç ve
   uygulamanın satır eylemleri kalır. Hücreler kilitli zeminle çizilmez: gösterimde her hücre okunur.
@@ -391,4 +391,4 @@ Kaydedilmiş belgenin satırları aynı ızgarayla gösterilir: Excel'deki gibi 
 - **`rowHeight="auto"`:** sabit satır yüksekliği (§4, R40) gösterimde kalkabilir; düzenleyici, yapıştırmayla doğan
   satır ve doldurma tutamacı sabit yüksekliğe göre kurulu olduğu için düzenlenen ızgarada yok. Çizilen satır ölçülür,
   çizilmeyen yoğunluğun satır yüksekliği sayılır: ⌘↓ ile uzağa atlarken kaydırma çubuğu ölçüm bitene kadar oynayabilir.
-  Hücre içeriği üstten başlar; metin kaydırılır, sayı kaydırılmaz.
+  Hücre, satır no ve satır düğmeleri dikeyde ortalıdır; metin kaydırılır, sayı kaydırılmaz.

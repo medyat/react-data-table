@@ -20,5 +20,11 @@
     --dt-focus: hsl(var(--ring));
     --dt-r-dot: hsl(var(--destructive));
     --dt-r-fg: hsl(var(--destructive));
+    --dt-danger: hsl(var(--destructive));
+    --dt-danger-hover: color-mix(in oklab, hsl(var(--destructive)) 88%, black);
+    --dt-on-danger: hsl(var(--destructive-foreground));
+    /* Tooltip shadcn'inki gibi sayfanın tersi: açık temada koyu, koyu temada açık; tablo zemininden ayrılır. */
+    --dt-tip-bg: hsl(var(--foreground));
+    --dt-tip-fg: hsl(var(--background));
   }
 }

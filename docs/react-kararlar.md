@@ -136,6 +136,8 @@ sıralama anahtarlarında sıralıdır.
   düğmeleri Tab sırasından çıkardığı için kullanılmadı.
 - Sütun genişliği değişimi hook'u yeniden çizmez (05 · Resize); "edited" için `useSyncExternalStore` sürükleme bitince
   bir kez çizer.
+- Resize tutamacına çift tık o sütunun sürüklenmiş genişliğini siler (`layout.resetWidth`): sütun tanımdaki ya da tipin
+  varsayılan genişliğine döner, görünümde de genişlik kaydı kalkar. Liste tablosunda ve FormGrid'de aynı.
 
 ## R7 · Provider
 
@@ -303,6 +305,9 @@ oturunca çıkar.
 - Kesilen hücrenin tooltip'i metnin tamamını gösterir: tek satır ve `…` yerine en çok 480 px genişlikte satırlara
   bölünür (`white-space: pre-line`, `overflow-wrap: anywhere`). Vue tooltip'i 320 px'te `…` ile kesiyordu; uzun formül ya
   da açıklama tooltip'te de okunamıyordu. Tek satırlık tooltip 26 px kalır (02).
+- Metin hücrenin sayfadaki düzeninden okunur (`innerText`): alt alta duran parçalar (ad ve altındaki özet) tooltip'te de
+  ayrı satırdır, aralarında 6 px; satır kaydırmasında boşluk yoktur. Uzun içerik ekranı kaplamasın diye en çok 10 satır
+  gösterilir (`line-clamp`), fazlası `…` ile kesilir; hücrenin kendisi zaten açılabilir (`onRowOpen`, satır penceresi).
 - Genişliği metinden gelir (`width: max-content`), konumu pencereye sığacak şekilde hesaplanır: öğenin ortasına
   hizalanır, taşacaksa kenardan 8 px içeride durur. `left` + `translateX(-50%)` ile sağ kenardaki dar öğenin
   (satır hatası) tooltip'i kenara kalan boşluk kadar daralıyor, metin harf harf bölünüyordu.
@@ -502,7 +507,8 @@ oturunca çıkar.
 - Satır penceresinin yerini `onRowOpen` alır (› düğmesi, ⌘↵, çift tık): detay uygulamanın ekranıdır.
 - `rowHeight="auto"` yalnız gösterimde: belge satırının açıklaması, teslim tarihi ve seçenek özeti ayrı satırlarda
   durur. Sanal satırlar TanStack Virtual'ın ölçümüyle (`measureElement`) çizilir; liste tablosunun açılan detayıyla aynı
-  yol. Düzenlenen ızgarada sabit yükseklik kalır (R40).
+  yol. Düzenlenen ızgarada sabit yükseklik kalır (R40). Hücreler, satır no ve satır düğmeleri dikeyde ortalıdır:
+  görselli iki satırlık ürün hücresinin yanında tek satırlık sayı ortada okunur (Swors belge satırı tasarımı).
 - `frame={false}` çerçeveyi ve köşe yuvarlaklığını kaldırır: ızgara bir kartın içinde (belge detayı) kenardan kenara
   durur. Yalnız gösterime bağlı değildir.
 - Gösterimde seçim Excel'deki kadar belirgin değildir: hücre düzenlenmez, seçim kopya ve toplam içindir. Zemin
@@ -515,6 +521,17 @@ oturunca çıkar.
 - `--dt-surface-2` değiştirilmez: alt çubuk, menüler ve kilitli hücre de onu kullanır. İki token `tokens.css`'te
   tanımlı değildir (dosya Vue spesifikasyonundan üretilir); kullanıldıkları yerde `--dt-surface-2`'ye düşer.
 - Saydam değil, kartın rengi: başlık yapışkan, satır no sütunu sabit; saydam zeminde altından geçen satır görünür.
+
+## R43 · Yıkıcı menü öğesi, alt menü oku ve tooltip
+
+- Yıkıcı öğe (`destructive`: Sil) hafif kırmızı zeminde (`--dt-danger` %10) kırmızı ikon ve yazıdır; vurgulanınca zemin
+  dolu `--dt-danger`, ikon ve yazı `--dt-on-danger`. Yalnız kırmızı yazı menüde öteki öğelerden zor ayrılıyordu. shadcn
+  köprüsü `--dt-danger`'ı `--destructive`'e bağlar: Swors'un DropdownMenu'sündeki Sil ile aynı renk.
+- Alt menü tetiğinin oku metin "›" değil 16 px `CaretRightIcon` (`.dt-menu-caret`): metin ok seçilmeyecek kadar küçüktü.
+- Hücre tooltip'i (`.dt-tip`) Swors'un shadcn Tooltip'iyle aynıdır: shadcn köprüsü zemini `--foreground`, yazıyı
+  `--background`'a bağlar (koyu temada açık kutu; koyu gri kutu tablo zemininden ayrılmıyordu), 12/6 px boşluk, normal
+  kalınlık, üst kenarda 10 px ok. Kutu pencere kenarına yaslansa da ok öğenin (geniş öğede imlecin) hizasındadır
+  (`--dt-tip-arrow-x`). 10 satır sınırı içteki kutudadır (`.dt-tip-body`): dıştaki kırpsaydı ok da kesilirdi.
 
 ## Yol haritası
 

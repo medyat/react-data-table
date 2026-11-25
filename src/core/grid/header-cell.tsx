@@ -265,7 +265,13 @@ export function HeaderCell<Row extends object>({
         </DtMenu>
       )}
       <span className="dt-head-sep" aria-hidden="true" />
-      <span className="dt-resize" aria-hidden="true" onMouseDown={onResizeStart} onTouchStart={onResizeStart}>
+      <span
+        className="dt-resize"
+        aria-hidden="true"
+        onMouseDown={onResizeStart}
+        onTouchStart={onResizeStart}
+        onDoubleClick={() => layout.resetWidth(column.id)}
+      >
         {resizing >= 0 && <span className="dt-resize-badge">{Math.round(resizing)} px</span>}
       </span>
     </div>

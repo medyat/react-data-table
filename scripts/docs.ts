@@ -191,8 +191,6 @@ const REACT_MESSAGES: Record<string, [string, string]> = {
 /** Vue dokümanında olmayan, yalnızca React'te bulunan anahtarlar; dokümanda varsa REACT_MESSAGES'a girer. */
 const REACT_ONLY_MESSAGES: Record<string, [string, string]> = {
   // FormGrid alt çubuğu (form-grid.md §4): "1 rows" yazmasın; özet Excel gibi en küçük ve en büyüğü de verir.
-  'sheet.rows.one': ['{count} row', '{count} satır'],
-  'sheet.rows.other': ['{count} rows', '{count} satır'],
   'sheet.agg.min': ['Min', 'En küçük'],
   // FormGrid `maxRows` (form-grid.md §5): sığmayan yapıştırma satırları alınmaz; Vue'da yapıştırma hiç uygulanmıyordu.
   'sheet.pasteSkipped.one': [
@@ -225,12 +223,6 @@ const REACT_ONLY_MESSAGES: Record<string, [string, string]> = {
   'sheet.addRow': ['Add row', 'Satır ekle'],
   // FormGrid sağ tık menüsü (form-grid.md §8, pano ContextMenu): grup başlıkları, "Seç ›" alt menüsü; silme seçili
   // satırların hepsini alır (§5).
-  'sheet.menu.cells.one': ['{count} cell', '{count} hücre'],
-  'sheet.menu.cells.other': ['{count} cells', '{count} hücre'],
-  'sheet.menu.lockedSkipped.one': ['{count} locked cell is skipped', '{count} kilitli hücre atlanır'],
-  'sheet.menu.lockedSkipped.other': ['{count} locked cells are skipped', '{count} kilitli hücre atlanır'],
-  'sheet.menu.rows.one': ['{count} row', '{count} satır'],
-  'sheet.menu.rows.other': ['{count} rows', '{count} satır'],
   'sheet.menu.fillDownFirst': ['The first row is copied to the rows below.', 'İlk satırın değeri alttakilere yazılır.'],
   'sheet.menu.fillDownAbove': ['The row above is copied here.', 'Üstteki satırın değeri yazılır.'],
   'sheet.menu.select': ['Select', 'Seç'],

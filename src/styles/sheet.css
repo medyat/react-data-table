@@ -416,9 +416,6 @@
 .dt-form-grid.is-readonly .dt-status {
   font-size: var(--dt-ui-fs-xs);
 }
-.dt-form-grid.is-readonly .dt-status-rows {
-  color: inherit;
-}
 .dt-form-grid.is-readonly .dt-status-summary b {
   font-weight: 500;
 }
@@ -434,23 +431,15 @@
   border-top: 1px solid var(--dt-line);
 }
 
-/* Gösterim (R41), `rowHeight="auto"`: satır içeriği kadar uzar, en az yoğunluğun satırı. Hücre içeriği üstten başlar;
-   tek satırlık hücrenin metni çok satırlı komşusunun ilk satırıyla aynı hizada. Metin kaydırılır, sayı kaydırılmaz. */
+/* Gösterim (R41), `rowHeight="auto"`: satır içeriği kadar uzar, en az yoğunluğun satırı. Hücreler, satır no ve satır
+   düğmeleri dikeyde ortalı: belge satırında görselli iki satırlık ürünün yanında tek satırlık sayılar ortada okunur.
+   Metin kaydırılır, sayı kaydırılmaz. */
 .dt-form-grid.is-auto-height .dt-row {
   height: auto;
   min-height: calc(var(--dt-row-h) + 1px);
 }
 .dt-form-grid.is-auto-height .dt-cell[data-row] {
-  justify-content: flex-start;
   padding-block: calc((var(--dt-row-h) - 1lh) / 2);
-}
-.dt-form-grid.is-auto-height .dt-row > .dt-gutter {
-  align-items: flex-start;
-  padding-top: calc((var(--dt-row-h) - 1lh) / 2);
-}
-.dt-form-grid.is-auto-height .dt-row > .dt-cell-menu {
-  align-items: flex-start;
-  padding-top: calc((var(--dt-row-h) - var(--dt-control-h-sm)) / 2);
 }
 .dt-form-grid.is-auto-height .dt-cell[data-col] .dt-cell-content {
   white-space: normal;
@@ -498,9 +487,6 @@
   padding: 0 12px;
   font-size: var(--dt-ui-fs-sm);
   color: var(--dt-text-2);
-}
-.dt-status-rows {
-  color: var(--dt-text);
 }
 /* Hatalı satır işareti: gutter'da ikon, alt çubukta 7 px kare. */
 .dt-mark {

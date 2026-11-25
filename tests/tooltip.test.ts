@@ -34,6 +34,12 @@ describe('tipOf', () => {
     sized(content.querySelector<HTMLElement>('.name')!, 260, 140)
     expect(tipOf(content.querySelector('.name'))).toBeNull()
   })
+  it('alt alta duran satırlar ayrı satır kalır: metin sayfadaki düzenden (innerText) okunur', () => {
+    const content = sized(cell('<span>Zebra Perde Sistemi</span><span>250 × 200 cm</span>'), 240, 120)
+    // jsdom yerleşim yapmadığı için innerText yok; tarayıcının vereceği değer elle verilir.
+    Object.defineProperty(content, 'innerText', { value: 'Zebra Perde Sistemi\n250 × 200 cm' })
+    expect(tipOf(content)?.text).toBe('Zebra Perde Sistemi\n250 × 200 cm')
+  })
   it('kesilmemiş hücrede tooltip yok', () => {
     expect(tipOf(cell('Pump'))).toBeNull()
   })

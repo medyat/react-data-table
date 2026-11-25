@@ -70,6 +70,20 @@ describe('FormGrid iskeleti', () => {
     // Başlıkta sütun menüsü yok: formun sütunu gizlenmez, taşınmaz.
     expect(grid.querySelector('.dt-head-menu')).toBeNull()
   })
+  it('resize tutamacına çift tık sütunu varsayılan genişliğine döndürür', async () => {
+    render(<Harness />)
+    await flush()
+    const grid = document.querySelector<HTMLElement>('.dt-form-grid')!
+    const cols = () => grid.style.getPropertyValue('--cols')
+    const before = cols()
+    const handle = grid.querySelectorAll<HTMLElement>('.dt-resize')[1]!
+    // Sürüklemenin başı genişliği modele px olarak yazar; çift tık bunu siler.
+    fireEvent.mouseDown(handle, { clientX: 0 })
+    fireEvent.mouseUp(handle)
+    expect(cols()).not.toBe(before)
+    fireEvent.doubleClick(handle)
+    expect(cols()).toBe(before)
+  })
   it('kilitli hücre aria-readonly; açılıştaki satırda Ürün kilitli, boş satırda açık', async () => {
     render(<Harness />)
     await flush()
@@ -587,15 +601,16 @@ describe('sağ tık menüsü (pano ContextMenu)', () => {
     return screen.getByRole('menu')
   }
 
-  it('başlıklar hücre ve kilitli sayısını, satır sayısını yazar; sil ⌘⌫ taşır', async () => {
+  it('satır işlemleri üstte, sayı başlığı yok; sil ⌘⌫ taşır', async () => {
     render(<Harness onChange={vi.fn()} />)
     await flush()
     fireEvent.pointerDown(cell(0, 0), { button: 0 })
     fireEvent.pointerDown(cell(1, 1), { button: 0, shiftKey: true })
     const menu = await open(cell(1, 1))
-    expect(within(menu).getByText('4 hücre · 2 kilitli hücre atlanır')).toBeTruthy()
-    expect(within(menu).getByText('2 satır')).toBeTruthy()
+    expect(within(menu).queryByText(/hücre$/)).toBeNull()
+    const items = within(menu).getAllByRole('menuitem')
     const remove = within(menu).getByRole('menuitem', { name: /2 satırı sil/ })
+    expect(items.indexOf(remove)).toBeLessThan(items.findIndex((i) => /Kopyala/.test(i.textContent ?? '')))
     expect(remove.textContent).toContain(/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘⌫' : 'Ctrl+Backspace')
   })
 
@@ -1580,8 +1595,7 @@ describe('gösterim (R41)', () => {
       within(menu)
         .getAllByRole('menuitem')
         .map((i) => i.textContent),
-    ).toEqual([expect.stringContaining('Kopyala'), expect.stringContaining('Seç'), 'Kodu kopyala'])
-    expect(within(menu).getByText('1 hücre')).toBeTruthy()
+    ).toEqual(['Kodu kopyala', expect.stringContaining('Kopyala'), expect.stringContaining('Seç')])
     cleanup()
     render(<Showing />)
     await flush()

@@ -63,6 +63,12 @@ describe('useColumnLayout', () => {
     expect(api.resizing()).toBeNull()
     off()
   })
+  it('resetWidth: sürüklenen genişlik silinir, sütun tanımdaki genişliğine döner', () => {
+    const api = setup().hook.result.current
+    act(() => api.setWidth('customer', 184))
+    act(() => api.resetWidth('customer'))
+    expect(api.cols()).toBe('136px minmax(160px, 1.2fr) minmax(160px, 1.2fr) 148px auto 56px')
+  })
   it('görünürlük: gizle / göster yeniden çizer', () => {
     const { hook } = setup()
     act(() => hook.result.current.setVisible('customer', false))

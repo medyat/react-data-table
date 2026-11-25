@@ -514,17 +514,41 @@
   z-index: 50;
   width: max-content;
   max-width: calc(480 * var(--dt-ui-fs) / 13);
-  padding: 5px 8px;
-  border-radius: var(--dt-radius-item);
+  /* Swors'un (shadcn) Tooltip'iyle aynı: 12/6 px boşluk, normal kalınlık, rounded-md, ok. */
+  padding: 6px 12px;
+  border-radius: calc(var(--dt-radius-item) + 2px);
   background: var(--dt-tip-bg);
   color: var(--dt-tip-fg);
   font-size: var(--dt-ui-fs-xs);
-  font-weight: 500;
+  font-weight: 400;
   line-height: 16px;
   white-space: pre-line;
   overflow-wrap: anywhere;
   box-shadow: var(--dt-shadow-tip);
   pointer-events: none;
+}
+/* Uzun içerik (açıklama, seçim özeti) ekranı kaplamasın: en çok 10 satır. */
+.dt-tip-body {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 10;
+  line-clamp: 10;
+  overflow: hidden;
+}
+/* Hücredeki ayrı satırlar (ad, altında özet) ipucunda da ayrı; aralarında paragraf boşluğu, satır kaydırmasında yok. */
+.dt-tip-line + .dt-tip-line {
+  margin-top: 6px;
+}
+/* Kutu öğenin altında; ok üst kenarda, öğenin hizasında (--dt-tip-arrow-x JS'ten). */
+.dt-tip-arrow {
+  position: absolute;
+  top: 0;
+  left: var(--dt-tip-arrow-x, 50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--dt-tip-bg);
+  transform: translate(-50%, -50%) rotate(45deg);
 }
 
 /* Faz 2 (05 §8, §10; 08 §3): dikey çizgiler, sorgu değişiminde soluk gövde, yenileme çubuğu, bildirim satırı, kaydırma hapı, header odağı. */

@@ -423,6 +423,9 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
     reset: (l: Partial<ColumnLayout> | undefined = options.layout) => apply(l),
     widthOf: (id: string): number => table.getColumn(id)?.getSize() ?? 0,
     setWidth: (id: string, px: number) => table.setColumnSizing((s) => ({ ...s, [id]: clampWidth(id, px) })),
+    /** Resize tutamacına çift tık: sürüklenen genişlik silinir, sütun tanımdaki (tip varsayılanı) genişliğe döner. */
+    resetWidth: (id: string) =>
+      table.setColumnSizing((s) => Object.fromEntries(Object.entries(s).filter(([key]) => key !== id))),
     setVisible: (id: string, visible: boolean) => table.getColumn(id)?.toggleVisibility(visible),
   }
 }

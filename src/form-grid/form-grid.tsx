@@ -945,7 +945,6 @@ export function FormGrid<Row extends object>({
           selectAll: () => store.selectAll(),
           info: () => {
             const r = store.range()
-            const last = Math.min(r?.bottom ?? -1, rows.length - 1)
             let cells = 0
             let locked = 0
             if (r)
@@ -958,7 +957,6 @@ export function FormGrid<Row extends object>({
             return {
               cells,
               locked,
-              rows: r ? Math.max(0, last - r.top + 1) : 0,
               single: !!r && r.top === r.bottom,
               row: store.rows()[store.active()?.row ?? -1],
               rowActions: rowActionsFor(),
@@ -989,7 +987,6 @@ export function FormGrid<Row extends object>({
       <div className="dt-fg-foot">
         <ScrollBar metrics={hs.metrics} onScroll={hs.scrollTo} />
         <div className="dt-status" role="status" aria-label={ctx.i18n.t('sheet.statusAria')}>
-          <span className="dt-status-rows">{ctx.i18n.t('sheet.rows', { count: rows.length })}</span>
           {issues.errorRows > 0 && (
             <button
               type="button"

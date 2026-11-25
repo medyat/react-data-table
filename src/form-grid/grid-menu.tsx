@@ -6,6 +6,7 @@ import { Menu } from '@base-ui/react/menu'
 import {
   ArrowDownIcon,
   BackspaceIcon,
+  CaretRightIcon,
   ClipboardTextIcon,
   ColumnsIcon,
   CopyIcon,
@@ -35,8 +36,6 @@ export interface GridMenuInfo<Row> {
   cells: number
   /** Seçimdeki kilitli hücreler: Kes, Temizle, Doldur onları atlar; hepsi kilitliyse pasif. */
   locked: number
-  /** Seçimdeki dolu satırlar (satır grubu başlığı). */
-  rows: number
   /** Tek satır seçiliyse ⌘D üstteki satırı getirir; açıklama ona göre. */
   single: boolean
   /** Aktif satır; boş satırda yok, satır grubu çizilmez. */
@@ -117,11 +116,24 @@ export function GridContextMenu<Row extends object>({
           <Menu.Popup className="dt-menu dt-grid-menu dt-sheet-layer" finalFocus={false}>
             {info && (
               <>
-                <div className="dt-menu-head">
-                  {info.locked
-                    ? `${t('cells', { count: info.cells })} · ${t('lockedSkipped', { count: info.locked })}`
-                    : t('cells', { count: info.cells })}
-                </div>
+                {/* Satır işlemleri üstte: menü çoğu zaman satıra bir şey yapmak için açılır. Gruplar yalnız çizgiyle ayrılır. */}
+                {row &&
+                  shown.map((a) => {
+                    const off = a.disabled?.(row)
+                    return (
+                      <Item
+                        key={a.id}
+                        icon={a.icon}
+                        label={a.label}
+                        sub={typeof off === 'string' ? off : a.description}
+                        kbd={a.shortcut}
+                        destructive={a.destructive}
+                        disabled={!!off}
+                        run={() => !off && void a.run(row)}
+                      />
+                    )
+                  })}
+                {row && shown.length > 0 && <DtMenuSeparator />}
                 {c.cut && <Item icon={ScissorsIcon} label={t('cut')} kbd={CUT_KBD} disabled={allLocked} run={c.cut} />}
                 <Item icon={CopyIcon} label={t('copy')} kbd={COPY_KBD} run={c.copy} />
                 {c.paste && <Item icon={ClipboardTextIcon} label={t('paste')} kbd={PASTE_KBD} run={c.paste} />}
@@ -142,9 +154,7 @@ export function GridContextMenu<Row extends object>({
                   <Menu.SubmenuTrigger className="dt-menu-item">
                     <TableIcon size={16} className="dt-menu-icon" aria-hidden="true" />
                     <span className="dt-menu-text">{t('select')}</span>
-                    <span className="dt-menu-kbd" aria-hidden="true">
-                      ›
-                    </span>
+                    <CaretRightIcon size={16} className="dt-menu-caret" aria-hidden="true" />
                   </Menu.SubmenuTrigger>
                   <Menu.Portal>
                     <Menu.Positioner className="dt-positioner" sideOffset={4}>
@@ -156,27 +166,6 @@ export function GridContextMenu<Row extends object>({
                     </Menu.Positioner>
                   </Menu.Portal>
                 </Menu.SubmenuRoot>
-                {row && shown.length > 0 && (
-                  <>
-                    <DtMenuSeparator />
-                    <div className="dt-menu-head">{t('rows', { count: info.rows })}</div>
-                    {shown.map((a) => {
-                      const off = a.disabled?.(row)
-                      return (
-                        <Item
-                          key={a.id}
-                          icon={a.icon}
-                          label={a.label}
-                          sub={typeof off === 'string' ? off : a.description}
-                          kbd={a.shortcut}
-                          destructive={a.destructive}
-                          disabled={!!off}
-                          run={() => !off && void a.run(row)}
-                        />
-                      )
-                    })}
-                  </>
-                )}
               </>
             )}
           </Menu.Popup>
