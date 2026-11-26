@@ -57,8 +57,8 @@ export interface CellEditorProps<Row extends object> {
   text: string | undefined
   value: unknown
   onDraft: (value: unknown, text: string) => void
-  /** Listeden / takvimden seçim: taslağı yazıp onaylar; klavyeyle seçildiyse alt hücreye iner. */
-  onPick: (value: unknown, down: boolean) => void
+  /** Listeden / takvimden seçim: taslağı yazıp onaylar; imleç hücrede kalır. */
+  onPick: (value: unknown) => void
   /** `ajax` "yeni kayıt"tan dönen seçenek: editör o sırada kapanmış olabilir, yazma çağıranın işidir. */
   onCreated?: (value: unknown, option: OptionDef) => void
   /** Satır penceresinin alanı: açılışta odak almaz, liste kendiliğinden açılmaz, uzun metin yerinde yazılır. */
@@ -97,6 +97,19 @@ function initialText(def: ColumnDef, value: unknown, locale: string): string {
  */
 const escapeToGrid = (e: BaseUIEvent<KeyboardEvent<HTMLInputElement>>) => {
   if (e.key === 'Escape') e.preventBaseUIHandler()
+}
+
+/**
+ * Tab listede vurgulu seçeneği alır (Excel'in otomatik tamamlaması gibi): taslağa yazar, onaylayıp sağa geçmek
+ * ızgaranın Tab'ıdır. Böylece seçim için Enter'a mecbur kalınmaz.
+ */
+const listKeys = (
+  e: BaseUIEvent<KeyboardEvent<HTMLInputElement>>,
+  highlighted: unknown,
+  take: (value: unknown) => void,
+) => {
+  escapeToGrid(e)
+  if (e.key === 'Tab' && highlighted !== undefined) take(highlighted)
 }
 
 /** Pencere alanında liste input'a değil çerçeveli kutuya bağlanır: kenarları ve genişliği kutuyla aynı olsun. */
@@ -202,16 +215,17 @@ function OptionCell<Row extends object>({
   const shown = typed
     ? options.filter((o) => fold(o.label, env.locale).includes(needle) || String(o.value) === text.trim())
     : options
+  const highlighted = useRef<unknown>(undefined)
   return (
     <Combobox.Root<unknown>
       open={open}
       onOpenChange={setOpen}
       value={value ?? null}
-      onValueChange={(v, details) => {
+      onValueChange={(v) => {
         if (v === null || v === undefined) return
         // Pencere alanı açık kalır: kutuda seçilenin adı durur.
         if (field) setText(inputText(def, v))
-        onPick(v, details.event instanceof globalThis.KeyboardEvent)
+        onPick(v)
       }}
       inputValue={text}
       onInputValueChange={(t, details) => {
@@ -229,6 +243,7 @@ function OptionCell<Row extends object>({
       // shortcut: ComboboxRoot tipi 'always'u gizler ama AriaCombobox'a iletir; Base UI yükselince test kırılırsa
       // onItemHighlighted + Enter'da ilk seçeneği seçmeye geçilir.
       autoHighlight={(typed ? 'always' : true) as boolean}
+      onItemHighlighted={(v) => (highlighted.current = open ? (v as OptionDef | undefined)?.value : undefined)}
     >
       <Combobox.Input
         ref={input}
@@ -237,7 +252,7 @@ function OptionCell<Row extends object>({
         id={id}
         aria-invalid={invalid || undefined}
         autoComplete="off"
-        onKeyDown={field ? undefined : escapeToGrid}
+        onKeyDown={field ? undefined : (e) => listKeys(e, highlighted.current, (v) => onDraft(v, inputText(def, v)))}
       />
       <Combobox.Portal>
         <Combobox.Positioner
@@ -288,6 +303,7 @@ function AjaxCell<Row extends object>({
   labels,
   text: start,
   value,
+  onDraft,
   onPick,
   onCreated,
   field,
@@ -353,6 +369,7 @@ function AjaxCell<Row extends object>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const items = found?.items ?? []
+  const highlighted = useRef<unknown>(undefined)
   // "Yeni kayıt" listenin son öğesi: ↓ ile ulaşılır (ızgarada Tab hücre değiştirir), altta yapışık durur. Listenin
   // içinde çizilir: dışındaki öğeye klavye gezintisi inmez.
   const creatable = !!remote.create && found !== null
@@ -373,11 +390,11 @@ function AjaxCell<Row extends object>({
         if (next && found === null) load('')
       }}
       value={value ?? null}
-      onValueChange={(v, details) => {
+      onValueChange={(v) => {
         if (v === null || v === undefined) return
         if (v === CREATE) return create()
         if (field) setText(labelOf(v))
-        onPick(v, details.event instanceof globalThis.KeyboardEvent)
+        onPick(v)
       }}
       inputValue={text}
       onInputValueChange={(t, details) => {
@@ -391,6 +408,8 @@ function AjaxCell<Row extends object>({
       itemToStringLabel={(v) => (v === CREATE ? '' : labelOf(v))}
       filter={null}
       autoHighlight
+      // "Yeni kayıt" Tab ile seçilmez: Tab hücreden çıkmaktır, pencere açmak değil.
+      onItemHighlighted={(v) => (highlighted.current = open && v !== CREATE ? (v ?? undefined) : undefined)}
     >
       <Combobox.Input
         ref={input}
@@ -399,7 +418,7 @@ function AjaxCell<Row extends object>({
         id={id}
         aria-invalid={invalid || undefined}
         autoComplete="off"
-        onKeyDown={field ? undefined : escapeToGrid}
+        onKeyDown={field ? undefined : (e) => listKeys(e, highlighted.current, (v) => onDraft(v, labelOf(v)))}
       />
       <Combobox.Portal>
         <Combobox.Positioner
@@ -582,7 +601,7 @@ function DateCell<Row extends object>({
                     // Tarih-saatte gün seçimi saati korur ve editör açık kalır: saat yazılabilsin.
                     if (def.type === 'datetime') return change(fillMask(mask, parseDateTimeInput(`${v} ${clock}`, env)))
                     picked.current = true
-                    onPick(v, false)
+                    onPick(v)
                   }}
                   onDone={() => setOpen(false)}
                 />

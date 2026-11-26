@@ -1367,6 +1367,87 @@ describe('ajax listesi', () => {
   })
 })
 
+describe('listeden seçince imleç', () => {
+  type L = { company: string | null; n: number | null; note: string | null }
+  const cols: Array<ColumnDef<L>> = [
+    {
+      id: 'company',
+      header: 'Cari',
+      type: 'ajax',
+      remote: {
+        search: async () => ({ items: [{ value: 'c1', label: 'KİRAZLI AHŞAP' }], hasMore: false }),
+        resolve: async () => [{ value: 'c1', label: 'KİRAZLI AHŞAP' }],
+      },
+    },
+    { id: 'n', header: 'Taksit', type: 'select', options: [{ value: 2, label: '2 taksit' }] },
+    { id: 'note', header: 'Not', type: 'text' },
+  ]
+  const activeCell = () => document.querySelector<HTMLElement>('.dt-cell[tabindex="0"]')?.dataset
+  function Own({ onChange }: { onChange: (rows: L[]) => void }) {
+    const [rows, setRows] = useState<L[]>([{ company: null, n: null, note: null }])
+    return (
+      <FormGrid
+        label="Satırlar"
+        rows={rows}
+        columns={cols}
+        onRowsChange={(next) => {
+          setRows(next)
+          onChange(next)
+        }}
+      />
+    )
+  }
+  async function openList(col: number, key: string, search: string) {
+    fireEvent.pointerDown(cell(0, col), { button: 0 })
+    fireEvent.keyDown(cell(0, col), { key })
+    // Kullanıcı aramayı yazar: ilk sonuç vurgulanır.
+    fireEvent.change(editor()!, { target: { value: search } })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 300))
+    })
+    await flush()
+    // jsdom'da sonradan gelen uzak sonuç kendiliğinden vurgulanmaz (tarayıcıda ilk öğe vurgulu gelir): ↓ ile verilir.
+    if (col === 0) fireEvent.keyDown(editor()!, { key: 'ArrowDown' })
+    await flush()
+    expect(document.querySelector('[role=option][data-highlighted]')).not.toBeNull()
+  }
+  for (const [name, col, key, search, value] of [
+    ['ajax', 0, 'k', 'kir', 'c1'],
+    ['select', 1, '2', '2 t', 2],
+  ] as const) {
+    const field = col === 0 ? 'company' : 'n'
+    it(`${name}: Enter vurgulu seçeneği yazar, imleç hücrede kalır`, async () => {
+      const onChange = vi.fn()
+      render(
+        <DataTableProvider locale="tr-TR">
+          <Own onChange={onChange} />
+        </DataTableProvider>,
+      )
+      await flush()
+      await openList(col, key, search)
+      fireEvent.keyDown(editor()!, { key: 'Enter' })
+      await flush()
+      expect(onChange.mock.lastCall?.[0][0][field]).toBe(value)
+      expect(editor()).toBeNull()
+      expect(activeCell()).toMatchObject({ row: '0', col: String(col) })
+    })
+    it(`${name}: Tab vurgulu seçeneği yazar ve sağdaki hücreye geçer`, async () => {
+      const onChange = vi.fn()
+      render(
+        <DataTableProvider locale="tr-TR">
+          <Own onChange={onChange} />
+        </DataTableProvider>,
+      )
+      await flush()
+      await openList(col, key, search)
+      fireEvent.keyDown(editor()!, { key: 'Tab' })
+      await flush()
+      expect(onChange.mock.lastCall?.[0][0][field]).toBe(value)
+      expect(activeCell()).toMatchObject({ row: '0', col: String(col + 1) })
+    })
+  }
+})
+
 describe('select yazarak', () => {
   type Rate = { n: number | null }
   const rateCols: Array<ColumnDef<Rate>> = [

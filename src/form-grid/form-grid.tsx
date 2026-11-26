@@ -169,10 +169,9 @@ function GridCell<Row extends object>({
           text={edit.text}
           value={edit.draft}
           onDraft={(v, text) => store.setDraft(v, text)}
-          onPick={(v, down) => {
+          onPick={(v) => {
             store.setDraft(v)
             store.commit()
-            if (down) store.move('down')
             onPicked()
           }}
           onCreated={(v) => store.set({ row: index, col: colIndex }, v)}

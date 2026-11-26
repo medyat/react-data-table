@@ -223,7 +223,8 @@ Vue 08'in sheet klavyesi geçerli; farklar:
 - ⌘↵ (Windows Ctrl+Enter) aktif satırın satır penceresini açar; boş satırda yeni satır penceresi.
 - Enter düzenlemede onaylayıp alt hücreye iner, düzenleme yokken yalnız alt hücreye geçer.
 - `select`, `ajax` ve `date` editöründe liste / takvim açıkken Enter önce ona gider; listeden ya da takvimden seçmek
-  hücreyi onaylar (Enter ile seçilince alt hücreye de iner; Vue'da ikinci Enter gerekiyordu). Tab her zaman onaylar.
+  hücreyi onaylar ve imleç hücrede kalır (seçim bir karardır, sonraki hücreyi kullanıcı seçer). Tab her zaman onaylar;
+  liste açıksa vurgulu seçeneği alıp sağa geçer (Excel'in otomatik tamamlaması gibi). "Yeni kayıt" Tab ile seçilmez.
   ⌥↓ takvimi açar.
 - Esc `select` / `ajax` hücresinde liste açıkken de düzenlemeyi tek basışta iptal eder (Excel gibi). Vue 07 §5'te ilk
   Esc listeyi kapatıp editörde bırakıyordu; hücrede liste düzenlemeyle kendiliğinden açılır, listesiz kalan editörün
