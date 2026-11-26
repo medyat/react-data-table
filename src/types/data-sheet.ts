@@ -38,8 +38,11 @@ export interface SheetExportOptions {
   format: 'csv' | 'xlsx'
   /** Dosya ve sayfa adı, uzantısız ("ürünler"). */
   name: string
-  /** Varsayılan bütün satırlar; `view` açık görünümün satırları. */
-  rows?: 'all' | 'view'
+  /**
+   * Satırlar hep listenin tamamıdır. Varsayılan görünen sütunlar; `all` gizliler dahil bütün sütunlar (dosyayı
+   * doldurup geri yüklemek için). Gizlenen sütun da içe aktarılır.
+   */
+  columns?: 'visible' | 'all'
 }
 
 export interface DataSheetOptions<Row extends object> {

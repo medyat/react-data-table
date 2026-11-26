@@ -852,10 +852,16 @@
 }
 
 /* DataSheet kabuğu: araç çubuğu uygulamanın (data-sheet.md §2); burada ızgaranın kabı ve satır no işaretleri. */
+/* Toplu kayıt ekranı tek iştir: kabı sütunlu flex ise boyunu doldurur, az satırda alt çubuk kabın dibinde durur. */
 .dt-data-sheet {
   display: flex;
+  flex: 1 0 auto;
   flex-direction: column;
   min-width: 0;
+}
+.dt-data-sheet > .dt-form-grid,
+.dt-data-sheet .dt-fg-body {
+  flex: 1 0 auto;
 }
 .dt-mark.is-changed {
   width: 6px;

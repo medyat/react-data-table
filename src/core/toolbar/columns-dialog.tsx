@@ -41,6 +41,7 @@ export default function ColumnsDialog<Row extends object>({
   onSave,
   finalFocus,
   phone,
+  pinnable = true,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -50,14 +51,19 @@ export default function ColumnsDialog<Row extends object>({
   finalFocus: RefObject<HTMLElement | null>
   /** Telefon: sabitleme yok (yalnızca birincil sütun başta); kaydetmek mevcut sabitleme sayılarını korur. */
   phone?: boolean
+  /** DataSheet: ızgara yalnız ilk sütunu sabitler; sabitleme bölümü çizilmez, liste tek sütun olur. */
+  pinnable?: boolean
 }) {
   const { i18n } = useDataTableContext()
+  const single = phone || !pinnable
   return (
     <Dialog.Root open={open} onOpenChange={(o) => onOpenChange(o)}>
       <Dialog.Portal>
         <Dialog.Backdrop className="dt-scrim" forceRender />
         <Dialog.Popup
-          className={phone ? 'dt-dialog dt-cols-dialog is-phone' : 'dt-dialog dt-cols-dialog'}
+          className={['dt-dialog dt-cols-dialog', phone && 'is-phone', !pinnable && 'is-plain']
+            .filter(Boolean)
+            .join(' ')}
           finalFocus={finalFocus}
           aria-describedby={undefined}
           // Popup ok tuşlarının yayılmasını durdurur; klavyeyle sürüklerken dnd-kit tuşları window'da dinler.
@@ -67,7 +73,7 @@ export default function ColumnsDialog<Row extends object>({
         >
           <Dialog.Title className="dt-sr-only">{i18n.t('display.columns')}</Dialog.Title>
           {/* Popup kapanınca söküldüğü için gövde her açılışta taslağı sütunlardan yeniden kurar. */}
-          <Body columns={columns} onSave={onSave} close={() => onOpenChange(false)} phone={phone} />
+          <Body columns={columns} onSave={onSave} close={() => onOpenChange(false)} phone={single} />
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>

@@ -223,11 +223,13 @@ const REACT_MESSAGES: Record<string, [string, string]> = {
   // Varsayılan system görünümünde "Set as default" yerine "Remove default" çıkar (R6); yasaklananı söylemek iki durumda da doğru.
   // form-grid.md §4: özet boş olmayan hücreleri sayar; "Adet" miktar sütunuyla karışıyordu.
   'sheet.agg.count': ['Cells', 'Hücre'],
-  // Vue'daki "Bu satır gönderilmeyecek" birden çok hatalı satırda yanlış okunuyordu (başlık sayıyı zaten söylüyor).
+  // Yine de kaydet hatalı satırları da gönderir: hata sunucudan gelmiş olabilir, kullanıcının düzeltecek bir şeyi
+  // olmayabilir (docs/data-sheet.md §5, 2026-11-26).
   'sheet.errDialog.body': [
-    "Rows with errors won't be sent. The other {count} changed rows will be saved.",
-    'Hatalı satırlar gönderilmez. Değişen diğer {count} satır kaydedilir.',
+    'Rows with errors are sent too; if the server rejects them again, the error stays on the row.',
+    'Hatalı satırlar da gönderilir; sunucu yine reddederse hata satırda kalır.',
   ],
+  'sheet.errDialog.save': ['Save anyway', 'Yine de kaydet'],
   'views.systemNote': [
     "System views can't be renamed or deleted.",
     'Sistem görünümleri yeniden adlandırılamaz ve silinemez.',

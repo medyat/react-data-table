@@ -1,7 +1,7 @@
 // DataSheet (R44, docs/data-sheet.md): FormGrid'in ızgarası + taslak katmanı, anahtar sütunu, görünümler, hata ve
 // değişiklik işaretleri, ⌘S ve iki onay penceresi. Araç çubuğu uygulamanındır (§2): `useDataSheet`'in durumunu okur,
 // komutlarını çağırır. Hücre, klavye ve pano kuralları form-grid.md §3–§8.
-import { useLayoutEffect, type KeyboardEvent } from 'react'
+import { lazy, Suspense, useLayoutEffect, useRef, type KeyboardEvent } from 'react'
 import type { ColumnDef } from '../types/columns'
 import type { Density } from '../types/core'
 import { readPath } from '../core/columns/read-path'
@@ -17,6 +17,11 @@ import { SheetGrid } from '../form-grid/form-grid'
 import { ImportDialog } from './import/import-dialog'
 import { mergeView, type DataSheetInstance } from './use-data-sheet'
 
+// Liste tablosundaki gibi tembel: @dnd-kit ızgarayla yüklenmez. lazy() tip parametresini düşürür.
+const ColumnsDialog = lazy(
+  () => import('../core/toolbar/columns-dialog'),
+) as unknown as typeof import('../core/toolbar/columns-dialog').default
+
 const MAX_ROWS = 10_000
 
 export interface DataSheetProps<Row extends object> {
@@ -25,9 +30,22 @@ export interface DataSheetProps<Row extends object> {
   label: string
   /** Varsayılan `compact` (Vue 07 §2). */
   density?: Density
+  /** `false`: uygulamanın kartının içinde kenardan kenara, kendi çerçevesi ve köşesi yok (FormGrid `frame`). */
+  frame?: boolean
+  /**
+   * Satırlar ilk kez geldiğinde ve ızgara kilitli değilken imleç bir kez ilk satırın ilk düzenlenebilir hücresine
+   * gider (yüklenen satırda kilitli anahtar atlanır): ekran açılınca yazmaya hazırdır.
+   */
+  autoFocus?: boolean
 }
 
-export function DataSheet<Row extends object>({ sheet, label, density = 'compact' }: DataSheetProps<Row>) {
+export function DataSheet<Row extends object>({
+  sheet,
+  label,
+  density = 'compact',
+  frame = true,
+  autoFocus = false,
+}: DataSheetProps<Row>) {
   const { i18n, locale } = useDataTableContext()
   const { t } = i18n
   const fmt = getFormat(locale)
@@ -45,13 +63,15 @@ export function DataSheet<Row extends object>({ sheet, label, density = 'compact
     isNew,
     clientOf,
     dupOf,
+    ordered,
+    opener,
   } = sheet.internal
-  const { blocked, sendable, run } = sheet.internal
+  const { blocked, run } = sheet.internal
   const key = options.keyColumn
   const readOnly = sheet.readOnly
 
   // Anahtar yüklenen satırda kilitli, yeni satırda sütunun kendi kuralıyla yazılır (data-sheet.md §3).
-  const columns: Array<ColumnDef<Row>> = options.columns
+  const columns: Array<ColumnDef<Row>> = ordered
     .filter((c) => !s.hidden.has(c.id))
     .map((c) =>
       c.id === key
@@ -136,6 +156,41 @@ export function DataSheet<Row extends object>({ sheet, label, density = 'compact
       return { ...p, rows, viewIds, errors, no, next: n, result: null }
     })
 
+  // `focusNewRow`: odak ızgarada değilken ızgara aktif hücreyi DOM'da odaklamaz; hücre burada odaklanır.
+  const root = useRef<HTMLDivElement>(null)
+  // Izgara az önce görünür olduysa (uygulama boş hâlde gizliyordu) gizli öğeye focus() sessizce düşer ve satırlar
+  // sonraki karede çizilir: odak bir sonraki karede verilir, hücre yoksa birkaç kare beklenir.
+  const focusCell = (pos: { row: number; col: number }) => {
+    store.focus(pos)
+    const go = (tries: number) => {
+      const el = root.current?.querySelector<HTMLElement>(`.dt-cell[data-row="${pos.row}"][data-col="${pos.col}"]`)
+      if (!el) return void (tries && requestAnimationFrame(() => go(tries - 1)))
+      el.focus({ preventScroll: true })
+      el.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    }
+    requestAnimationFrame(() => go(3))
+  }
+
+  useLayoutEffect(() => {
+    if (!s.focusNew || readOnly) return
+    focusCell({
+      row: viewRows.length,
+      col: Math.max(
+        0,
+        columns.findIndex((c) => c.id !== key),
+      ),
+    })
+    setState((p) => ({ ...p, focusNew: false }))
+  })
+
+  const autoFocused = useRef(false)
+  useLayoutEffect(() => {
+    if (!autoFocus || autoFocused.current || readOnly || !viewRows.length) return
+    autoFocused.current = true
+    const col = columns.findIndex((_, c) => store.canEdit(0, c))
+    if (col >= 0) focusCell({ row: 0, col })
+  })
+
   // Kayıt hatalı bitince Hatalılar görünümünde ilk hataya gidilir (Vue 07 §14).
   useLayoutEffect(() => {
     if (!s.focusError) return
@@ -155,7 +210,7 @@ export function DataSheet<Row extends object>({ sheet, label, density = 'compact
   const maxRows = options.maxRows ?? MAX_ROWS
 
   return (
-    <div className="dt-data-sheet" onKeyDown={onKeyDown}>
+    <div ref={root} className="dt-data-sheet" onKeyDown={onKeyDown}>
       {readOnly ? (
         <SheetGrid
           readOnly
@@ -167,6 +222,7 @@ export function DataSheet<Row extends object>({ sheet, label, density = 'compact
           // Daraltılmış görünümde boş satır yok: yeni satır Tümü'de eklenir.
           maxRows={s.viewIds ? viewRows.length : maxRows}
           density={density}
+          frame={frame}
           store={store}
           isNew={isNew}
           issues={issues}
@@ -187,6 +243,7 @@ export function DataSheet<Row extends object>({ sheet, label, density = 'compact
           // Daraltılmış görünümde boş satır yok: yeni satır Tümü'de eklenir.
           maxRows={s.viewIds ? viewRows.length : maxRows}
           density={density}
+          frame={frame}
           store={store}
           isNew={isNew}
           issues={issues}
@@ -196,6 +253,32 @@ export function DataSheet<Row extends object>({ sheet, label, density = 'compact
           removeLabel={() => t('sheet.menu.remove')}
           labels={sheet.internal.labels}
         />
+      )}
+      {s.columnsOpen && (
+        <Suspense fallback={null}>
+          <ColumnsDialog
+            open
+            onOpenChange={(open) => !open && setState((p) => ({ ...p, columnsOpen: false }))}
+            pinnable={false}
+            columns={ordered.map((def) => ({
+              id: def.id,
+              def,
+              visible: !s.hidden.has(def.id),
+              pinned: null,
+              canHide: def.required !== true,
+              // Anahtar satırları tanıtır: başta kilitli durur, gizlenmez.
+              fixed: def.id === key,
+            }))}
+            onSave={({ order, visible }) =>
+              setState((p) => ({
+                ...p,
+                order,
+                hidden: new Set(order.filter((id) => !visible.includes(id))),
+              }))
+            }
+            finalFocus={opener}
+          />
+        </Suspense>
       )}
       {s.importing && (
         <ImportDialog
@@ -215,14 +298,15 @@ export function DataSheet<Row extends object>({ sheet, label, density = 'compact
         open={s.confirm === 'errors'}
         onOpenChange={closeConfirm}
         title={t('sheet.errDialog.title', { count: blocked })}
-        body={t('sheet.errDialog.body', { count: sendable.length })}
+        body={t('sheet.errDialog.body')}
         cancelLabel={t('sheet.errDialog.fix')}
         onCancel={() => {
           sheet.setView('errors')
           setState((p) => ({ ...p, focusError: true }))
         }}
-        confirmLabel={t('sheet.errDialog.save', { count: sendable.length })}
-        onConfirm={() => void run(sendable)}
+        // Hata sunucudan gelmiş olabilir: kullanıcının düzeltecek bir şeyi yoksa da yeniden gönderebilir.
+        confirmLabel={t('sheet.errDialog.save')}
+        onConfirm={() => void run(sheet.internal.changes)}
       />
       <ConfirmDialog
         open={s.confirm === 'discard'}

@@ -27,6 +27,7 @@ const sheet = useDataSheet({
 })
 
 <DataSheet sheet={sheet} label="Ürünler" />
+// frame={false}: dış çerçeve uygulamanın; autoFocus: satırlar ilk gelince imleç ilk düzenlenebilir hücrede
 
 sheet.isDirty        // ayrılma koruması uygulamanın (yönlendirici + beforeunload)
 sheet.applyResult(results)
@@ -42,11 +43,15 @@ sheet.discard()                         // paketin onayını sorar, taslağı at
 sheet.saving                            // { done, total } | null
 sheet.result                            // { created, updated, failed } | null: son kayıt, sonraki değişiklikte kalkar
 sheet.readOnly / sheet.phone            // düzenleme kapalı (telefon, yükleme, kayıt) / telefon
-sheet.columns / sheet.toggleColumn(id)  // gizlenebilen sütunlar { id, label, visible }
+sheet.openColumns()                     // liste tablosunun Sütunlar penceresi: göster / gizle, sıra; sabitleme yok
+sheet.focusNewRow()                     // Tümü'ne geçer, imleç alttaki boş satırın anahtardan sonraki ilk hücresinde
 sheet.importFile()                      // paketin penceresi; Promise<{ updated, added } | null>
-sheet.exportFile({ format, name, rows }) // 'xlsx' | 'csv'; rows: 'all' (varsayılan) | 'view'
+sheet.exportFile({ format, name, columns }) // 'xlsx' | 'csv'; bütün satırlar; columns: 'visible' (varsayılan) | 'all'
 ```
 
+- Kabı sütunlu flex ise ızgara boyunu doldurur: az satırda alt çubuk kabın dibinde durur (2026-11-26).
+- Sütunlar liste tablosunun penceresiyle seçilir (karar, 2026-11-26): iki ayrı sütun seçici olmasın. Anahtar başta
+  kilitli, `required` gizlenemez; ızgara yalnız ilk sütunu sabitlediği için sabitleme bölümü çizilmez. Düzen oturumludur.
 - Liste tablosundaki gibi kanca + bileşen (`useDataTable` / `DataTable`): uygulama `isDirty`'yi ve `applyResult`'ı
   ref olmadan alır.
 - **Kontrolsüz:** taslak paketin içindedir. `rows` tabandır; Vue 07 §14'teki gibi uygulama `rows`'u yenileyince gelen
@@ -125,7 +130,9 @@ onSave: (changes: { rows: SheetChangeRow<Row>[] }) => Promise<void>
   gizli para birimini `row`'dan alır, değeri sunucunun biçimine sokar, istek düzeyindeki işaretleri koyar. Pakette
   bunun için ayrı bir seçenek yok (karar, 2026-11-26). `accessor`'lı sütun `values`'a girmez: ızgara ona yazmaz.
 - **Başlatma:** Kaydet ya da ⌘S (odak ızgaradayken). Hatalı satır varsa önce paketin onay penceresi (Vue 07 §14):
-  "1 satır hatalı, gönderilmeyecek" · Önce düzelt · N satırı kaydet. Uygulamanın kendi onayı (Swors'ta kayıt
+  "N satırda hata var" · Önce düzelt · Yine de kaydet. Yine de kaydet hatalılar dahil değişen bütün satırları
+  gönderir: hata sunucudan gelmiş olabilir (eşleşmeyen ilişki, geçici sorun) ve kullanıcının düzeltecek bir şeyi
+  olmayabilir; sunucu yine reddederse hata satırda kalır, hatasız satırlar kaydedilir (karar, 2026-11-26). Uygulamanın kendi onayı (Swors'ta kayıt
   seçenekleri) `onSave`'in içindedir; vazgeçilirse `onSave` sonuç vermeden döner ve taslak olduğu gibi kalır.
 - **İlerleme:** `onSave` sürerken ızgara salt okunurdur (kaydırma, Bul ve seçim serbest). Paket ilerlemeyi
   kendisi sayar: `applyResult` ile gelen satır sayısı / gönderilen satır sayısı. Uygulama parçaları işledikçe
@@ -175,8 +182,9 @@ Vue 07 §13 ve D46, şu farklarla:
   satır olur. Boş anahtarlı dosya satırı her zaman yeni satırdır (§3); özet sayısını ayrıca söyler.
 - Excel'deki boş hücre mevcut değeri silmez. İçe aktarma tek geri al adımıdır.
 
-**Dışa aktarma:** liste tablosunun yazıcısı (`core/export`), taslak değerlerle ve görünen sütunlarla; "Tüm satırlar" /
-"Görünen satırlar" (`rows: 'view'`). Menüyü uygulama çizer.
+**Dışa aktarma:** liste tablosunun yazıcısı (`core/export`), taslak değerlerle ve listenin bütün satırlarıyla. Seçim
+sütundadır: "Görünen sütunlar" (varsayılan) / "Tüm sütunlar" (`columns: 'all'`, gizliler dahil). Satır seçimi kaldırıldı
+(2026-11-26): görünüm sekmesi geçicidir, dosya listenin tamamını taşımalı. Menüyü uygulama çizer.
 Seçenek sayfası (Vue 07 §13) dosyanın Excel'de düzenlenip geri alınmasını sağlar.
 
 ## 7. Klavye

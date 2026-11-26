@@ -209,17 +209,12 @@ function Toolbar({
       <button type="button" onClick={() => void sheet.exportFile({ format: 'xlsx', name: 'ürünler' })}>
         Excel
       </button>
-      <button type="button" onClick={() => void sheet.exportFile({ format: 'csv', name: 'ürünler', rows: 'view' })}>
-        CSV (görünen)
+      <button type="button" onClick={() => void sheet.exportFile({ format: 'csv', name: 'ürünler', columns: 'all' })}>
+        CSV (tüm sütunlar)
       </button>
-      <details>
-        <summary>Sütunlar</summary>
-        {sheet.columns.map((c) => (
-          <label key={c.id}>
-            <input type="checkbox" checked={c.visible} onChange={() => sheet.toggleColumn(c.id)} /> {c.label}
-          </label>
-        ))}
-      </details>
+      <button type="button" onClick={sheet.openColumns}>
+        Sütunlar
+      </button>
       <span className="pg-sheet-status">{status}</span>
       <button type="button" disabled={!summary.rows || sheet.readOnly} onClick={sheet.discard}>
         Vazgeç

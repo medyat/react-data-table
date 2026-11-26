@@ -280,9 +280,9 @@ export const ru: Record<string, string> = {
   'sheet.errDialog.title.one': '{count} строка с ошибками',
   'sheet.errDialog.title.other': 'Строк с ошибками: {count}',
   'sheet.errDialog.body':
-    'Строки с ошибками не будут отправлены. Остальные изменённые строки ({count}) будут сохранены.',
+    'Строки с ошибками тоже будут отправлены; если сервер снова их отклонит, ошибка останется в строке.',
   'sheet.errDialog.fix': 'Сначала исправить',
-  'sheet.errDialog.save': 'Сохранить строк: {count}',
+  'sheet.errDialog.save': 'Всё равно сохранить',
   'sheet.leave.discard': 'Отменить изменения',
   'sheet.discard.title': 'Отменить изменения ({cells}) в строках: {rows}?',
   'sheet.discard.body': 'Таблица вернётся к загруженному состоянию. Это нельзя отменить.',

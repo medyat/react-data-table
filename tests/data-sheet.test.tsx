@@ -37,12 +37,20 @@ let sheet: DataSheetInstance<Product>
 const expose = (s: DataSheetInstance<Product>) => {
   sheet = s
 }
-function Harness({ rows, onSave }: { rows: Product[]; onSave: (c: SheetChanges<Product>) => Promise<void> }) {
+function Harness({
+  rows,
+  onSave,
+  autoFocus,
+}: {
+  rows: Product[]
+  onSave: (c: SheetChanges<Product>) => Promise<void>
+  autoFocus?: boolean
+}) {
   const s = useDataSheet({ rows, columns, keyColumn: 'code', getRowId: (r) => r.id, onSave })
   useEffect(() => expose(s))
   return (
     <DataTableProvider locale="tr-TR">
-      <DataSheet sheet={s} label="Ürünler" />
+      <DataSheet sheet={s} label="Ürünler" autoFocus={autoFocus} />
     </DataTableProvider>
   )
 }
@@ -68,6 +76,28 @@ const save = async () => {
 
 beforeAll(mockLayout)
 afterEach(cleanup)
+
+describe('autoFocus', () => {
+  it('satırlar gelince ilk satırın ilk düzenlenebilir hücresine bir kez odaklanır (kilitli anahtar atlanır)', async () => {
+    const onSave = vi.fn(async () => {})
+    const view = render(<Harness rows={[]} onSave={onSave} autoFocus />)
+    await flush()
+    expect(document.activeElement).toBe(document.body)
+    view.rerender(<Harness rows={loaded} onSave={onSave} autoFocus />)
+    await act(async () => new Promise<void>((r) => requestAnimationFrame(() => r())))
+    await flush()
+    expect(document.activeElement).toBe(cell(0, 1))
+  })
+})
+
+describe('focusNewRow', () => {
+  it('boş listede alttaki boş satırın anahtardan sonraki ilk hücresine odaklanır', async () => {
+    await open(undefined, [])
+    await act(async () => sheet.focusNewRow())
+    await flush()
+    expect(document.activeElement).toBe(cell(0, 1))
+  })
+})
 
 describe('anahtar sütunu', () => {
   it('yüklenen satırda kilitli, alttaki boş satırda yazılır; boş anahtarda yer tutucu', async () => {
@@ -163,16 +193,19 @@ describe('satır sonuçları', () => {
     expect(cell(0, 1).classList.contains('is-error')).toBe(false)
     expect(sheet.isDirty).toBe(true)
   })
-  it('hatalı satır varken Kaydet önce sorar; onayda yalnız hatasız satırlar gider', async () => {
+  // Hata sunucudan gelmiş olabilir (eşleşmeyen ilişki, geçici sorun): kullanıcının düzeltecek bir şeyi yoksa da yeniden
+  // gönderebilmeli. Sunucu yine reddederse hata satırda kalır.
+  it('hatalı satır varken Kaydet önce sorar; Yine de kaydet hatalılar dahil bütün değişenleri gönderir', async () => {
     const { onSave } = await open()
     await write(0, 2, '11')
     await write(1, 2, '-5')
     expect(cell(1, 2).classList.contains('is-error')).toBe(true)
     await save()
     expect(onSave).not.toHaveBeenCalled()
-    fireEvent.click(await screen.findByRole('button', { name: '1 satırı kaydet' }))
+    expect(screen.getByRole('button', { name: 'Önce düzelt' })).toBeTruthy()
+    fireEvent.click(await screen.findByRole('button', { name: 'Yine de kaydet' }))
     await flush()
-    expect(onSave.mock.calls[0]![0].rows.map((r) => r.id)).toEqual(['a'])
+    expect(onSave.mock.calls[0]![0].rows.map((r) => r.id)).toEqual(['a', 'b'])
   })
 })
 
@@ -184,11 +217,12 @@ describe('uygulamanın araç çubuğu için komutlar', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Değişiklikleri at' }))
     await flush()
     expect(sheet.isDirty).toBe(false)
-    expect(sheet.columns.map((c) => [c.id, c.visible])).toEqual([
-      ['price', true],
-      ['note', false],
-    ])
-    await act(async () => sheet.toggleColumn('price'))
+    await act(async () => sheet.openColumns())
+    const price = await screen.findByRole('switch', { name: /Fiyat/ })
+    expect(screen.getByRole('switch', { name: /Not/ }).getAttribute('aria-checked')).toBe('false')
+    fireEvent.click(price)
+    fireEvent.click(screen.getByRole('button', { name: 'Kaydet' }))
+    await flush()
     expect(document.querySelector('.dt-data-sheet .dt-head')?.textContent).not.toContain('Fiyat')
     await write(0, 1, 'Pompa 2')
     await act(async () => sheet.save())

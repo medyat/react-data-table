@@ -1,7 +1,7 @@
 // DataSheet'in durumu (docs/data-sheet.md §1, §4, §5): taban (yüklenen + kaydedilen satırlar), taslak satır listesi,
 // sunucu hataları, kalıcı satır no ve kayıt ilerlemesi. Hücre motoru FormGrid'inki; depo burada kurulur, ızgara onu
 // kullanır. Uygulamanın `rows` dizisine dokunulmaz.
-import { useState, useSyncExternalStore } from 'react'
+import { useRef, useState, useSyncExternalStore, type RefObject } from 'react'
 import type { ColumnDef } from '../types/columns'
 import type {
   DataSheetOptions,
@@ -17,7 +17,6 @@ import { exportFile } from '../core/export/write'
 import { getFormat } from '../core/format'
 import { isEmptyValue } from '../core/cells/format'
 import { readPath } from '../core/columns/read-path'
-import { columnName } from '../core/columns/column-name'
 import { useDataTableContext } from '../core/provider'
 import { createSheetStore, same, writePath, type SheetStore } from '../core/sheet/store'
 import { cellIssue, type Issue } from '../core/sheet/validate'
@@ -42,6 +41,9 @@ export interface SheetState<Row extends object> {
   no: Map<string, number>
   next: number
   hidden: Set<string>
+  /** Sütunların sırası (Sütunlar penceresi); başta tanımların sırası. */
+  order: string[]
+  columnsOpen: boolean
   view: SheetView
   /** Daraltılmış görünümün satırları; seçildiği anın fotoğrafı (düzelen satır imlecin altından kaçmaz, Vue 07 §11). */
   viewIds: Set<string> | null
@@ -52,6 +54,8 @@ export interface SheetState<Row extends object> {
   confirm: 'errors' | 'discard' | null
   /** Kayıt hatalı bitti: bileşen ilk hatalı hücreye gider. */
   focusError: boolean
+  /** `focusNewRow`: bileşen alttaki boş satıra gider. */
+  focusNew: boolean
   /** İçe aktarma penceresi açık; kapanınca sonuçla çözülür. */
   importing: ((result: SheetImportResult | null) => void) | null
 }
@@ -88,9 +92,16 @@ export interface DataSheetInstance<Row extends object> {
   readOnly: boolean
   /** Telefonda salt okunur (D14); açılışta karar verilir. */
   phone: boolean
-  /** Gizlenebilen sütunlar (anahtar ve `required` gizlenemez); görünürlük oturumludur. */
-  columns: Array<{ id: string; label: string; visible: boolean }>
-  toggleColumn: (id: string) => void
+  /**
+   * Liste tablosunun Sütunlar penceresini açar: göster / gizle ve sıra. Anahtar başta kilitli, `required` gizlenemez;
+   * sabitleme yoktur (ızgara yalnız ilk sütunu sabitler). Düzen oturumludur.
+   */
+  openColumns: () => void
+  /**
+   * Tümü görünümüne geçer ve imleci alttaki boş satırın anahtardan sonraki ilk sütununa koyar (Ad): yazınca yeni
+   * satır olur. Uygulamanın "Boş satır ekle"si.
+   */
+  focusNewRow: () => void
   /**
    * İçe aktarma penceresini açar (Tümü görünümüne geçer). Uygulanınca sonuçla, vazgeçilince null ile çözülür; dosya
    * yalnız tabloyu doldurur, kayıt Kaydet'tedir.
@@ -121,9 +132,12 @@ export interface SheetInternals<Row extends object> {
   dupOf: (row: Row) => Issue | undefined
   /** Hatalı olduğu için gönderilmeyecek değişen satır sayısı ve gönderilecekler. */
   blocked: number
-  sendable: Array<SheetChangeRow<Row>>
   run: (send: Array<SheetChangeRow<Row>>) => Promise<void>
   labels: RemoteLabels
+  /** Sütun tanımları pencerenin sırasıyla, gizliler dahil. */
+  ordered: Array<ColumnDef<Row>>
+  /** Sütunlar penceresini açan öğe: kapanınca odak ona döner. */
+  opener: RefObject<HTMLElement | null>
 }
 
 const isField = <Row extends object>(def: ColumnDef<Row>) => !def.accessor && def.editable !== false
@@ -167,16 +181,20 @@ export function useDataSheet<Row extends object>(options: DataSheetOptions<Row>)
       no: new Map([...base.keys()].map((id, i) => [id, i + 1])),
       next: base.size + 1,
       hidden: new Set(options.columns.filter((c) => c.hidden).map((c) => c.id)),
+      order: options.columns.map((c) => c.id),
+      columnsOpen: false,
       view: 'all',
       viewIds: null,
       saving: null,
       result: null,
       confirm: null,
       focusError: false,
+      focusNew: false,
       importing: null,
     }
   })
   const [labels] = useState(() => new RemoteLabels())
+  const opener = useRef<HTMLElement | null>(null)
   const [store] = useState(() =>
     createSheetStore<Row>({ rows: state.rows, columns: options.columns, onRowsChange: () => {} }),
   )
@@ -307,6 +325,12 @@ export function useDataSheet<Row extends object>(options: DataSheetOptions<Row>)
 
   // Aynı anahtar listede bir kez (Vue 07 §9); boş anahtar seriden numara alır, sayılmaz.
   const key = options.keyColumn
+  // Sonradan gelen sütun (özel alanlar geç yüklenir) sırada yoksa sona eklenir.
+  const rank = (def: ColumnDef<Row>) => {
+    const i = s.order.indexOf(def.id)
+    return i < 0 ? s.order.length + options.columns.indexOf(def) : i
+  }
+  const ordered = [...options.columns].sort((a, b) => rank(a) - rank(b))
   const byKey = new Map<string, string[]>()
   for (const row of s.rows) {
     const v = readPath(row, key)
@@ -354,11 +378,10 @@ export function useDataSheet<Row extends object>(options: DataSheetOptions<Row>)
   }
 
   const blocked = changes.filter((c) => errorIds.has(c.id)).length
-  const sendable = changes.filter((c) => !errorIds.has(c.id))
   const save = () => {
     if (readOnly || !changes.length) return
     if (blocked) setState((p) => ({ ...p, confirm: 'errors' }))
-    else void run(sendable)
+    else void run(changes)
   }
 
   const canUndo = useSyncExternalStore(store.subscribe, store.canUndo)
@@ -383,31 +406,30 @@ export function useDataSheet<Row extends object>(options: DataSheetOptions<Row>)
     result: s.result,
     readOnly,
     phone,
-    columns: options.columns
-      .filter((c) => c.id !== key && c.required !== true)
-      .map((c) => ({ id: c.id, label: columnName(c), visible: !s.hidden.has(c.id) })),
-    toggleColumn: (id: string) =>
-      setState((p) => {
-        const hidden = new Set(p.hidden)
-        if (!hidden.delete(id)) hidden.add(id)
-        return { ...p, hidden }
-      }),
+    focusNewRow: () => setState((p) => ({ ...p, view: 'all', viewIds: null, focusNew: true })),
+    openColumns: () => {
+      // Pencere kapanınca odak açan düğmeye döner; düğme uygulamanın çubuğundadır.
+      opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+      setState((p) => ({ ...p, columnsOpen: true }))
+    },
     importFile: () =>
       new Promise<SheetImportResult | null>((resolve) => {
         if (readOnly) return resolve(null)
         setState((p) => ({ ...p, view: 'all', viewIds: null, importing: resolve }))
       }),
-    exportFile: ({ format, name, rows = 'all' }) =>
+    exportFile: ({ format, name, columns = 'visible' }) =>
       exportFile({
         format,
         name,
-        columns: options.columns.filter((c) => !s.hidden.has(c.id)),
-        rows: rows === 'view' && s.viewIds ? s.rows.filter((r) => s.viewIds!.has(idOf(r))) : s.rows,
+        columns: columns === 'all' ? ordered : ordered.filter((c) => !s.hidden.has(c.id)),
+        rows: s.rows,
         read: (row, def) => (def.accessor ? def.accessor(row) : readPath(row, def.id)),
         env: { fmt: getFormat(locale), i18n, today: new Date(), labels },
       }),
     internal: {
       labels,
+      ordered,
+      opener,
       options,
       state: s,
       setState,
@@ -422,7 +444,6 @@ export function useDataSheet<Row extends object>(options: DataSheetOptions<Row>)
       clientOf,
       dupOf,
       blocked,
-      sendable,
       run,
     },
   }

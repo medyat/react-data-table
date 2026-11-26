@@ -347,7 +347,11 @@
   flex: 1;
   min-height: 0;
 }
-.dt-cols-dialog.is-phone .dt-cols-body {
+.dt-cols-dialog.is-plain {
+  width: min(calc(440 * var(--dt-ui-fs) / 13), calc(100vw - 32px));
+}
+.dt-cols-dialog.is-phone .dt-cols-body,
+.dt-cols-dialog.is-plain .dt-cols-body {
   grid-template-columns: minmax(0, 1fr);
 }
 .dt-cols-pins {
