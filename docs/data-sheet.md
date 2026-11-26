@@ -47,6 +47,7 @@ sheet.readOnly / sheet.phone            // düzenleme kapalı (telefon, yükleme
 sheet.openColumns()                     // liste tablosunun Sütunlar penceresi: göster / gizle, sıra; sabitleme yok
 sheet.focusNewRow()                     // Tümü'ne geçer, imleç alttaki boş satırın anahtardan sonraki ilk hücresinde
 sheet.importFile()                      // paketin penceresi; Promise<{ updated, added } | null>
+sheet.importRows(records, { addNew }) // uygulamanın getirdiği kayıtlar, penceresiz; aynı eşleme (§6)
 sheet.exportFile({ format, name, columns }) // 'xlsx' | 'csv'; bütün satırlar; columns: 'visible' (varsayılan) | 'all'
 ```
 
@@ -182,6 +183,11 @@ Vue 07 §13 ve D46, şu farklarla:
 - Eşleme anahtar sütunuyla yapılır. Listede olan anahtar o satırı günceller; olmayan, "eklensin" kutusu açıksa yeni
   satır olur. Boş anahtarlı dosya satırı her zaman yeni satırdır (§3); özet sayısını ayrıca söyler.
 - Excel'deki boş hücre mevcut değeri silmez. İçe aktarma tek geri al adımıdır.
+- **Penceresiz içe aktarma (R45):** `sheet.importRows(records, { addNew = true })` uygulamanın başka bir sistemden
+  getirdiği kayıtları alır. Kayıt sütun kimliğiyle yazılır (`{ code, title }`); değer dosya hücresi gibi çözülür (sayı
+  ham metniyle, seçim değer ya da etiketle, `ajax` `remote.match` ile), eşleme ve sayılar penceredekiyle aynıdır, alan
+  listesi yine görünen sütunlardır. Tümü görünümüne geçer, tek geri al adımıdır; `maxRows` aşılırsa hiçbir şey
+  yazılmaz ve söz reddedilir. Bildirim uygulamanındır.
 
 **Dışa aktarma:** liste tablosunun yazıcısı (`core/export`), taslak değerlerle ve listenin bütün satırlarıyla. Seçim
 sütundadır: "Görünen sütunlar" (varsayılan) / "Tüm sütunlar" (`columns: 'all'`, gizliler dahil). Satır seçimi kaldırıldı

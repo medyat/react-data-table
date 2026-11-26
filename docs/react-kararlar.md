@@ -553,6 +553,15 @@ oturunca çıkar.
 - İçe aktarma penceresi pakette (`importFile()` sonucu söz olarak döner), dışa aktarma `exportFile()`; düğmeler
   uygulamanın. Alan listesi yalnız görünen sütunlar; aynı değer yazılmaz (dışa aktarıp geri almak değişiklik doğurmaz).
 
+## R45 · DataSheet: penceresiz içe aktarma (`importRows`)
+
+- Uygulama kayıtları başka bir sistemden kendisi getirir (Swors: Bayiloji'den aktarım) ve dosya gibi içe aktarmak
+  ister. Penceredeki uygulama adımı (`remote.match` + plan) `import/apply.ts`'e çıktı; pencere ve
+  `sheet.importRows(records, { addNew })` aynı yoldan geçer. Kayıt sütun kimliğiyle yazılır, değer dosya hücresi gibi
+  çözülür; yalnız görünen alan sütunları yazılır (§6). Vue'da karşılığı yok.
+- Satırları `rows` tabanına koymak yeni satır yerine kayıtlı satır sayılmalarına yol açardı; eşlemeyi uygulamada
+  yazmak paketin içe aktarma kurallarını kopyalardı.
+
 ## Yol haritası
 
 Vue 10-roadmap'in liste fazları, aynı kabul kriterleriyle:

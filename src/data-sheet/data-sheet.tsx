@@ -15,14 +15,12 @@ import type { Issue } from '../core/sheet/validate'
 import { ConfirmDialog } from '../core/ui/confirm-dialog'
 import { SheetGrid } from '../form-grid/form-grid'
 import { ImportDialog } from './import/import-dialog'
-import { mergeView, type DataSheetInstance } from './use-data-sheet'
+import { MAX_ROWS, mergeView, type DataSheetInstance } from './use-data-sheet'
 
 // Liste tablosundaki gibi tembel: @dnd-kit ızgarayla yüklenmez. lazy() tip parametresini düşürür.
 const ColumnsDialog = lazy(
   () => import('../core/toolbar/columns-dialog'),
 ) as unknown as typeof import('../core/toolbar/columns-dialog').default
-
-const MAX_ROWS = 10_000
 
 export interface DataSheetProps<Row extends object> {
   sheet: DataSheetInstance<Row>

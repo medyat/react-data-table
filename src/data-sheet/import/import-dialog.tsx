@@ -3,7 +3,7 @@
 import { Dialog } from '@base-ui/react/dialog'
 import { CaretDownIcon, FileArrowUpIcon, FileCsvIcon, FileXlsIcon } from '@phosphor-icons/react'
 import { useState, type DragEvent } from 'react'
-import type { ColumnDef, OptionDef } from '../../types/columns'
+import type { ColumnDef } from '../../types/columns'
 import type { SheetImportResult } from '../../types/data-sheet'
 import type { RemoteLabels } from '../../core/cells/remote-labels'
 import { columnName } from '../../core/columns/column-name'
@@ -12,6 +12,7 @@ import { getFormat } from '../../core/format'
 import { useDataTableContext } from '../../core/provider'
 import { useParseEnv } from '../../core/sheet/cell-editor'
 import type { SheetStore } from '../../core/sheet/store'
+import { resolveImport } from './apply'
 import { cellText, cellValue, detectHeaderRow, matchColumns, planImport } from './match'
 import { ImportError, readFile, type FileSheet } from './read'
 
@@ -102,36 +103,15 @@ export function ImportDialog<Row extends object>(p: ImportDialogProps<Row>) {
     if (!file || !canApply) return
     setBusy(true)
     // `ajax` sütunundaki metinler (kod, ad) uygulamanın `match`'iyle seçeneğe çevrilir (yapıştırmayla aynı yol).
-    const found = new Map<number, Map<string, OptionDef | null>>()
-    for (const [j, col] of mapping.entries()) {
-      const def = col === null ? undefined : p.columns[col]
-      if (def?.type !== 'ajax' || !def.remote.match) continue
-      const texts = [...new Set(body.map((r) => cellText(r[j] ?? null).trim()).filter(Boolean))]
-      const map = new Map<string, OptionDef | null>()
-      for (let k = 0; k < texts.length; k += 100) {
-        const part = texts.slice(k, k + 100)
-        const options = await def.remote.match(part, { signal: new AbortController().signal }).catch(() => [])
-        part.forEach((text, n) => map.set(text, options[n] ?? null))
-      }
-      p.labels.seed(
-        def.id,
-        [...map.values()].filter((o): o is OptionDef => !!o),
-      )
-      found.set(col!, map)
-    }
-    const plan = planImport({
+    const plan = await resolveImport({
       data: body,
       mapping,
       columns: p.columns,
       rows: p.rows,
       keyColumn: p.keyColumn,
       addNew,
-      value: (def, c) => {
-        if (def.type !== 'ajax') return cellValue(def, c, parseEnv)
-        const text = cellText(c).trim()
-        if (!text) return undefined
-        return found.get(colOf(def.id))?.get(text)?.value ?? text
-      },
+      labels: p.labels,
+      env: parseEnv,
     })
     p.store.importCells(plan.cells)
     p.onClose({ updated: plan.updated, added: plan.added })

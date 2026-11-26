@@ -20,6 +20,11 @@ import { readPath } from '../core/columns/read-path'
 import { useDataTableContext } from '../core/provider'
 import { createSheetStore, same, writePath, type SheetStore } from '../core/sheet/store'
 import { cellIssue, type Issue } from '../core/sheet/validate'
+import { useParseEnv } from '../core/sheet/cell-editor'
+import { resolveImport, toFileCell } from './import/apply'
+
+/** Izgaranın varsayılan satır sınırı (`DataSheetOptions.maxRows`). */
+export const MAX_ROWS = 10_000
 
 /** Yeni satırın paketteki kimliği; uygulamanın alanlarına karışmaz (spread taşır, JSON yazmaz). */
 const NEW = Symbol('dt-new-row')
@@ -107,6 +112,16 @@ export interface DataSheetInstance<Row extends object> {
    * yalnız tabloyu doldurur, kayıt Kaydet'tedir.
    */
   importFile: () => Promise<SheetImportResult | null>
+  /**
+   * Uygulamanın getirdiği kayıtları dosya gibi içe aktarır (başka sistemden aktarım): kayıt sütun kimliğiyle yazılır
+   * (`{ code, title }`), değer dosya hücresi gibi çözülür, eşleme penceredekiyle aynıdır (anahtar, `remote.match`,
+   * yalnız görünen alan sütunları, `addNew` varsayılan açık). Tümü görünümüne geçer; tek geri al adımıdır. Izgara
+   * kilitliyse null; `maxRows` aşılırsa hiçbir şey yazılmaz, söz reddedilir.
+   */
+  importRows: (
+    records: ReadonlyArray<Record<string, unknown>>,
+    o?: { addNew?: boolean },
+  ) => Promise<SheetImportResult | null>
   /** Görünen sütunları taslak değerlerle yazar (liste tablosunun yazıcısı). */
   exportFile: (o: SheetExportOptions) => Promise<void>
   /** @internal DataSheet bileşeni için. */
@@ -306,6 +321,7 @@ export function useDataSheet<Row extends object>(options: DataSheetOptions<Row>)
   // İstemci kuralları satır nesnesine göre önbellekte: hücre onayı yalnız değişen satırı yeniden doğrular (Vue 07 §18).
   // `validate`'in `rows`'u satır son değiştiğindeki listedir.
   const { i18n, locale } = useDataTableContext()
+  const parseEnv = useParseEnv()
   const isNew = (row: Row) => !s.base.has(idOf(row))
   const [cache, setCache] = useState(() => ({ locale, map: new WeakMap<Row, Map<string, Issue> | null>() }))
   if (cache.locale !== locale) setCache({ locale, map: new WeakMap() })
@@ -416,6 +432,26 @@ export function useDataSheet<Row extends object>(options: DataSheetOptions<Row>)
         if (readOnly) return resolve(null)
         setState((p) => ({ ...p, view: 'all', viewIds: null, importing: resolve }))
       }),
+    importRows: async (records, { addNew = true } = {}) => {
+      if (readOnly) return null
+      // Penceredeki alan listesi: görünen, değerle yazılan, pencere editörü olmayan sütunlar (store'un sırası).
+      const shown = ordered.filter((c) => !s.hidden.has(c.id))
+      const mapping = shown.flatMap((c, i) => (!c.accessor && c.editable !== false && !c.editor?.window ? [i] : []))
+      const plan = await resolveImport({
+        data: records.map((r) => mapping.map((i) => toFileCell(readPath(r, shown[i]!.id)))),
+        mapping,
+        columns: shown,
+        rows: s.rows,
+        keyColumn: key,
+        addNew,
+        labels,
+        env: parseEnv,
+      })
+      if (s.rows.length + plan.added > (options.maxRows ?? MAX_ROWS)) throw new Error('maxRows')
+      setState((p) => ({ ...p, view: 'all', viewIds: null }))
+      if (plan.cells.length && !store.importCells(plan.cells)) return null
+      return { updated: plan.updated, added: plan.added }
+    },
     exportFile: ({ format, name, columns = 'visible' }) =>
       exportFile({
         format,

@@ -363,6 +363,47 @@ describe('içe ve dışa aktarma', () => {
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Vazgeç' })))
     await expect(done).resolves.toBeNull()
   })
+  it('importRows: kayıtlar dosya gibi eşlenir; gizli sütuna yazılmaz; boş anahtar yeni satır; tek geri al adımı', async () => {
+    await open()
+    let result: unknown
+    await act(async () => {
+      result = await sheet.importRows([
+        { code: 'B-1', title: 'Vana X' },
+        { code: 'C-1', title: 'Conta', price: 5.5, note: 'gizli' },
+        { code: null, title: 'Kodsuz' },
+      ])
+    })
+    expect(result).toEqual({ updated: 1, added: 2 })
+    await flush()
+    expect(cell(1, 1).textContent).toBe('Vana X')
+    expect(cell(2, 0).textContent).toBe('C-1')
+    expect(cell(2, 2).textContent).toContain('5,5')
+    expect(cell(3, 1).textContent).toBe('Kodsuz')
+    expect(sheet.getChanges().rows.find((r) => r.row.code === 'C-1')?.row.note ?? null).toBeNull()
+    expect(sheet.summary.newRows).toBe(2)
+    await act(async () => sheet.undo())
+    expect(sheet.isDirty).toBe(false)
+  })
+  it('importRows: addNew kapalıyken listede olmayan alınmaz; maxRows aşılırsa yazmadan reddeder', async () => {
+    await open()
+    await act(async () => {
+      await expect(
+        sheet.importRows(
+          [
+            { code: 'Z-9', title: 'Yok' },
+            { code: 'A-1', title: 'Pompa 2' },
+          ],
+          { addNew: false },
+        ),
+      ).resolves.toEqual({ updated: 1, added: 0 })
+    })
+    await act(async () => sheet.undo())
+    const many = Array.from({ length: 10_000 }, (_, i) => ({ code: `N-${i}`, title: 'x' }))
+    await act(async () => {
+      await expect(sheet.importRows(many)).rejects.toThrow('maxRows')
+    })
+    expect(sheet.isDirty).toBe(false)
+  })
 })
 
 describe('liste', () => {
