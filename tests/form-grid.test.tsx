@@ -1448,6 +1448,76 @@ describe('listeden seçince imleç', () => {
   }
 })
 
+describe('çoklu seçim hücresi', () => {
+  type R = { roles: string[] | null; note: string | null }
+  const cols: Array<ColumnDef<R>> = [
+    {
+      id: 'roles',
+      header: 'Roller',
+      type: 'multiselect',
+      options: [
+        { value: 'satis', label: 'Satış' },
+        { value: 'depo', label: 'Depo' },
+        { value: 'muhasebe', label: 'Muhasebe' },
+      ],
+    },
+    { id: 'note', header: 'Not', type: 'text' },
+  ]
+  const activeCell = () => document.querySelector<HTMLElement>('.dt-cell[tabindex="0"]')?.dataset
+  function Own({ onChange }: { onChange: (rows: R[]) => void }) {
+    const [rows, setRows] = useState<R[]>([{ roles: ['depo'], note: null }])
+    return (
+      <FormGrid
+        label="Satırlar"
+        rows={rows}
+        columns={cols}
+        onRowsChange={(next) => {
+          setRows(next)
+          onChange(next)
+        }}
+      />
+    )
+  }
+  async function open() {
+    const onChange = vi.fn()
+    render(
+      <DataTableProvider locale="tr-TR">
+        <Own onChange={onChange} />
+      </DataTableProvider>,
+    )
+    await flush()
+    expect(cell(0, 0).classList.contains('is-readonly')).toBe(false)
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.keyDown(cell(0, 0), { key: 'F2' })
+    await flush()
+    return onChange
+  }
+
+  it('liste açık kalır, birden çok seçenek işaretlenir; Tab yazar ve sağa geçer', async () => {
+    const onChange = await open()
+    fireEvent.click(screen.getByRole('option', { name: /Satış/ }))
+    await flush()
+    // Seçim listeyi kapatmaz: ikinci rol de seçilir, mevcut olanın işareti kalkar.
+    fireEvent.click(screen.getByRole('option', { name: /Depo/ }))
+    fireEvent.click(screen.getByRole('option', { name: /Muhasebe/ }))
+    await flush()
+    fireEvent.keyDown(editor()!, { key: 'Tab' })
+    await flush()
+    expect(onChange.mock.lastCall?.[0][0].roles).toEqual(['satis', 'muhasebe'])
+    expect(activeCell()).toMatchObject({ row: '0', col: '1' })
+  })
+
+  it('Esc vazgeçer: değer değişmez', async () => {
+    const onChange = await open()
+    fireEvent.click(screen.getByRole('option', { name: /Satış/ }))
+    await flush()
+    fireEvent.keyDown(editor()!, { key: 'Escape' })
+    await flush()
+    expect(onChange).not.toHaveBeenCalled()
+    expect(cell(0, 0).textContent).toContain('Depo')
+  })
+})
+
 describe('select yazarak', () => {
   type Rate = { n: number | null }
   const rateCols: Array<ColumnDef<Rate>> = [

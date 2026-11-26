@@ -162,7 +162,7 @@
     inset calc(var(--dt-sel-l) * 1px) 0 0 0 var(--dt-accent),
     inset calc(var(--dt-sel-r) * -1px) 0 0 0 var(--dt-accent),
     inset 0 calc(var(--dt-sel-t) * 1px) 0 0 var(--dt-accent),
-    inset 0 calc(var(--dt-sel-b) * -1px) 0 0 var(--dt-accent);
+    inset 0 calc(var(--dt-sel-b) * -1px) 0 0 var(--dt-accent-text);
 }
 .dt-sheet-grid .dt-cell[data-col].is-edge-l {
   --dt-sel-l: 1.5;
@@ -188,7 +188,7 @@
   bottom: -4px;
   width: 7px;
   height: 7px;
-  background: var(--dt-accent);
+  background: var(--dt-accent-text);
   box-shadow: 0 0 0 1.5px var(--dt-surface);
   cursor: crosshair;
 }
@@ -203,7 +203,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  border: 0 dashed var(--dt-accent);
+  border: 0 dashed var(--dt-accent-text);
   border-left-width: calc(var(--dt-sel-l, 0) * 1px);
   border-right-width: calc(var(--dt-sel-r, 0) * 1px);
   border-bottom-width: calc(var(--dt-sel-b, 0) * 1px);
@@ -213,7 +213,7 @@
 .dt-sheet-grid .dt-cell[data-col].is-active {
   --dt-row-bg: var(--dt-surface);
   z-index: 2;
-  box-shadow: inset 0 0 0 2px var(--dt-accent);
+  box-shadow: inset 0 0 0 2px var(--dt-accent-text);
 }
 .dt-sheet-grid .dt-cell[data-col].is-editing {
   --dt-row-bg: var(--dt-surface);
@@ -352,6 +352,17 @@
   justify-content: space-between;
   /* Alt satıra geçen seçenekte satırlar kenara yapışmasın. */
   padding-block: 4px;
+}
+/* Çoklu seçim: solda işaret yuvası, ad yanında (sağda ↵ yok: Enter listeyi kapatmaz). */
+.dt-cell-option.is-multi {
+  justify-content: flex-start;
+  gap: 8px;
+}
+.dt-cell-option-check {
+  display: inline-flex;
+  width: 14px;
+  flex: none;
+  color: var(--dt-accent-text);
 }
 .dt-cell-option[data-highlighted],
 .dt-cell-create[data-highlighted] {
@@ -871,10 +882,10 @@
   width: 6px;
   height: 6px;
   border-radius: 1.5px;
-  background: var(--dt-accent);
+  background: var(--dt-accent-text);
 }
 .dt-mark.is-new {
-  color: var(--dt-accent);
+  color: var(--dt-accent-text);
 }
 
 /* İçe aktarma penceresi (data-sheet.md §6, Vue 07 §13): 560 px; eşleme tablosu pencerenin içinde kayar. */
@@ -900,7 +911,7 @@
 .dt-import-drop:hover,
 .dt-import-drop.is-over,
 .dt-import-drop:focus-within {
-  border-color: var(--dt-accent);
+  border-color: var(--dt-accent-text);
   background: var(--dt-accent-soft);
 }
 .dt-import-file {
@@ -914,7 +925,7 @@
 }
 .dt-import-file > svg {
   flex: none;
-  color: var(--dt-accent);
+  color: var(--dt-accent-text);
 }
 .dt-import-file-text {
   display: flex;
@@ -1014,7 +1025,7 @@
 }
 .dt-import-summary summary {
   margin-top: 8px;
-  color: var(--dt-accent);
+  color: var(--dt-accent-text);
   cursor: pointer;
 }
 .dt-import-summary .dt-import-missing {

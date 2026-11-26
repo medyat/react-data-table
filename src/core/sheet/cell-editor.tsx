@@ -6,7 +6,7 @@ import { isDecimalType, isDecimalValue } from '../format/decimal'
 import { Combobox } from '@base-ui/react/combobox'
 import { Popover } from '@base-ui/react/popover'
 import type { BaseUIEvent } from '@base-ui/react/types'
-import { CalendarBlankIcon, PlusIcon, SpinnerGapIcon } from '@phosphor-icons/react'
+import { CalendarBlankIcon, CheckIcon, PlusIcon, SpinnerGapIcon } from '@phosphor-icons/react'
 import {
   lazy,
   Suspense,
@@ -20,7 +20,7 @@ import {
   type UIEvent,
 } from 'react'
 import type { ColumnDef, OptionDef } from '../../types/columns'
-import { decimalPlaces, isEmptyValue } from '../cells/format'
+import { decimalPlaces, isEmptyValue, optionLabel } from '../cells/format'
 import type { RemoteLabels } from '../cells/remote-labels'
 import { Badge } from '../cells/render-cell'
 import { useDelay } from '../interaction/use-delay'
@@ -125,6 +125,7 @@ function focusEnd(el: HTMLInputElement | HTMLTextAreaElement | null) {
 export function CellEditor<Row extends object>(props: CellEditorProps<Row>) {
   const { def } = props
   if (def.type === 'select') return <OptionCell {...props} options={def.options} />
+  if (def.type === 'multiselect') return <MultiCell {...props} options={def.options} />
   if (def.type === 'ajax') return <AjaxCell {...props} />
   if (def.type === 'date' || def.type === 'datetime') return <DateCell {...props} />
   if (def.type === 'text') return <TextCell {...props} />
@@ -281,6 +282,94 @@ function OptionCell<Row extends object>({
                 </Combobox.Item>
               ))}
               {shown.length === 0 && <div className="dt-options-empty">{i18n.t('remote.noResults')}</div>}
+            </Combobox.List>
+          </Combobox.Popup>
+        </Combobox.Positioner>
+      </Combobox.Portal>
+    </Combobox.Root>
+  )
+}
+
+/**
+ * Çoklu seçim (form-grid.md §8): liste düzenlemeyle açılır ve seçimde kapanmaz; tık ya da Enter işaretler veya
+ * kaldırır, her değişiklik taslağa yazılır. Kutuya yazılan aramadır, değer değil. Tab onaylayıp sağa geçer, Esc
+ * vazgeçer (ızgaranın tuşları).
+ */
+function MultiCell<Row extends object>({
+  def,
+  text: start,
+  value,
+  options,
+  onDraft,
+  field,
+  id,
+  invalid,
+}: CellEditorProps<Row> & { options: OptionDef[] }) {
+  const env = useParseEnv()
+  const [selected, setSelected] = useState<unknown[]>(() => (Array.isArray(value) ? value : []))
+  const [query, setQuery] = useState(start ?? '')
+  const [open, setOpen] = useState(!field)
+  const input = useRef<HTMLInputElement>(null)
+  useLayoutEffect(() => {
+    if (!field) focusEnd(input.current)
+    // Yazarak açılışta harf aramadır: taslak eski değerdir.
+    if (start !== undefined) onDraft(selected, '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  const needle = fold(query, env.locale)
+  const shown = needle ? options.filter((o) => fold(o.label, env.locale).includes(needle)) : options
+  const labels = selected.map((v) => optionLabel(options, v)).join(', ')
+  return (
+    <Combobox.Root<unknown, true>
+      multiple
+      open={open}
+      onOpenChange={setOpen}
+      value={selected}
+      onValueChange={(next) => {
+        setSelected(next)
+        onDraft(next, '')
+      }}
+      inputValue={query}
+      onInputValueChange={(t, details) => {
+        if (details.reason !== 'input-change') return
+        setQuery(t)
+        setOpen(true)
+      }}
+      items={shown.map((o) => o.value)}
+      itemToStringLabel={(v) => optionLabel(options, v)}
+      filter={null}
+      autoHighlight
+    >
+      <Combobox.Input
+        ref={input}
+        className="dt-cell-input"
+        aria-label={columnName(def)}
+        id={id}
+        aria-invalid={invalid || undefined}
+        autoComplete="off"
+        // Kutuda arama durur; seçilenler yer tutucuda görünür.
+        placeholder={labels}
+        onKeyDown={field ? undefined : escapeToGrid}
+      />
+      <Combobox.Portal>
+        <Combobox.Positioner
+          className="dt-positioner"
+          align="start"
+          sideOffset={field ? 4 : 2}
+          anchor={field ? () => fieldBox(input.current) : input}
+        >
+          <Combobox.Popup className="dt-pop dt-cell-list dt-sheet-layer" aria-label={columnName(def)}>
+            <Combobox.List>
+              {shown.map((o) => (
+                <Combobox.Item key={String(o.value)} value={o.value} className="dt-pop-item dt-cell-option is-multi">
+                  <span className="dt-cell-option-check" aria-hidden="true">
+                    <Combobox.ItemIndicator>
+                      <CheckIcon size={14} />
+                    </Combobox.ItemIndicator>
+                  </span>
+                  <span>{o.label}</span>
+                </Combobox.Item>
+              ))}
             </Combobox.List>
           </Combobox.Popup>
         </Combobox.Positioner>

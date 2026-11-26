@@ -87,6 +87,7 @@ const INLINE = new Set([
   'percentage',
   'currency',
   'select',
+  'multiselect',
   'date',
   'datetime',
 ])
@@ -466,8 +467,9 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
       if (!active || !canEdit(active.row, active.col)) return false
       const def = o.columns[active.col]!
       if (def.type === 'boolean' || def.editor?.window) return false
-      // `ajax`'ta yazılan harf aramadır, değer değil: listeden seçilene kadar taslak eski değerdir.
-      const draft = seed === undefined || def.type === 'ajax' ? read(active.row, def) : seed
+      // `ajax` ve çoklu seçimde yazılan harf aramadır, değer değil: listeden seçilene kadar taslak eski değerdir.
+      const draft =
+        seed === undefined || def.type === 'ajax' || def.type === 'multiselect' ? read(active.row, def) : seed
       editing = { pos: active, draft, text: seed }
       anchor = null
       emit()
@@ -648,7 +650,7 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
       if (!active || !canEdit(active.row, active.col)) return
       const def = o.columns[active.col]!
       if (def.type === 'boolean') write([{ ...active, value: read(active.row, def) !== true }], 'edit')
-      else if (def.type === 'select' || def.type === 'ajax') this.startEdit()
+      else if (def.type === 'select' || def.type === 'multiselect' || def.type === 'ajax') this.startEdit()
     },
     /** Delete / Backspace: seçimdeki düzenlenebilir hücreleri boşaltır (boş satıra dokunmaz). */
     clear() {

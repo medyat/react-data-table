@@ -182,7 +182,7 @@ Tek düzen; belgede de form içinde de aynı (POS tablosu için ayrı "gömülü
 ## 7. Pencereler
 
 - **Satır penceresi** (`rowDialog`): paket sütunlardan üretir; alanlar sütun sırasıyla tek sütun, dar (440 px),
-  telefonda tam ekran. Alan olan sütun düzenlenebilir türdendir (metin türleri `email`, `password`, `phone`, `url`, `color` dahil; `accessor` ve
+  telefonda tam ekran. Alan olan sütun düzenlenebilir türdendir (metin türleri `email`, `password`, `phone`, `url`, `color` ve `multiselect` dahil; `accessor` ve
   `editable: false` alan olmaz); satır
   için kilitli alan (`editable(row)` false) pasif görünür. Taslak Tamam'a kadar satıra yazılmaz: Tamam değişen alanları
   tek geri al adımıyla yazar, İptal ve Esc atar. ‹ › geçerken o satırın değişikliğini Tamam gibi yazar. Yeni satırda
@@ -225,6 +225,8 @@ Vue 08'in sheet klavyesi geçerli; farklar:
 - `select`, `ajax` ve `date` editöründe liste / takvim açıkken Enter önce ona gider; listeden ya da takvimden seçmek
   hücreyi onaylar ve imleç hücrede kalır (seçim bir karardır, sonraki hücreyi kullanıcı seçer). Tab her zaman onaylar;
   liste açıksa vurgulu seçeneği alıp sağa geçer (Excel'in otomatik tamamlaması gibi). "Yeni kayıt" Tab ile seçilmez.
+- `multiselect` hücresinde liste seçimde kapanmaz: tık ya da Enter işaretler veya kaldırır, kutuya yazılan aramadır.
+  Tab onaylayıp sağa geçer, Esc vazgeçer.
   ⌥↓ takvimi açar.
 - Esc `select` / `ajax` hücresinde liste açıkken de düzenlemeyi tek basışta iptal eder (Excel gibi). Vue 07 §5'te ilk
   Esc listeyi kapatıp editörde bırakıyordu; hücrede liste düzenlemeyle kendiliğinden açılır, listesiz kalan editörün
