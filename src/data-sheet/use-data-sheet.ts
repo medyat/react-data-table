@@ -238,10 +238,9 @@ export function useDataSheet<Row extends object>(options: DataSheetOptions<Row>)
     let filled = 0
     for (const def of fields) {
       const value = readPath(row, def.id)
-      // Gizli sütun gitmez (karar, 2026-11-26); yüklenen satırda değiştirilmiş olan gider, yoksa değişiklik kaybolurdu.
+      // Gizli sütun değiştirilmiş olsa da gitmez (karar, 2026-11-27): gönderilen, kullanıcının gördüğüdür.
       if (isNew && !isEmptyValue(value)) filled++
-      if (isNew ? isEmptyValue(value) || s.hidden.has(def.id) : s.hidden.has(def.id) && !changed.includes(def.id))
-        continue
+      if (s.hidden.has(def.id) || (isNew && isEmptyValue(value))) continue
       values = writePath(values, def.id, value)
     }
     if (isNew) {

@@ -219,7 +219,7 @@ describe('değişiklik ve gönderilen yük', () => {
     expect(row!.values).toEqual({ code: 'B-1', title: 'Vana', price: '25' })
     expect(row!.row.note).toBeNull()
   })
-  it('gizlenmiş ama değiştirilmiş sütun gider (değişiklik kaybolmasın); yeni satırda yalnız görünen dolu alanlar', async () => {
+  it('gizli sütun değiştirilmiş olsa da gitmez; yeni satırda yalnız görünen dolu alanlar', async () => {
     const { onSave } = await open()
     await act(async () =>
       sheet.internal.setState((s) => ({
@@ -230,7 +230,7 @@ describe('değişiklik ve gönderilen yük', () => {
     await write(2, 1, 'Conta')
     await save()
     const rows = onSave.mock.calls[0]![0].rows
-    expect(rows.find((r) => r.id === 'a')!.values).toEqual({ code: 'A-1', title: 'Pompa', price: '10.00', note: 'y' })
+    expect(rows.find((r) => r.id === 'a')!.values).toEqual({ code: 'A-1', title: 'Pompa', price: '10.00' })
     expect(rows.find((r) => r.isNew)!.values).toEqual({ title: 'Conta' })
   })
   it('geri alınarak eski değerine dönen hücre değişmiş sayılmaz', async () => {

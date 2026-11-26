@@ -11,7 +11,7 @@ export interface SheetChangeRow<Row> {
   key: unknown
   /**
    * Görünen sütunların değerleri (sütun id'sinin yoluyla, `variables.renk`); yeni satırda yalnız dolu olanlar.
-   * Gizlenmiş ama değiştirilmiş sütun da girer: değişiklik sessizce kaybolmasın.
+   * Gizli sütun, değiştirildikten sonra gizlenmiş olsa da girmez.
    */
   values: Partial<Row>
   /** Satırın taslaklı tam hâli, gizli alanlar dahil. */

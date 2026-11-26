@@ -539,7 +539,7 @@ oturunca çıkar.
 
 - Spesifikasyon: `docs/data-sheet.md` (onaylandı, 2026-11-26). Hücre motoru FormGrid'inki (R34); kanca + bileşen
   (`useDataSheet` / `DataSheet`), liste tablosu gibi.
-- Değişen satırın görünen bütün sütunları gider, gizliler gitmez (değiştirildikten sonra gizlenen gider); `onSave` satır başına `values` ve taslaklı `row`
+- Değişen satırın görünen bütün sütunları gider, gizliler gitmez (değiştirildikten sonra gizlenen de); `onSave` satır başına `values` ve taslaklı `row`
   verir, uygulama gönderirken alan ekler ve biçim düzenler (Vue: yalnız değişen alanlar).
 - Yeni satırda anahtar, anahtar sütunu `required` değilse boş kalabilir; sunucu numara verir (Swors kod serisi). Boş
   anahtarlar tekillik kontrolüne girmez (Vue 07 §9: anahtar zorunlu).

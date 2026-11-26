@@ -111,9 +111,9 @@ Vue 07 §2'deki düzen, şu farklarla:
 
 ## 5. Kaydetme
 
-**Ne gönderilir (karar, 2026-11-26):** yalnız yeni ve değişmiş satırlar. Değişmiş satırın **görünen bütün sütunları**
-gider, gizli sütunlar gitmez. İstisna: değiştirildikten sonra gizlenen sütun gider, yoksa kullanıcının değişikliği
-sessizce kaybolurdu. Yeni satırda boş hücre ve gizli sütun gönderilmez (Vue 07 §9). Hatalı ve listeden çıkarılan satır
+**Ne gönderilir (karar, 2026-11-27):** yalnız yeni ve değişmiş satırlar. Değişmiş satırın **görünen bütün sütunları**
+gider, gizli sütunlar gitmez; değiştirildikten sonra gizlenen sütun da gitmez: gönderilen, kullanıcının ekranda
+gördüğüdür. Yeni satırda boş hücre ve gizli sütun gönderilmez (Vue 07 §9). Hatalı ve listeden çıkarılan satır
 gitmez. Hiçbir koşulda silme yok (D11).
 
 ```ts
