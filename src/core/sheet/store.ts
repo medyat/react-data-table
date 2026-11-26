@@ -76,6 +76,11 @@ const INLINE = new Set([
   'text',
   'uppercase',
   'lowercase',
+  // Metin gibi yazılır; biçimi sunucu ya da sütunun `validate`'i denetler.
+  'email',
+  'phone',
+  'url',
+  'color',
   'int',
   'decimal',
   'percentage',
@@ -199,11 +204,11 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
       (INLINE.has(def.type) || def.type === 'boolean' || !!def.editor?.window)
     )
   }
-  const canEdit = (rowIndex: number, col: number): boolean => {
+  // `row` hücreden verilir: React Compiler sonucu yalnız argümanlarıyla önbelleğe alır, satır değişince yeniden sorulmalı.
+  const canEdit = (rowIndex: number, col: number, row: Row | undefined = rows[rowIndex]): boolean => {
     if (!isField(col)) return false
     const def = o.columns[col]!
     if (typeof def.editable !== 'function') return true
-    const row = rows[rowIndex]
     // Boş satır: henüz satır yok, sütunun kuralı boş nesneyle sorulur.
     return def.editable(row ?? ({} as Row), { isNew: isNewRow(row) })
   }

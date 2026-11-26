@@ -41,12 +41,14 @@ function Harness({
   rows,
   onSave,
   autoFocus,
+  cols = columns,
 }: {
   rows: Product[]
   onSave: (c: SheetChanges<Product>) => Promise<void>
   autoFocus?: boolean
+  cols?: Array<ColumnDef<Product>>
 }) {
-  const s = useDataSheet({ rows, columns, keyColumn: 'code', getRowId: (r) => r.id, onSave })
+  const s = useDataSheet({ rows, columns: cols, keyColumn: 'code', getRowId: (r) => r.id, onSave })
   useEffect(() => expose(s))
   return (
     <DataTableProvider locale="tr-TR">
@@ -76,6 +78,36 @@ const save = async () => {
 
 beforeAll(mockLayout)
 afterEach(cleanup)
+
+describe('düzenlenebilirlik', () => {
+  it('satıra bağlı kilit aynı satırdaki başka hücre değişince hemen açılır (hücre gri kalmaz)', async () => {
+    const cols: Array<ColumnDef<Product>> = [
+      columns[0]!,
+      columns[1]!,
+      { ...columns[2]!, editable: (row) => row.title !== 'Pompa' },
+    ]
+    render(<Harness rows={loaded} onSave={async () => {}} cols={cols} />)
+    await flush()
+    expect(cell(0, 2).classList.contains('is-readonly')).toBe(true)
+    await write(0, 1, 'Pompa X')
+    expect(cell(0, 2).classList.contains('is-readonly')).toBe(false)
+  })
+
+  it('e-posta, telefon, adres ve renk hücreleri metin gibi yazılır', async () => {
+    const cols: Array<ColumnDef<Product>> = (['email', 'phone', 'url', 'color'] as const).map((type, i) => ({
+      id: i === 0 ? 'title' : i === 1 ? 'note' : i === 2 ? 'price' : 'code',
+      header: type,
+      type,
+    }))
+    render(<Harness rows={loaded} onSave={async () => {}} cols={cols} />)
+    await flush()
+    for (const col of [0, 1, 2]) expect(cell(1, col).classList.contains('is-readonly')).toBe(false)
+    // Renk anahtar sütununda: yüklenen satırda kilitli, boş satırda yazılır.
+    expect(cell(2, 3).classList.contains('is-readonly')).toBe(false)
+    await write(1, 0, 'a@b.co')
+    expect(cell(1, 0).textContent).toContain('a@b.co')
+  })
+})
 
 describe('autoFocus', () => {
   it('satırlar gelince ilk satırın ilk düzenlenebilir hücresine bir kez odaklanır (kilitli anahtar atlanır)', async () => {

@@ -311,6 +311,8 @@
 .dt-cell-list {
   /* En az açıldığı kutu kadar (hücre ya da pencere alanı); dar hücrede 180. */
   min-width: max(calc(180 * var(--dt-ui-fs) / 13), var(--anchor-width, 0px));
+  /* Uzun seçenek (muafiyet nedeni) listeyi ekran boyu uzatmasın: en çok 360 ya da kutu kadar, metin alt satıra geçer. */
+  max-width: max(calc(360 * var(--dt-ui-fs) / 13), var(--anchor-width, 0px));
   /* Ekranda kalan yükseklikte kayar (Base UI `--available-height`); uzun listede ekrandan taşmaz. */
   max-height: min(calc(320 * var(--dt-ui-fs) / 13), var(--available-height, 100dvh));
   overflow-y: auto;
@@ -348,6 +350,8 @@
 .dt-cell-option {
   min-height: 30px;
   justify-content: space-between;
+  /* Alt satıra geçen seçenekte satırlar kenara yapışmasın. */
+  padding-block: 4px;
 }
 .dt-cell-option[data-highlighted],
 .dt-cell-create[data-highlighted] {

@@ -101,7 +101,7 @@ function GridCell<Row extends object>({
   const state = useSyncExternalStore(store.subscribe, () => store.cellState(index, colIndex))
   const def = col.def
   const value = row ? (def.accessor ? def.accessor(row) : store.read(index, def)) : null
-  const editable = store.canEdit(index, colIndex)
+  const editable = store.canEdit(index, colIndex, row)
   const cls = [
     'dt-cell',
     `is-${alignOf(def)}`,

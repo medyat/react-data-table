@@ -179,7 +179,8 @@ Tek düzen; belgede de form içinde de aynı (POS tablosu için ayrı "gömülü
 ## 7. Pencereler
 
 - **Satır penceresi** (`rowDialog`): paket sütunlardan üretir; alanlar sütun sırasıyla tek sütun, dar (440 px),
-  telefonda tam ekran. Alan olan sütun düzenlenebilir türdendir (`accessor` ve `editable: false` alan olmaz); satır
+  telefonda tam ekran. Alan olan sütun düzenlenebilir türdendir (metin türleri `email`, `phone`, `url`, `color` dahil; `accessor` ve
+  `editable: false` alan olmaz); satır
   için kilitli alan (`editable(row)` false) pasif görünür. Taslak Tamam'a kadar satıra yazılmaz: Tamam değişen alanları
   tek geri al adımıyla yazar, İptal ve Esc atar. ‹ › geçerken o satırın değişikliğini Tamam gibi yazar. Yeni satırda
   başlık "Yeni satır", ‹ › yerine "Ekle ve yeni satır". Alana yazılınca sütunun `onChange`'i taslakta çalışır (Ürün →
