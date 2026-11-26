@@ -19,6 +19,7 @@ kalıplarıyla yeniden kurulur. Bir karar burada değişiyorsa nedeni de yazıl�
 - Sütun sözleşmesinden yalnızca sheet'e ait alanlar çıkar: `editable`, `editor`, `validate`,
   `warn`, `importAliases`, `hint`, `optionEnabled`. `core/editors` kalır: filtre çipleri kullanır.
 - Dışa aktarma (D46) vardır; içe aktarma yoktur.
+- Sonradan: `FormGrid` (R34) ve `DataSheet` (R44, içe aktarma dahil) eklendi; bu madde ilk sürümün kapsamıdır.
 
 ## R2 · Sözleşme önce
 
@@ -532,6 +533,24 @@ oturunca çıkar.
   `--background`'a bağlar (koyu temada açık kutu; koyu gri kutu tablo zemininden ayrılmıyordu), 12/6 px boşluk, normal
   kalınlık, üst kenarda 10 px ok. Kutu pencere kenarına yaslansa da ok öğenin (geniş öğede imlecin) hizasındadır
   (`--dt-tip-arrow-x`). 10 satır sınırı içteki kutudadır (`.dt-tip-body`): dıştaki kırpsaydı ok da kesilirdi.
+
+## R44 · DataSheet: Vue 07'den sapmalar
+
+- Spesifikasyon: `docs/data-sheet.md` (onaylandı, 2026-11-26). Hücre motoru FormGrid'inki (R34); kanca + bileşen
+  (`useDataSheet` / `DataSheet`), liste tablosu gibi.
+- Değişen satırın görünen bütün sütunları gider, gizliler gitmez (değiştirildikten sonra gizlenen gider); `onSave` satır başına `values` ve taslaklı `row`
+  verir, uygulama gönderirken alan ekler ve biçim düzenler (Vue: yalnız değişen alanlar).
+- Yeni satırda anahtar, anahtar sütunu `required` değilse boş kalabilir; sunucu numara verir (Swors kod serisi). Boş
+  anahtarlar tekillik kontrolüne girmez (Vue 07 §9: anahtar zorunlu).
+- Formül çubuğu, "Add row" düğmesi, başlıktan sıralama ve filtre çipleri yok: altta boş satır, Bul, F8 ve Hatalılar
+  görünümü yeter (Vue 07 §2, §10, §11).
+- `saving` prop'u yok: ilerleme `applyResult` ile gelen satır sayısından; `onSave` reddedilirse sonuçsuz satırlar
+  taslak kalır.
+- İçe aktarmada `ajax` sütunu `remote.match` ile çözülür (Vue'da yok). Sütun görünürlüğü oturumludur.
+- Araç çubuğunu uygulama çizer (Vue'da paket): paket ızgarayı, işaretleri, ⌘S'yi ve onay pencerelerini çizer;
+  `useDataSheet` görünüm, sayılar, özet, geri al, kaydet / vazgeç, ilerleme, sonuç ve sütun görünürlüğünü verir.
+- İçe aktarma penceresi pakette (`importFile()` sonucu söz olarak döner), dışa aktarma `exportFile()`; düğmeler
+  uygulamanın. Alan listesi yalnız görünen sütunlar; aynı değer yazılmaz (dışa aktarıp geri almak değişiklik doğurmaz).
 
 ## Yol haritası
 

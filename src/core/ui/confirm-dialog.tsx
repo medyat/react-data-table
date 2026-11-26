@@ -11,6 +11,8 @@ export function ConfirmDialog({
   confirmLabel,
   danger,
   onConfirm,
+  cancelLabel,
+  onCancel,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -19,6 +21,9 @@ export function ConfirmDialog({
   confirmLabel: string
   danger?: boolean
   onConfirm: () => void
+  /** Varsayılan "Cancel"; DataSheet'te "Önce düzelt" gibi bir yol. */
+  cancelLabel?: string
+  onCancel?: () => void
 }) {
   const { i18n } = useDataTableContext()
   const cancel = useRef<HTMLButtonElement>(null)
@@ -30,8 +35,8 @@ export function ConfirmDialog({
           <AlertDialog.Title className="dt-dialog-title">{title}</AlertDialog.Title>
           {body && <AlertDialog.Description className="dt-dialog-body">{body}</AlertDialog.Description>}
           <div className="dt-dialog-actions">
-            <AlertDialog.Close ref={cancel} className="dt-btn">
-              {i18n.t('common.cancel')}
+            <AlertDialog.Close ref={cancel} className="dt-btn" onClick={onCancel}>
+              {cancelLabel ?? i18n.t('common.cancel')}
             </AlertDialog.Close>
             <button
               type="button"

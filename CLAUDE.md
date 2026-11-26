@@ -2,7 +2,7 @@
 
 Bu repo `@medyat/react-data-table`'ı geliştirir: `@medyat/vue-data-table`'ın liste bileşeninin React 19
 karşılığı. Üç bileşen (R34): `DataTable` (liste, tamam), `FormGrid` (formun içindeki satırlar,
-`docs/form-grid.md`, sıradaki iş) ve `DataSheet` (toplu kayıt, sonra).
+`docs/form-grid.md`) ve `DataSheet` (toplu kayıt, içe / dışa aktarma dahil, `docs/data-sheet.md`).
 
 ## Her işe başlamadan önce
 

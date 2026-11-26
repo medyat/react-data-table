@@ -207,6 +207,13 @@ Vue 08'in sheet klavyesi geçerli; farklar:
   (Excel gibi; ⇧↵ de aynı); menü yine hücre seçiliyken açılır.
 - ⌘ + yön o yönde en sona gider (aşağıda son dolu satıra, boş satıra değil); ⌘⇧ + yön seçimi oraya kadar büyütür
   (Excel). Izgara olayı işlediği için tarayıcının kendi işi çalışmaz. ⌥ + yön ızgara tuşu değil.
+- Fareyle sürükleyerek seçimde imleç görünen alanın kenarına yaklaşınca ya da dışına çıkınca ızgara o yöne kayar
+  (dikeyde kayan ata, yatayda gövde; hız kenarı geçtikçe artar), seçim kayan hücrelere uzar (`core/sheet/drag-scroll.ts`).
+  Satırların o kenarı zaten görünüyorsa sayfa kaymaz.
+- Doldurma tutamacı (Vue 07 §8): seçimin sağ altındaki kare aşağı sürüklenir; hedef kesik çerçeveyle görünür, bırakınca
+  dolar ve seçim doldurulanı kapsar. Sayı sütununda en az iki kaynak sabit artışlıysa dizi devam eder, değilse kaynak
+  tekrarlanır. Kilitli hücre atlanır, tek geri al adımı; yalnız var olan satırlara iner (boş satır doğmaz). Vue'dan
+  sapma: "4 hücreyi … ile doldur" etiketi yok, kesik çerçeve yeter. Gösterimde tutamaç yok.
 - F2 hücreyi düzenler; pencere türünde pencereyi açar. Yazmaya başlamak düzenler.
 - Space onay kutusunu çevirir; listeli hücrede (`select`, `ajax`) listeyi açar, F2 gibi.
 - ⌘↵ (Windows Ctrl+Enter) aktif satırın satır penceresini açar; boş satırda yeni satır penceresi.

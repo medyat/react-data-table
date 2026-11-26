@@ -54,6 +54,24 @@
   cursor: default;
 }
 
+/* DataSheet (data-sheet.md §2–§4): değişen hücre accent zemin + accent köşe, yeni satırın anahtarı accent zemin. Uyarı
+   ve hata kuralları aşağıda olduğu için aynı hücrede onlar kazanır (Error > Warning > Changed, Vue 07 §4). */
+.dt-sheet-grid .dt-cell[data-col].is-changed,
+.dt-sheet-grid .dt-cell[data-col].is-new {
+  --dt-row-bg: var(--dt-accent-soft);
+}
+.dt-sheet-grid .dt-cell[data-col].is-changed::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  border-style: solid;
+  border-width: 0 7px 7px 0;
+  border-color: transparent var(--dt-accent) transparent transparent;
+  pointer-events: none;
+  z-index: 1;
+}
+
 /* Uyarı / hata (06 §5): zemin + sağ üstte 7 px köşe üçgeni; hata 1.5 px kırmızı çerçeve. Seçim ve aktif hücre
    kuralları aşağıda: çerçeveleri hatanınkini örter (Vue sheet.css ile aynı sıra). */
 .dt-sheet-grid .dt-cell[data-col].is-warning::after,
@@ -157,6 +175,38 @@
 }
 .dt-sheet-grid .dt-cell[data-col].is-edge-b {
   --dt-sel-b: 1.5;
+}
+
+/* Doldurma tutamacı (Vue 07 §9): aralığın sağ altında 7 px kare, yüzey halkalı; tutması kolay olsun diye çevresi de
+   tutar. Hücre üst katmanda: alttaki satır kareyi örtmesin. */
+.dt-sheet-grid .dt-cell[data-col].has-handle {
+  z-index: 3;
+}
+.dt-fill-handle {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 7px;
+  height: 7px;
+  background: var(--dt-accent);
+  box-shadow: 0 0 0 1.5px var(--dt-surface);
+  cursor: crosshair;
+}
+.dt-fill-handle::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+}
+/* Doldurulacak hücreler: hedefin dış kenarında kesik accent çizgi. */
+.dt-sheet-grid .dt-cell[data-col].is-fill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 0 dashed var(--dt-accent);
+  border-left-width: calc(var(--dt-sel-l, 0) * 1px);
+  border-right-width: calc(var(--dt-sel-r, 0) * 1px);
+  border-bottom-width: calc(var(--dt-sel-b, 0) * 1px);
 }
 
 /* Aktif: 2 px accent iç çerçeve; düzenlenirken gölge ve üst katman. */
@@ -799,4 +849,168 @@
 .dt-cell.is-tip-below .dt-date-hint {
   bottom: auto;
   top: calc(100% + 6px);
+}
+
+/* DataSheet kabuğu: araç çubuğu uygulamanın (data-sheet.md §2); burada ızgaranın kabı ve satır no işaretleri. */
+.dt-data-sheet {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.dt-mark.is-changed {
+  width: 6px;
+  height: 6px;
+  border-radius: 1.5px;
+  background: var(--dt-accent);
+}
+.dt-mark.is-new {
+  color: var(--dt-accent);
+}
+
+/* İçe aktarma penceresi (data-sheet.md §6, Vue 07 §13): 560 px; eşleme tablosu pencerenin içinde kayar. */
+.dt-import-dialog {
+  display: flex;
+  flex-direction: column;
+  width: calc(560 * var(--dt-ui-fs) / 13);
+  max-height: calc(100dvh - 32px);
+}
+.dt-import-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 28px 16px;
+  border: 1px dashed var(--dt-line-2);
+  border-radius: var(--dt-radius-md);
+  color: var(--dt-text-2);
+  text-align: center;
+  cursor: pointer;
+}
+.dt-import-drop:hover,
+.dt-import-drop.is-over,
+.dt-import-drop:focus-within {
+  border-color: var(--dt-accent);
+  background: var(--dt-accent-soft);
+}
+.dt-import-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--dt-line);
+  border-radius: var(--dt-radius-md);
+}
+.dt-import-file > svg {
+  flex: none;
+  color: var(--dt-accent);
+}
+.dt-import-file-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.dt-import-file-text strong {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dt-import-file-text span {
+  color: var(--dt-text-2);
+  font-size: var(--dt-ui-fs-sm);
+}
+.dt-import-file .dt-btn {
+  cursor: pointer;
+}
+.dt-import-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 16px;
+}
+.dt-import-key {
+  flex: 1;
+  margin: 0;
+}
+.dt-import-key strong {
+  font-weight: 600;
+}
+.dt-import-key .dt-field-error {
+  display: block;
+  margin-top: 2px;
+}
+.dt-import-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--dt-text-2);
+  font-size: var(--dt-ui-fs-sm);
+}
+.dt-import-map {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr);
+  margin-top: 12px;
+  border: 1px solid var(--dt-line);
+  border-radius: var(--dt-radius-md);
+  overflow: auto;
+  min-height: 0;
+}
+.dt-import-map > [role='row'] {
+  display: contents;
+}
+.dt-import-map [role='cell'],
+.dt-import-map [role='columnheader'] {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 6px 10px;
+  border-top: 1px solid var(--dt-line);
+}
+.dt-import-map [role='columnheader'] {
+  position: sticky;
+  top: 0;
+  border-top: 0;
+  background: var(--dt-surface-2);
+  color: var(--dt-text-2);
+  font-size: var(--dt-ui-fs-sm);
+  font-weight: 500;
+}
+.dt-import-map .dt-select,
+.dt-import-map select {
+  width: 100%;
+  min-width: 0;
+}
+.dt-import-map-col,
+.dt-import-map-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dt-import-map-value {
+  color: var(--dt-text-2);
+}
+.dt-import-summary {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--dt-radius-md);
+  background: var(--dt-surface-2);
+}
+.dt-import-summary p {
+  margin: 0;
+}
+.dt-import-summary summary {
+  margin-top: 8px;
+  color: var(--dt-accent);
+  cursor: pointer;
+}
+.dt-import-summary .dt-import-missing {
+  max-height: 96px;
+  margin-top: 4px;
+  overflow: auto;
+  color: var(--dt-text-2);
+  font-size: var(--dt-ui-fs-sm);
 }

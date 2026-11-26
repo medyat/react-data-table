@@ -2,7 +2,7 @@
 // FormGrid B adımı: depo (seçim, düzenleme, yazma, geri al) ve klavye niyetleri; DOM yok.
 import { describe, expect, it, vi } from 'vitest'
 import { applyIntent, keyIntent, type KeyInput } from '../src/core/sheet/keyboard'
-import { CELL, createSheetStore, type SheetChange } from '../src/core/sheet/store'
+import { CELL, createSheetStore, fillSeries, type SheetChange } from '../src/core/sheet/store'
 import type { ColumnDef } from '../src/types'
 
 interface Line {
@@ -64,10 +64,10 @@ describe('seçim ve hareket', () => {
     store.move('right', true)
     expect(store.range()).toEqual({ top: 0, bottom: 1, left: 1, right: 2 })
     expect(store.cellState(0, 1)).toBe(CELL.selected | CELL.top | CELL.left)
-    expect(store.cellState(1, 2)).toBe(CELL.active | CELL.selected | CELL.bottom | CELL.right)
+    expect(store.cellState(1, 2)).toBe(CELL.active | CELL.selected | CELL.bottom | CELL.right | CELL.handle)
     expect(store.cellState(2, 2)).toBe(0)
     store.collapse()
-    expect(store.cellState(1, 2)).toBe(CELL.active)
+    expect(store.cellState(1, 2)).toBe(CELL.active | CELL.handle)
   })
   it('⌘ + yön en sona: son dolu satıra (boş satıra değil), ilk satıra, satırın ilk/son sütununa; ⇧ ile seçerek', () => {
     const { store } = setup()
@@ -551,6 +551,48 @@ describe('F3: yapıştır, doldur, satır sil', () => {
     store.fill()
     render()
     expect(rows()[2]!.title).toBe('y')
+  })
+
+  it('doldurma tutamacı: sabit artışlı sayı dizisi devam eder, metin tekrarlanır, kilitli atlanır; tek geri al', () => {
+    const { store, rows, changes, render } = make([
+      { product: 'A', title: 'x', qty: '1.5', lock: 'k' },
+      { product: 'B', title: 'y', qty: '2.0', lock: 'm' },
+      { product: 'C', title: 'z', qty: '9', lock: 'n' },
+      { product: 'D', title: 'w', qty: '9', lock: 'o' },
+      { product: 'E', title: 'v', qty: '9', lock: 'p' },
+    ])
+    store.focus({ row: 0, col: 1 })
+    store.focus({ row: 1, col: 3 }, true)
+    expect(store.cellState(1, 3) & CELL.handle).toBeTruthy()
+    expect(store.cellState(0, 3) & CELL.handle).toBeFalsy()
+    // Aralığın içine ya da üstüne sürüklemek önizleme vermez; aşağısı verir, son satırda durur.
+    store.previewFill(1)
+    expect(store.cellState(2, 1) & CELL.fill).toBeFalsy()
+    store.previewFill(99)
+    expect(store.cellState(4, 2) & (CELL.fill | CELL.bottom)).toBe(CELL.fill | CELL.bottom)
+    store.endFill()
+    render()
+    expect(rows().map((r) => [r.title, r.qty, r.lock])).toEqual([
+      ['x', '1.5', 'k'],
+      ['y', '2.0', 'm'],
+      ['x', '2.5', 'n'],
+      ['y', '3.0', 'o'],
+      ['x', '3.5', 'p'],
+    ])
+    expect(changes.at(-1)!.kind).toBe('fill')
+    expect(store.range()).toEqual({ top: 0, bottom: 4, left: 1, right: 3 })
+    store.undo()
+    render()
+    expect(rows().map((r) => r.qty)).toEqual(['1.5', '2.0', '9', '9', '9'])
+  })
+
+  it('fillSeries: tek değer, boş ya da düzensiz kaynak dizi değildir; sayı kaynağı sayı döner', () => {
+    expect(fillSeries(true, ['5'])).toBeNull()
+    expect(fillSeries(true, ['1', null])).toBeNull()
+    expect(fillSeries(true, ['1', '2', '4'])).toBeNull()
+    expect(fillSeries(false, ['1', '2'])).toBeNull()
+    expect(fillSeries(true, [10, 20])!(3)).toBe(40)
+    expect(fillSeries(true, ['0.1', '0.2'])!(2)).toBe('0.3')
   })
 
   it('satır sil: seçili satırlar gider, geri al yerlerine koyar, yinele yine siler', () => {

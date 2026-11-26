@@ -160,10 +160,51 @@ const KEPT_KEYS = [
   'sheet.menu.clear',
   'sheet.find',
   'sheet.findCount',
+  // DataSheet DS1 (data-sheet.md): görünümler, kaydetme, sonuç ve onaylar.
+  'sheet.changed',
+  'sheet.addedRow',
+  'sheet.duplicateKey',
+  'sheet.menu.remove',
+  'import.title',
+  'import.body',
+  'import.failed',
+  'import.drop',
+  'import.xlsxOnly',
+  'import.sheetInfo',
+  'import.headerRow',
+  'import.headerRowN',
+  'import.replace',
+  'import.matchBy',
+  'import.excelColumn',
+  'import.field',
+  'import.firstValue',
+  'import.matchKey',
+  'import.skip',
+  'import.chooseField',
+  'import.summary',
+  'import.seeNew',
+  'import.addNew',
+  'import.apply',
+  'import.keyRequired',
+  'sheet.limitFile',
+  'sheet.errDialog.title.one',
+  'sheet.errDialog.title.other',
+  'sheet.errDialog.body',
+  'sheet.errDialog.fix',
+  'sheet.errDialog.save',
+  'sheet.discard.title',
+  'sheet.discard.body',
+  'sheet.discard.keep',
+  'sheet.leave.discard',
 ]
 
 // React'in bilinçli sapmaları (Vue'ya taşınmaz; docs/react-kararlar.md · Faz 7c): anahtar → [EN, TR], dokümandakini ezer.
 const REACT_MESSAGES: Record<string, [string, string]> = {
+  // DataSheet'te varlık adı yok (data-sheet.md §6): "kaydını" yerine satır; kaydetmenin ayrı adım olduğu açık.
+  'import.body': [
+    'Rows are matched by {key}: a {key} in the list updates its row, a new {key} becomes a new row. Nothing is saved until you save.',
+    "Satırlar {key} ile eşleşir: tabloda olan {key} o satırı günceller, olmayan yeni satır olur. Kaydet'e basana kadar hiçbir şey kaydedilmez.",
+  ],
   // WCAG 2.5.3: eksik çipin adı görünen metinle ("Status is Select…") başlar.
   'filter.chooseValueAria': ['{column} {op} {value}. Choose a value', '{column} {op} {value}. Bir değer seçin'],
   // "Değişti" sistemin kendiliğinden güncellediği diye okundu; kastedilen kaydedilmemiş değişiklik.
@@ -182,6 +223,11 @@ const REACT_MESSAGES: Record<string, [string, string]> = {
   // Varsayılan system görünümünde "Set as default" yerine "Remove default" çıkar (R6); yasaklananı söylemek iki durumda da doğru.
   // form-grid.md §4: özet boş olmayan hücreleri sayar; "Adet" miktar sütunuyla karışıyordu.
   'sheet.agg.count': ['Cells', 'Hücre'],
+  // Vue'daki "Bu satır gönderilmeyecek" birden çok hatalı satırda yanlış okunuyordu (başlık sayıyı zaten söylüyor).
+  'sheet.errDialog.body': [
+    "Rows with errors won't be sent. The other {count} changed rows will be saved.",
+    'Hatalı satırlar gönderilmez. Değişen diğer {count} satır kaydedilir.',
+  ],
   'views.systemNote': [
     "System views can't be renamed or deleted.",
     'Sistem görünümleri yeniden adlandırılamaz ve silinemez.',
@@ -190,6 +236,9 @@ const REACT_MESSAGES: Record<string, [string, string]> = {
 
 /** Vue dokümanında olmayan, yalnızca React'te bulunan anahtarlar; dokümanda varsa REACT_MESSAGES'a girer. */
 const REACT_ONLY_MESSAGES: Record<string, [string, string]> = {
+  // İçe aktarma (data-sheet.md §6): boş anahtarlı satır her zaman yeni satırdır (sunucu numara verir); çok sayfalı dosya.
+  'import.blankKeys': ['{count} rows without {key} become new rows', '{key} boş olan {count} satır yeni satır olur'],
+  'import.sheet': ['Sheet', 'Sayfa'],
   // FormGrid alt çubuğu (form-grid.md §4): "1 rows" yazmasın; özet Excel gibi en küçük ve en büyüğü de verir.
   'sheet.agg.min': ['Min', 'En küçük'],
   // FormGrid `maxRows` (form-grid.md §5): sığmayan yapıştırma satırları alınmaz; Vue'da yapıştırma hiç uygulanmıyordu.

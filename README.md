@@ -1,8 +1,9 @@
 # @medyat/react-data-table
 
-React 19 için liste tablosu (`DataTable`). Davranış ve tasarım `@medyat/vue-data-table` ile aynı sözleşmeye dayanır;
-spesifikasyon Vue paketinin `docs/data-table/` klasöründedir, React'e özgü kararlar ve Vue'dan sapmalar
-`docs/react-kararlar.md`'de. Toplu düzenleme (`DataSheet`) ve içe aktarma bu pakette yok (R1).
+React 19 için liste tablosu (`DataTable`), form satır ızgarası (`FormGrid`, `docs/form-grid.md`) ve toplu düzenleme
+(`DataSheet`: Excel'den içe / dışa aktarma dahil, `docs/data-sheet.md`). Davranış ve tasarım `@medyat/vue-data-table` ile
+aynı sözleşmeye dayanır; spesifikasyon Vue paketinin `docs/data-table/` klasöründedir, React'e özgü kararlar ve Vue'dan
+sapmalar `docs/react-kararlar.md`'de.
 
 Paket veri çekmez ve kaydetmez (D18): istek nesnesini üretir, uygulama onu kendi sorgu katmanıyla (önerilen TanStack Query)
 çalıştırır ve sonucu tabloya verir.
@@ -11,6 +12,7 @@ Paket veri çekmez ve kaydetmez (D18): istek nesnesini üretir, uygulama onu ken
 
 ```bash
 pnpm add @medyat/react-data-table @base-ui/react @phosphor-icons/react write-excel-file
+pnpm add read-excel-file # yalnız DataSheet içe aktarması; ilk kullanımda yüklenir
 ```
 
 ```tsx

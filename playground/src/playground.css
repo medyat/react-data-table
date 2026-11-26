@@ -370,3 +370,22 @@ body {
   color: var(--dt-text-3);
   font-size: var(--dt-ui-fs-xs);
 }
+
+/* DS1: uygulamanın çizdiği araç çubuğunun sade örneği. */
+.pg-sheet-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.pg-sheet-toolbar button[aria-pressed='true'] {
+  font-weight: 600;
+}
+.pg-sheet-toolbar details label {
+  display: block;
+}
+.pg-sheet-status {
+  margin-left: auto;
+  color: var(--dt-text-2);
+}

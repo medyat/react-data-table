@@ -39,6 +39,7 @@ export default defineConfig({
         /^@dnd-kit\//,
         /^react-day-picker/,
         /^write-excel-file/,
+        /^read-excel-file/,
       ],
     },
     sourcemap: true,

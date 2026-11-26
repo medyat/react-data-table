@@ -4,7 +4,7 @@ import type { ColumnDef, OptionDef } from './columns'
 import type { RowAction } from './list'
 
 export interface FormGridChange {
-  kind: 'edit' | 'paste' | 'fill' | 'remove' | 'duplicate' | 'undo' | 'redo'
+  kind: 'edit' | 'paste' | 'fill' | 'import' | 'remove' | 'duplicate' | 'undo' | 'redo'
   /** Değişen hücreler: satır sırası (yeni dizide) ve sütun id. */
   cells: Array<{ row: number; column: string }>
 }

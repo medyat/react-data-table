@@ -165,6 +165,9 @@ export interface BaseColumn<Row, V = unknown> {
   header: string
   /** Dar alanlarda (telefon) kısa header. */
   headerShort?: string
+  /** DataSheet içe aktarması (data-sheet.md §6): dosyadaki başka başlıklar ("Stok Kodu", "SKU"); büyük/küçük harf ve
+   *  Türkçe işaret duyarsız. */
+  importAliases?: string[]
   /** İç içe başlık: üstteki grup adı, dıştan içe (`['Ek vergiler', 'ÖTV']`). Yan yana duran aynı gruplu sütunlar tek
    *  grup başlığı altında çizilir; taşıma ya da sabitleme araya girerse grup bölünür. Izgara dışında (filtre, Sütunlar,
    *  satır penceresi, Excel) sütun tam adıyla görünür: "İndirim · Oran". */

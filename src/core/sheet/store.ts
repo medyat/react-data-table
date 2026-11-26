@@ -6,6 +6,7 @@ import { sameDecimal } from '../format/decimal'
 import type { ColumnDef, OptionDef } from '../../types/columns'
 import { isEmptyValue } from '../cells/format'
 import { readPath } from '../columns/read-path'
+import { isNumericType } from '../cells/specs'
 
 export interface CellPos {
   row: number
@@ -14,7 +15,7 @@ export interface CellPos {
 export type Direction = 'up' | 'down' | 'left' | 'right'
 
 export interface SheetChange {
-  kind: 'edit' | 'paste' | 'fill' | 'remove' | 'duplicate' | 'undo' | 'redo'
+  kind: 'edit' | 'paste' | 'fill' | 'import' | 'remove' | 'duplicate' | 'undo' | 'redo'
   /** Değişen hücreler: satır sırası (değişiklikten sonraki dizide) ve sütun id. */
   cells: Array<{ row: number; column: string }>
 }
@@ -33,6 +34,8 @@ export interface SheetStoreOptions<Row extends object> {
   readOnly?: boolean
   /** `onChange`'e verilecek seçenek: `select`'te sütunun listesi, `ajax`'ta etiket önbelleği. */
   optionOf?: (def: ColumnDef<Row>, value: unknown) => OptionDef | undefined
+  /** Satır yeni mi (`editable(row, { isNew })`); verilmezse açılışta olmayan satır yenidir. DataSheet kayıttan sonra değiştirir. */
+  isNew?: (row: Row) => boolean
 }
 
 /** `cellState` bayrakları: hücre bunlarla çizilir (kenarlar seçim aralığının çerçevesi). */
@@ -44,7 +47,27 @@ export const CELL = {
   right: 16,
   bottom: 32,
   left: 64,
+  /** Doldurma tutamacı bu hücrede (aralığın sağ altı). */
+  handle: 128,
+  /** Tutamaç sürüklenirken doldurulacak hücre. */
+  fill: 256,
 } as const
+
+/**
+ * Doldurma dizisi (Vue 07 §8): sayı sütununda en az iki kaynak sabit artışlıysa (1, 2, 3 / 10, 20) devam eder; değilse
+ * null (kaynak tekrarlanır). Kaynak metinse (ondalık metin) sonuç da metin, kaynaktaki en çok basamakla.
+ */
+export function fillSeries(numeric: boolean, source: unknown[]): ((k: number) => unknown) | null {
+  if (!numeric || source.length < 2) return null
+  const nums = source.map((v) => (isEmptyValue(v) ? NaN : Number(v)))
+  if (nums.some(Number.isNaN)) return null
+  const places = Math.max(...source.map((v) => String(v).split('.')[1]?.length ?? 0))
+  const round = (n: number) => Number(n.toFixed(places))
+  const step = round(nums[1]! - nums[0]!)
+  if (nums.some((n, i) => i > 0 && round(n - nums[i - 1]!) !== step)) return null
+  const asText = typeof source[0] === 'string'
+  return (k) => (asText ? (nums[0]! + step * k).toFixed(places) : round(nums[0]! + step * k))
+}
 
 // Hücrede düzenlenen türler; object/array pencereyle (F4).
 const INLINE = new Set([
@@ -80,10 +103,10 @@ const HISTORY = 100
 
 /** Boş değerler (null / undefined / '' / []) birbirine eşittir. */
 // Ondalıkta değere bakılır ("120.0000" = "120"): F2 + Enter değişiklik saymaz (R35).
-const same = (a: unknown, b: unknown): boolean =>
+export const same = (a: unknown, b: unknown): boolean =>
   (isEmptyValue(a) && isEmptyValue(b)) || Object.is(a, b) || sameDecimal(a, b)
 
-function writePath<Row extends object>(row: Row, path: string, value: unknown): Row {
+export function writePath<Row extends object>(row: Row, path: string, value: unknown): Row {
   const keys = path.split('.')
   const out = { ...row } as Record<string, unknown>
   let o = out
@@ -124,9 +147,12 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
   }
   // Açılışta olan satırlar "yeni" değildir (`editable(row, { isNew })`).
   const initial = new Set(rows.map(idOf))
+  const isNewRow = (row: Row | undefined) => !row || (o.isNew ? o.isNew(row) : !initial.has(idOf(row)))
 
   let active: CellPos | null = null
   let anchor: CellPos | null = null
+  // Tutamaç sürüklenirken hedefin son satırı.
+  let fillEnd: number | null = null
   // `text`: editörün ham metni (yazarak açılışta yazılan harf); sanal kaydırmada editör yeniden çizilince kaybolmasın.
   let editing: { pos: CellPos; draft: unknown; text?: string } | null = null
   const undoStack: Step[] = []
@@ -179,7 +205,7 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
     if (typeof def.editable !== 'function') return true
     const row = rows[rowIndex]
     // Boş satır: henüz satır yok, sütunun kuralı boş nesneyle sorulur.
-    return def.editable(row ?? ({} as Row), { isNew: !row || !initial.has(idOf(row)) })
+    return def.editable(row ?? ({} as Row), { isNew: isNewRow(row) })
   }
 
   /** Hücrelere yazar; tek kullanıcı işlemi tek geri al adımıdır. Boş satıra yazmak satırı doğurur. */
@@ -322,7 +348,7 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
     rows: () => rows,
     rowCount,
     rowId: (index: number) => (rows[index] ? idOf(rows[index]) : null),
-    isNew: (index: number) => !rows[index] || !initial.has(idOf(rows[index])),
+    isNew: (index: number) => isNewRow(rows[index]),
     read,
     canEdit,
     isField,
@@ -331,6 +357,12 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
     editing: () => editing,
     canUndo: () => undoStack.length > 0,
     canRedo: () => redoStack.length > 0,
+    /** Kayıttan sonra (Vue 07 §12): kaydedilen satır geri alınamaz. */
+    clearHistory() {
+      undoStack.length = 0
+      redoStack.length = 0
+      emit()
+    },
 
     /** Hücrenin bayrakları (`CELL`); ilkel değer: `useSyncExternalStore` yalnız değişince yeniden çizer. */
     cellState(row: number, col: number): number {
@@ -343,6 +375,14 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
         s |= CELL.selected
         if (row === r.top) s |= CELL.top
         if (row === r.bottom) s |= CELL.bottom
+        if (col === r.left) s |= CELL.left
+        if (col === r.right) s |= CELL.right
+      }
+      if (!o.readOnly && !editing && fillEnd === null && row === r.bottom && col === r.right && row < rows.length)
+        s |= CELL.handle
+      if (fillEnd !== null && row > r.bottom && row <= fillEnd && col >= r.left && col <= r.right) {
+        s |= CELL.fill
+        if (row === fillEnd) s |= CELL.bottom
         if (col === r.left) s |= CELL.left
         if (col === r.right) s |= CELL.right
       }
@@ -516,6 +556,43 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
         for (let col = r.left; col <= r.right; col++)
           if (canEdit(row, col)) cells.push({ row, col, value: readPath(rows[source]!, o.columns[col]!.id) })
       write(cells, 'fill')
+    },
+    /** DataSheet içe aktarması: hücreler satır sırasıyla, listenin sonundakiler satır doğurur; kilitli hücre atlanır. Tek geri al adımı. */
+    importCells(cells: Array<{ row: number; col: number; value: unknown }>): boolean {
+      if (o.readOnly || editing) return false
+      return write(
+        cells.filter((c) => canEdit(c.row, c.col)),
+        'import',
+        true,
+      )
+    },
+    /** Tutamaç sürüklenirken hedef satır (aralığın altı; yalnız var olan satırlar). */
+    previewFill(to: number) {
+      const r = range()
+      const next = r && to > r.bottom ? Math.min(to, rows.length - 1) : null
+      if (next === fillEnd || (next !== null && next <= r!.bottom)) return
+      fillEnd = next
+      emit()
+    },
+    /** Tutamaç bırakıldı: kaynak aralık hedefe kadar doldurulur, seçim doldurulanı kapsar. Kilitli hücre atlanır. */
+    endFill() {
+      const r = range()
+      const end = fillEnd
+      fillEnd = null
+      if (!r || end === null || editing) return emit()
+      const cells: Array<{ row: number; col: number; value: unknown }> = []
+      for (let col = r.left; col <= r.right; col++) {
+        const def = o.columns[col]!
+        const source = rows.slice(r.top, r.bottom + 1).map((row) => readPath(row, def.id))
+        const series = fillSeries(isNumericType(def.type), source)
+        for (let row = r.bottom + 1; row <= end; row++) {
+          const k = row - r.top
+          if (canEdit(row, col)) cells.push({ row, col, value: series ? series(k) : source[k % source.length] })
+        }
+      }
+      anchor = { row: r.top, col: r.left }
+      active = { row: end, col: r.right }
+      if (!write(cells, 'fill')) emit()
     },
     /** Seçimdeki satırları siler (menü); geri alınınca yerlerine döner. Boş satır silinmez. */
     removeRows() {

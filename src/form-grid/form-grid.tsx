@@ -46,9 +46,10 @@ import { GridContextMenu } from './grid-menu'
 import { RowDialog } from './row-dialog'
 import { plainText } from '../core/export/cells'
 import { fold, parseInput } from '../core/sheet/parse'
+import { startDragScroll } from '../core/sheet/drag-scroll'
 import { ScrollBar, useHorizontalScroll } from '../core/sheet/h-scroll'
 import { mapErrors } from '../core/sheet/errors'
-import { collectIssues, nextError } from '../core/sheet/issues'
+import { collectIssues, nextError, type GridIssues } from '../core/sheet/issues'
 import { CellTip } from './cell-tip'
 import { applyIntent, keyIntent } from '../core/sheet/keyboard'
 import { CELL, createSheetStore, type CellPos, type SheetStore } from '../core/sheet/store'
@@ -74,7 +75,12 @@ function GridCell<Row extends object>({
   onPicked,
   onWindow,
   showing,
+  mark,
+  onFillStart,
 }: {
+  onFillStart: (e: PointerEvent) => void
+  /** DataSheet'in hücre işareti (`is-changed`, `is-new`). */
+  mark?: string
   /** Gösterim (R41): hücreler kilitli görünmez, hepsi okunur. */
   showing: boolean
   store: SheetStore<Row>
@@ -108,8 +114,11 @@ function GridCell<Row extends object>({
     state & CELL.bottom && 'is-edge-b',
     state & CELL.left && 'is-edge-l',
     state & CELL.right && 'is-edge-r',
+    state & CELL.handle && 'has-handle',
+    state & CELL.fill && 'is-fill',
     issue && `is-${issue.level}`,
     found && 'is-found',
+    mark,
     // Tarih editörünün açıklaması ilk satırda alta açılır (hata balonu kökte, `CellTip`).
     state & CELL.editing && index === 0 && 'is-tip-below',
     ...pinClasses(col),
@@ -179,6 +188,7 @@ function GridCell<Row extends object>({
       {row && !edit && actions.length ? (
         <CellActions actions={actions} row={row} setValue={(v) => store.set({ row: index, col: colIndex }, v)} />
       ) : null}
+      {state & CELL.handle ? <span className="dt-fill-handle" aria-hidden onPointerDown={onFillStart} /> : null}
       {issue && (
         // Ekran okuyucu için; görünen balon kökte (`CellTip`).
         <span id={tipId} className="dt-sr-only">
@@ -189,7 +199,28 @@ function GridCell<Row extends object>({
   )
 }
 
-export function FormGrid<Row extends object>({
+/** DataSheet'in ızgarayı genişlettiği yerler (paket içi; FormGrid'in public API'sine girmez, data-sheet.md). */
+export interface SheetGridExtras<Row extends object> {
+  /** Uygulamanın kurduğu depo (DataSheet geçmişi ve odağı kendisi yönetir). */
+  store?: SheetStore<Row>
+  isNew?: (row: Row) => boolean
+  /** Dışarıda hesaplanmış sorunlar: verilirse ızgara kendisi hesaplamaz (`errors` yok sayılır). */
+  issues?: GridIssues
+  cellMark?: (index: number, column: string) => string | undefined
+  /** Kalıcı satır no (görünüm daraltılınca değişmez). */
+  rowNo?: (index: number) => number
+  rowMark?: (index: number) => 'changed' | 'new' | undefined
+  /** Silme eyleminin adı; verilirse yıkıcı değildir ("Listeden çıkar", D12). */
+  removeLabel?: (count: number) => string
+  /** Uzak seçenek etiketleri (DataSheet içe aktarması eşleşen seçenekleri buraya yazar). */
+  labels?: RemoteLabels
+}
+
+export function FormGrid<Row extends object>(props: FormGridProps<Row>) {
+  return <SheetGrid {...props} />
+}
+
+export function SheetGrid<Row extends object>({
   rows,
   onRowsChange,
   columns,
@@ -206,15 +237,23 @@ export function FormGrid<Row extends object>({
   readOnly = false,
   onRowOpen,
   rowHeight,
-}: FormGridProps<Row>) {
+  store: external,
+  labels: externalLabels,
+  isNew,
+  issues: given,
+  cellMark,
+  rowNo,
+  rowMark,
+  removeLabel,
+}: FormGridProps<Row> & SheetGridExtras<Row>) {
   const ctx = useDataTableContext()
   const root = useRef<HTMLDivElement>(null)
   const head = useRef<HTMLDivElement>(null)
   const body = useRef<HTMLDivElement>(null)
   // Gösterimde (R41) satır penceresi yok: satır uygulamanın detayında açılır (`onRowOpen`).
   const rowDialog = dialog && !readOnly
-  const [store] = useState(() =>
-    createSheetStore({ rows, columns, onRowsChange: onRowsChange ?? (() => {}), getRowId, readOnly }),
+  const [store] = useState(
+    () => external ?? createSheetStore({ rows, columns, onRowsChange: onRowsChange ?? (() => {}), getRowId, readOnly }),
   )
   // Birinci sütun ve satır no solda sabit (§4); kullanıcı sütun düzenini değiştirmez.
   const layout = useColumnLayout({
@@ -223,7 +262,8 @@ export function FormGrid<Row extends object>({
   })
   const shown = layout.columns
   const defs = shown.map((c) => c.def as ColumnDef<Row>)
-  const [labels] = useState(() => new RemoteLabels())
+  const [ownLabels] = useState(() => new RemoteLabels())
+  const labels = externalLabels ?? ownLabels
   store.sync({
     rows,
     columns: defs,
@@ -232,6 +272,7 @@ export function FormGrid<Row extends object>({
     newRow,
     maxRows,
     readOnly,
+    isNew,
     optionOf: (def, value) => {
       if (isEmptyValue(value)) return undefined
       if (def.type === 'select') return def.options.find((o) => String(o.value) === String(value))
@@ -239,17 +280,19 @@ export function FormGrid<Row extends object>({
     },
   })
   // Her çizimde veriden: 1000 × 30'da tek geçiş, hücre başına tip denetimi (form-grid.md §5–6).
-  const issues = collectIssues({
-    rows,
-    columns: defs,
-    errors: mapErrors(
-      errors ?? {},
-      defs.map((d) => d.id),
-    ),
-    read: store.read,
-    isNew: store.isNew,
-    i18n: ctx.i18n,
-  })
+  const issues =
+    given ??
+    collectIssues({
+      rows,
+      columns: defs,
+      errors: mapErrors(
+        errors ?? {},
+        defs.map((d) => d.id),
+      ),
+      read: store.read,
+      isNew: store.isNew,
+      i18n: ctx.i18n,
+    })
 
   // Balon üzerine gelinen, yoksa aktif hücrenin; düzenlenen hücrede yok (editör hücreyi kaplar).
   const [hovered, setHovered] = useState<CellPos | null>(null)
@@ -284,10 +327,8 @@ export function FormGrid<Row extends object>({
   const buttons = readOnly ? Number(!!onRowOpen) + Number(rowActions.length > 0) : rowDialog ? 2 : 1
   const menuW = buttons ? `calc(16px + ${buttons} * var(--dt-control-h-sm) + ${buttons - 1} * 2px)` : null
   const startW = () => GUTTER_W + layout.start.reduce((w, c) => w + layout.widthOf(c.id), 0)
-  const hs = useHorizontalScroll([body, head], () => ({
-    start: startW(),
-    end: root.current?.querySelector<HTMLElement>('.dt-head .dt-cell-menu')?.offsetWidth ?? 0,
-  }))
+  const menuEnd = () => root.current?.querySelector<HTMLElement>('.dt-head .dt-cell-menu')?.offsetWidth ?? 0
+  const hs = useHorizontalScroll([body, head], () => ({ start: startW(), end: menuEnd() }))
 
   const count = store.rowCount()
   const virtual = usePageRows({
@@ -465,6 +506,26 @@ export function FormGrid<Row extends object>({
     return cell ? { row: Number(cell.dataset.row), col: Number(cell.dataset.col) } : null
   }
   const dragging = useRef(false)
+  const dragInsets = () => ({ top: metrics.head, bottom: metrics.foot, start: startW(), end: menuEnd() })
+  // Doldurma tutamacı (Vue 07 §8): aşağı sürüklenir, bırakınca doldurur; hücre seçimi başlamaz.
+  const onFillStart = (e: PointerEvent) => {
+    if (e.button !== 0 || !body.current) return
+    e.stopPropagation()
+    e.preventDefault()
+    startDragScroll({
+      body: body.current,
+      insets: dragInsets,
+      scrollX: hs.scrollTo,
+      extend: (x, y) => {
+        const at = posOf(document.elementFromPoint(x, y))
+        if (at) store.previewFill(at.row)
+      },
+      onEnd: () => {
+        store.endFill()
+        focusActive()
+      },
+    })
+  }
   const onPointerDown = (e: PointerEvent) => {
     if (e.button !== 0) return
     // Editörün kendi içine tık düzenlemeyi kapatmaz.
@@ -473,6 +534,20 @@ export function FormGrid<Row extends object>({
     if (!pos) return
     store.focus(pos, e.shiftKey)
     dragging.current = true
+    // Dokunmada sürükleme sayfayı kaydırır, seçim yapmaz.
+    if (e.pointerType === 'touch' || !body.current) return
+    let last = pos
+    startDragScroll({
+      body: body.current,
+      insets: dragInsets,
+      scrollX: hs.scrollTo,
+      extend: (x, y) => {
+        const at = posOf(document.elementFromPoint(x, y))
+        if (!at || (at.row === last.row && at.col === last.col) || !dragging.current) return
+        last = at
+        store.focus(at, true)
+      },
+    })
   }
   const onPointerOver = (e: PointerEvent) => {
     if (!dragging.current || !(e.buttons & 1)) {
@@ -628,7 +703,7 @@ export function FormGrid<Row extends object>({
     label: '',
     icon: TrashIcon,
     shortcut: REMOVE_KBD,
-    destructive: true,
+    destructive: !removeLabel,
     // Menüden silinince odak menüdeydi; ⋯ düğmesi silinen satırla gider, Base UI odağı geri veremez.
     run: () => {
       store.removeRows()
@@ -662,7 +737,7 @@ export function FormGrid<Row extends object>({
             },
           },
           ...rowActions,
-          { ...removeAction, label: ctx.i18n.t('sheet.menu.removeRows', { count }) },
+          { ...removeAction, label: removeLabel?.(count) ?? ctx.i18n.t('sheet.menu.removeRows', { count }) },
         ]
   // ⋯ ya da sağ tık seçimin dışındaysa önce oraya gider: menü tıklanan satır(lar) için.
   const focusFor = (pos: { row: number; col: number }) => {
@@ -751,7 +826,7 @@ export function FormGrid<Row extends object>({
         style={{ transform: `translateY(${start}px)` }}
       >
         <div className="dt-cell dt-gutter is-pinned-start" style={{ left: 0 }} role="rowheader" data-dt-tip={rowError}>
-          {hasError && (
+          {hasError ? (
             <WarningCircleIcon
               size={13}
               weight="fill"
@@ -759,8 +834,10 @@ export function FormGrid<Row extends object>({
               role="img"
               aria-label={ctx.i18n.t('sheet.hasErrors')}
             />
+          ) : (
+            !blank && <GutterMark mark={rowMark?.(index)} i18n={ctx.i18n} />
           )}
-          {!blank && <span className="dt-gutter-no">{index + 1}</span>}
+          {!blank && <span className="dt-gutter-no">{rowNo?.(index) ?? index + 1}</span>}
         </div>
         {withFill(shown, (col, c) => (
           <GridCell
@@ -776,6 +853,8 @@ export function FormGrid<Row extends object>({
             onPicked={focusActive}
             onWindow={openWindow}
             showing={readOnly}
+            mark={row ? cellMark?.(index, col.id) : undefined}
+            onFillStart={onFillStart}
           />
         ))}
         {menuW && (
@@ -1037,6 +1116,16 @@ export function FormGrid<Row extends object>({
       )}
     </div>
   )
+}
+
+/** DataSheet satır işareti (Vue 07 §3): değişti accent kare, yeni accent +. */
+function GutterMark({ mark, i18n }: { mark: 'changed' | 'new' | undefined; i18n: I18n }) {
+  if (mark === 'new')
+    return (
+      <PlusIcon size={13} weight="bold" className="dt-mark is-new" role="img" aria-label={i18n.t('sheet.addedRow')} />
+    )
+  if (mark === 'changed') return <span className="dt-mark is-changed" role="img" aria-label={i18n.t('sheet.changed')} />
+  return null
 }
 
 /** Boş hücrede `placeholder` soluk yazılır; değer değildir (form-grid.md §3.2). */
