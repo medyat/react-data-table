@@ -482,14 +482,15 @@ oturunca çıkar.
   taksiti: Tek çekim, 2 taksit…) rozet sütunu kalabalıklaştırıyor, değer bir durum gibi okunuyordu. `display: 'text'`
   hücrede ve listede düz etiket çizer; varsayılan `'badge'`. Filtre çipi ve filtre editörü değişmez.
 
-## R39 · `select` hücresi: boşa tık listeyi açar, yazınca ilk eşleşen vurgulu (form-grid.md §3)
+## R39 · `select` hücresi: tık yalnız seçer, yazınca ilk eşleşen vurgulu (form-grid.md §3)
 
-- Boş seçim hücresinde tık listeyi açar: seçilecek değer yok, beklenen listedir. Dolu hücrede tık yalnız seçer
-  (kopya, sürükleyerek seçim); Shift ile tık aralık seçer.
+- Tık, boş hücrede de yalnız seçer; liste çift tık, Enter ya da Space ile açılır. Önceden boş hücreye tık listeyi
+  açıyordu: yer tutucu yazan boş hücrelerin ("Hepsi", "Varsayılan") çok olduğu ızgarada hücreyi seçmek isteyen
+  kullanıcının önüne liste çıkıyordu. Shift ile tık aralık seçer.
 - Yazarak açılışta liste yazılanla süzülür ve ilk eşleşen hemen vurgulu olur (`autoHighlight: 'always'`); tek Enter
   seçer. Değerin tam yazımı da eşleşir (taksit `1` → Tek çekim), yapıştırmadaki kuralla; değerin parçası aranmaz.
   Önceden değere eşit yazım ("4" → değer 4) süzmeyi atlatıyor, Enter yalnız listeyi kapatıyordu.
-- Space listeli hücrede (`select`, `ajax`) listeyi açar, F2 gibi: fareyle boşa tıklamanın klavye karşılığı.
+- Space listeli hücrede (`select`, `ajax`) listeyi açar, F2 gibi.
 
 ## R40 · FormGrid satırı 42 px, varsayılan yoğunluk standart; satır düğmeleri tek grup
 

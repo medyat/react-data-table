@@ -1438,7 +1438,7 @@ describe('select yazarak', () => {
     await flush()
     expect(onChange.mock.lastCall?.[0]).toEqual([{ n: 1 }, { n: 4 }, { n: 3 }, { n: '9 taksit' }])
   })
-  it('boş seçim hücresine tık listeyi açar; dolu hücrede tık yalnız seçer', async () => {
+  it('seçim hücresine tek tık yalnız seçer, boş da olsa; çift tık listeyi açar', async () => {
     render(
       <DataTableProvider locale="tr-TR">
         <FormGrid label="Satırlar" rows={[{ n: 2 }]} columns={rateCols} onRowsChange={() => {}} />
@@ -1449,8 +1449,12 @@ describe('select yazarak', () => {
     fireEvent.click(cell(0, 0))
     await flush()
     expect(editor()).toBeNull()
+    // Boş hücre de yalnız seçilir: yer tutucu ("Hepsi", "Varsayılan") yazan hücreye tık liste açmaz.
     fireEvent.pointerDown(cell(1, 0), { button: 0 })
     fireEvent.click(cell(1, 0))
+    await flush()
+    expect(editor()).toBeNull()
+    fireEvent.doubleClick(cell(1, 0))
     await flush()
     expect(editor()).not.toBeNull()
     expect(document.querySelectorAll('.dt-cell-option')).toHaveLength(4)

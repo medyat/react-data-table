@@ -574,11 +574,8 @@ export function SheetGrid<Row extends object>({
     }
     if (store.editing() || e.shiftKey) return
     const pos = posOf(e.target)
-    if (!pos) return
-    // Boş seçim hücresinde seçilecek değer yok, beklenen listedir: tık açar. Dolu hücrede tık yalnız seçer (kopya, sürükle).
-    const def = defs[pos.col]!
-    const pick = def.type === 'select' && isEmptyValue(rows[pos.row] && store.read(pos.row, def))
-    if (!pick && !(e.target as HTMLElement).closest('.dt-text-expand')) return
+    // Tık yalnız seçer, boş seçim hücresinde de (R39): liste çift tık, Enter ya da Space ile açılır.
+    if (!pos || !(e.target as HTMLElement).closest('.dt-text-expand')) return
     store.focus(pos)
     store.startEdit()
   }
