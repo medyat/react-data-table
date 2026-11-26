@@ -333,6 +333,8 @@ export const tr: Record<string, string> = {
   "remote.create": "Yeni kayıt",
   "remote.createWith": "“{text}” ile yeni kayıt",
   "sheet.edit": "Düzenle",
+  "type.password": "Şifre",
+  "sheet.generatePassword": "Güçlü şifre oluştur",
   "sheet.aboutField": "{label} hakkında",
   "sheet.maskDay": "gg",
   "sheet.maskMonth": "aa",

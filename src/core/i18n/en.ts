@@ -333,6 +333,8 @@ export const en: Record<string, string> = {
   "remote.create": "New record",
   "remote.createWith": "New record with “{text}”",
   "sheet.edit": "Edit",
+  "type.password": "Password",
+  "sheet.generatePassword": "Generate strong password",
   "sheet.aboutField": "About {label}",
   "sheet.maskDay": "dd",
   "sheet.maskMonth": "mm",

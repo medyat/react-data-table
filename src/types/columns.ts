@@ -20,6 +20,8 @@ export type ColumnType =
   | 'phone'
   | 'color'
   | 'email'
+  // Hücrede maskeli, düzenleyicide açık; kopyaya ve dışa aktarmaya girmez.
+  | 'password'
   | 'url'
   | 'id'
   // seçim
@@ -274,6 +276,11 @@ export type ColumnDef<Row = any> =
         minDecimalPlaces?: number
       })
   | (BaseColumn<Row, string | null> & { type: 'string' | 'text' | 'uppercase' | 'lowercase' | 'email' | 'url' | 'id' })
+  | (BaseColumn<Row, string | null> & {
+      type: 'password'
+      /** FormGrid'de hücre aksiyonu güçlü şifre yazar ("Güçlü şifre oluştur"). */
+      generate?: boolean
+    })
   | (BaseColumn<Row, string | null> & { type: 'phone' })
   | (BaseColumn<Row, string | null> & { type: 'color'; display?: 'swatch' | 'fill'; palette?: string[] })
   | (BaseColumn<Row, boolean | null> & { type: 'boolean'; falseTone?: 'neutral' | 'destructive' })

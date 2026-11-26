@@ -59,6 +59,9 @@ export function formatCell<Row extends object>(def: ColumnDef<Row>, row: Row, va
       return fmt.decimal(decimalOf(value), decimalPlaces(def), def.signDisplay, minDecimalPlaces(def))
     case 'percentage':
       return fmt.percent(decimalOf(value), decimalPlaces(def), def.signDisplay, minDecimalPlaces(def))
+    // Sabit maske: uzunluk da sızmaz.
+    case 'password':
+      return '******'
     case 'star':
       return i18n.t('cell.rating', { value: Number(value), max: def.max ?? 5 })
     case 'currency':

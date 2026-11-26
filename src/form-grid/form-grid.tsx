@@ -4,6 +4,7 @@
 import {
   CaretRightIcon,
   CopySimpleIcon,
+  PasswordIcon,
   PencilSimpleIcon,
   PlusIcon,
   TrashIcon,
@@ -21,7 +22,8 @@ import {
   type MouseEvent,
   type PointerEvent,
 } from 'react'
-import type { CellAction, ColumnDef, OptionDef } from '../types/columns'
+import type { CellAction, CellActionContext, ColumnDef, OptionDef } from '../types/columns'
+import { generatePassword } from '../core/cells/password'
 import type { RowAction } from '../types/list'
 import type { FormGridProps } from '../types/form-grid'
 import { decimalPlaces, isEmptyValue, minDecimalPlaces } from '../core/cells/format'
@@ -223,7 +225,7 @@ export function FormGrid<Row extends object>(props: FormGridProps<Row>) {
 export function SheetGrid<Row extends object>({
   rows,
   onRowsChange,
-  columns,
+  columns: appColumns,
   label,
   getRowId,
   errors,
@@ -247,6 +249,23 @@ export function SheetGrid<Row extends object>({
   removeLabel,
 }: FormGridProps<Row> & SheetGridExtras<Row>) {
   const ctx = useDataTableContext()
+  // Paketin kendi hücre aksiyonları uygulamanınkilerden önce gelir.
+  const columns = appColumns.map((def) =>
+    def.type === 'password' && def.generate
+      ? {
+          ...def,
+          actions: [
+            {
+              id: 'generate-password',
+              label: ctx.i18n.t('sheet.generatePassword'),
+              icon: PasswordIcon,
+              run: (_row: Row, { setValue }: CellActionContext) => setValue?.(generatePassword()),
+            },
+            ...(def.actions ?? []),
+          ],
+        }
+      : def,
+  )
   const root = useRef<HTMLDivElement>(null)
   const head = useRef<HTMLDivElement>(null)
   const body = useRef<HTMLDivElement>(null)

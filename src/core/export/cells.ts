@@ -20,7 +20,8 @@ import { localDateTime } from '../sheet/parse'
 const asciiMinus = (s: string): string => s.replace(/\u2212/g, '-')
 
 export function plainText<Row extends object>(def: ColumnDef<Row>, row: Row, value: unknown, env: FormatEnv): string {
-  if (isEmptyValue(value)) return ''
+  // Şifre ızgaradan çıkmaz: kopyaya, CSV'ye ve Excel'e boş yazılır.
+  if (isEmptyValue(value) || def.type === 'password') return ''
   switch (def.type) {
     // İşaret her zaman yazılır: `signDisplay: 'never'` yalnız ekranındır, kopyalanan değer geri yapıştırılınca aynı kalmalı.
     // Eksi düz tiredir: Excel U+2212'yi eksi saymaz, sayıyı metin olarak yapıştırır.

@@ -133,6 +133,9 @@ ondan farklıdır: kilit değeri silmez, `onChange` değer yazar.
   hücreye döner.
 - `setValue` kilitli hücreye yazmaz (depo atlar); yazan aksiyonu kilitli satırda kapatmak uygulamanın `disabled`'ıdır,
   gerekçe metni menüde ikinci satır olur. Liste tablosunda `ctx.setValue` yoktur (salt okunur).
+- `password` sütunu hücrede sabit maske (`******`, uzunluk sızmaz), düzenleyicide açık değer gösterir; kopyaya, CSV'ye
+  ve Excel'e boş yazılır, süzülmez ve sıralanmaz. `generate: true` paketin kendi aksiyonunu ekler ("Güçlü şifre
+  oluştur"): 16 karakter, büyük ve küçük harf, rakam ve işaret her birinden en az biri; karışan karakterler yok.
 
 ## 4. Yerleşim
 
@@ -179,7 +182,7 @@ Tek düzen; belgede de form içinde de aynı (POS tablosu için ayrı "gömülü
 ## 7. Pencereler
 
 - **Satır penceresi** (`rowDialog`): paket sütunlardan üretir; alanlar sütun sırasıyla tek sütun, dar (440 px),
-  telefonda tam ekran. Alan olan sütun düzenlenebilir türdendir (metin türleri `email`, `phone`, `url`, `color` dahil; `accessor` ve
+  telefonda tam ekran. Alan olan sütun düzenlenebilir türdendir (metin türleri `email`, `password`, `phone`, `url`, `color` dahil; `accessor` ve
   `editable: false` alan olmaz); satır
   için kilitli alan (`editable(row)` false) pasif görünür. Taslak Tamam'a kadar satıra yazılmaz: Tamam değişen alanları
   tek geri al adımıyla yazar, İptal ve Esc atar. ‹ › geçerken o satırın değişikliğini Tamam gibi yazar. Yeni satırda

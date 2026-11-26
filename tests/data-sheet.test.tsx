@@ -1,6 +1,6 @@
 // DataSheet DS1 (docs/data-sheet.md): anahtar kilidi, değişiklik işaretleri, gönderilen yük (görünen sütunlar),
 // satır sonuçları, hatalı satır onayı, anahtar tekrarı, görünümün listeye yerleşmesi ve tabanın yenilenmesi.
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { useEffect } from 'react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { DataTableProvider } from '../src/core/provider'
@@ -106,6 +106,37 @@ describe('düzenlenebilirlik', () => {
     expect(cell(2, 3).classList.contains('is-readonly')).toBe(false)
     await write(1, 0, 'a@b.co')
     expect(cell(1, 0).textContent).toContain('a@b.co')
+  })
+})
+
+describe('şifre sütunu', () => {
+  it('hücre maskeli; düzenleyicide değer açık, yazılır', async () => {
+    const cols: Array<ColumnDef<Product>> = [columns[0]!, { id: 'note', header: 'Şifre', type: 'password' }]
+    render(<Harness rows={loaded} onSave={async () => {}} cols={cols} />)
+    await flush()
+    expect(cell(1, 1).classList.contains('is-readonly')).toBe(false)
+    await write(1, 1, 'Gizli123')
+    // Uzunluk da sızmaz: maske her değerde aynı.
+    expect(cell(1, 1).textContent).toBe('******')
+    expect(cell(1, 1).textContent).not.toContain('Gizli123')
+  })
+
+  it('generate: hücre aksiyonu güçlü şifre yazar; seçenek yoksa aksiyon da yok', async () => {
+    const cols: Array<ColumnDef<Product>> = [
+      columns[0]!,
+      { id: 'note', header: 'Şifre', type: 'password', generate: true },
+      { id: 'title', header: 'Eski şifre', type: 'password' },
+    ]
+    render(<Harness rows={loaded} onSave={async () => {}} cols={cols} />)
+    await flush()
+    expect(within(cell(1, 2)).queryByRole('button', { name: 'Güçlü şifre oluştur' })).toBeNull()
+    fireEvent.pointerDown(cell(1, 1), { button: 0 })
+    fireEvent.click(within(cell(1, 1)).getByRole('button', { name: 'Güçlü şifre oluştur' }))
+    await flush()
+    const value = String(sheet.internal.state.rows[1]?.note)
+    // 16 karakter; büyük, küçük harf, rakam ve işaret her birinden en az biri.
+    expect(value).toMatch(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z\d]).{16}$/)
+    expect(cell(1, 1).textContent).toBe('******')
   })
 })
 

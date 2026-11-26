@@ -338,6 +338,8 @@ export const ru: Record<string, string> = {
   'remote.create': 'Новая запись',
   'remote.createWith': 'Новая запись «{text}»',
   'sheet.edit': 'Изменить',
+  'type.password': 'Пароль',
+  'sheet.generatePassword': 'Создать надёжный пароль',
   'sheet.aboutField': 'О поле «{label}»',
   'sheet.maskDay': 'дд',
   'sheet.maskMonth': 'мм',

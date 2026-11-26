@@ -78,6 +78,14 @@ describe('plainText', () => {
   })
 })
 
+describe('şifre', () => {
+  it('kopyaya ve dosyaya girmez: şifre ızgaradan çıkmaz', () => {
+    const password: ColumnDef<P> = { id: 'sku', header: 'Şifre', type: 'password' }
+    expect(plainText(password, rows[0]!, 'Gizli123', en)).toBe('')
+    expect(xlsxCell(password, rows[0]!, 'Gizli123', en)).toEqual({ value: null, type: String })
+  })
+})
+
 describe('xlsxCell', () => {
   const def = (id: keyof P) => columns.find((c) => c.id === id)!
   it('sayı tipli, biçim tipten: para kodu, yüzde değeri bölünmez', () => {

@@ -259,6 +259,9 @@ const REACT_ONLY_MESSAGES: Record<string, [string, string]> = {
   'remote.create': ['New record', 'Yeni kayıt'],
   'remote.createWith': ['New record with “{text}”', '“{text}” ile yeni kayıt'],
   'sheet.edit': ['Edit', 'Düzenle'],
+  // Şifre sütunu ve `generate` aksiyonu (form-grid.md §3.3).
+  'type.password': ['Password', 'Şifre'],
+  'sheet.generatePassword': ['Generate strong password', 'Güçlü şifre oluştur'],
   'sheet.aboutField': ['About {label}', '{label} hakkında'],
   // Tarih editörünün kalıp harfleri (placeholder) ve canlı açıklaması.
   'sheet.maskDay': ['dd', 'gg'],

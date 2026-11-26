@@ -36,6 +36,8 @@ export const OPERATORS: Record<ColumnType, FilterOp[]> = {
   user: LIST,
   date: DATE,
   datetime: DATE,
+  // Şifre süzülmez: değeri sunucudan hiç gelmez.
+  password: [],
   object: [],
   array: ['contains', ...EMPTY],
 }

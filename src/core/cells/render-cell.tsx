@@ -273,6 +273,7 @@ export function renderCellContent<Row extends object>(
     case 'uppercase':
     case 'lowercase':
     case 'email':
+    case 'password':
       return formatted
     case 'percentage':
       return signed(def, row, value, def.display === 'bar' ? <Bar pct={Number(value)} label={formatted} /> : formatted)

@@ -78,6 +78,7 @@ const INLINE = new Set([
   'lowercase',
   // Metin gibi yazılır; biçimi sunucu ya da sütunun `validate`'i denetler.
   'email',
+  'password',
   'phone',
   'url',
   'color',
