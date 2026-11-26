@@ -20,7 +20,7 @@ import {
   type ColumnDef as TanstackColumnDef,
   type Header,
 } from '@tanstack/react-table'
-import { useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import type { ColumnDef } from '../../types/columns'
 import type { ColumnLayout } from '../../types/query'
 import { actionsReserved, actionsWidth, ACTIONS_MIN_TEXT, defaultTrack, type Track } from '../cells/specs'
@@ -199,6 +199,24 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
     // Genişlik ve resize durumu bilerek yok: sürüklerken ekran yeniden çizilmez (05 · Resize).
     (s) => ({ columnOrder: s.columnOrder, columnVisibility: s.columnVisibility, columnPinning: s.columnPinning }),
   )
+
+  // Sonradan gelen sütun (gizliyken açılan, geç yüklenen) TanStack'te sıranın sonuna düşerdi: tanımdaki yerine,
+  // önündeki sütunun arkasına girer. Boyamadan önce çalışır, sütun sonda görünüp yer değiştirmez.
+  const ids = defs.map((d) => d.id as string)
+  useLayoutEffect(() => {
+    const order = table.atoms.columnOrder.get()
+    if (ids.every((id) => order.includes(id))) return
+    const next = [...order]
+    ids.forEach((id, i) => {
+      if (next.includes(id)) return
+      const before = ids
+        .slice(0, i)
+        .reverse()
+        .find((prev) => next.includes(prev))
+      next.splice(before === undefined ? 0 : next.indexOf(before) + 1, 0, id)
+    })
+    table.setColumnOrder(next)
+  })
 
   const headerById = new Map(table.getLeafHeaders().map((h) => [h.column.id, h as Header<Features, Row, unknown>]))
   const toLayoutColumn = (col: TColumn<Row>, pinned: PinSide, pinEdge: boolean): LayoutColumn<Row> => ({

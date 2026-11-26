@@ -145,6 +145,8 @@ Tek düzen; belgede de form içinde de aynı (POS tablosu için ayrı "gömülü
 - Başlık yapışkan; satırlar sayfa ya da Sheet gövdesiyle kayar, tablo kendi içinde dikey kaymaz.
 - Yatay kaydırma tablonun kendi çubuğuyla değil, alt çubuğun hemen üstündeki her zaman görünen çubukla;
   ikisi birlikte yapışkan alt. Satır no ve birinci sütun solda sabit.
+- Sütun sırası verilen `columns` dizisinin sırasıdır. Sonradan gelen sütun (gizliyken açılan, geç yüklenen) sona
+  değil, dizideki yerine girer.
 - Altta her zaman bir boş satır (`maxRows` dolana kadar).
 - **Alt çubuk** tablonundur: solda "N hata — git" (satır sayısı yazmaz, tablo zaten gösteriyor); iki ve daha çok hücre seçiliyse sağda Hücre,
   Toplam, Ortalama, En küçük, En büyük. Ekrana özel metin yazılmaz.

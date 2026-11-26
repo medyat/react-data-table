@@ -84,6 +84,22 @@ describe('FormGrid iskeleti', () => {
     fireEvent.doubleClick(handle)
     expect(cols()).toBe(before)
   })
+  it('sonradan gelen sütun tanımdaki yerine girer, sona değil (gizliyken açılan sütun)', async () => {
+    const shown = (cols: Array<ColumnDef<Line>>) => (
+      <FormGrid label="Satırlar" rows={initial} columns={cols} onRowsChange={() => {}} />
+    )
+    const { rerender } = render(shown([columns[0]!, columns[2]!]))
+    await flush()
+    rerender(shown(columns))
+    await flush()
+    const grid = screen.getByRole('grid', { name: 'Satırlar' })
+    expect(
+      within(grid)
+        .getAllByRole('columnheader')
+        .map((c) => c.textContent!.replace('*', '').trim())
+        .filter((name) => name && name !== '#'),
+    ).toEqual(['Ürün', 'Miktar', 'Promosyon'])
+  })
   it('kilitli hücre aria-readonly; açılıştaki satırda Ürün kilitli, boş satırda açık', async () => {
     render(<Harness />)
     await flush()
