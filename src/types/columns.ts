@@ -247,6 +247,12 @@ export interface BaseColumn<Row, V = unknown> {
   warn?: Validator<Row>
   /** Başlıkta ? ikonu ile açıklama. */
   hint?: string
+  /**
+   * Metin türlerinde (`string`, `uppercase`, `lowercase`) giriş maskesi: yazılanı alır, maskelenmiş metni döndürür.
+   * Düzenleyicide her tuşta, yapıştırmada ve içe aktarmada uygulanır; hücre değeri de onunla görünür. İşaretleri
+   * uygulama tanımlar, paket bilmez.
+   */
+  mask?: (text: string) => string
 }
 
 /** Sayı türlerinin işareti (R36). Verilmezse bugünkü gibi: yalnız eksi yazılır, renk yok. */

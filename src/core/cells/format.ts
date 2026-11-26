@@ -49,8 +49,16 @@ export function minDecimalPlaces(def: ColumnDef): number {
 /** Ondalık metin olduğu gibi biçimlenir (float'a çevrilmez, R35); öteki değer sayıya. */
 export const decimalOf = (v: unknown): number | string => (typeof v === 'string' && isDecimalValue(v) ? v : Number(v))
 
+const MASKABLE = new Set(['string', 'uppercase', 'lowercase'])
+
+/** Sütunun maskesi (`ColumnDef.mask`); maskesiz ya da metin olmayan türde metin olduğu gibi döner. */
+export function applyMask<Row extends object>(def: ColumnDef<Row>, text: string): string {
+  return def.mask && MASKABLE.has(def.type) ? def.mask(text) : text
+}
+
 export function formatCell<Row extends object>(def: ColumnDef<Row>, row: Row, value: unknown, env: FormatEnv): string {
   if (isEmptyValue(value)) return def.emptyText ?? '—'
+  if (typeof value === 'string' && def.mask) return applyMask(def, value)
   const { fmt, i18n } = env
   switch (def.type) {
     case 'int':

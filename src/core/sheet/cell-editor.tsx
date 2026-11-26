@@ -20,7 +20,7 @@ import {
   type UIEvent,
 } from 'react'
 import type { ColumnDef, OptionDef } from '../../types/columns'
-import { decimalPlaces, isEmptyValue, optionLabel } from '../cells/format'
+import { applyMask, decimalPlaces, isEmptyValue, optionLabel } from '../cells/format'
 import type { RemoteLabels } from '../cells/remote-labels'
 import { Badge } from '../cells/render-cell'
 import { useDelay } from '../interaction/use-delay'
@@ -147,7 +147,8 @@ function InputCell<Row extends object>({
   const clean = (t: string) => (numeric ? cleanNumber(env.locale, t, decimalPlaces(def) === 0) : t)
   const [text, setText] = useState(() => start ?? initialText(def, value, env.locale))
   const el = useRef<HTMLInputElement & HTMLTextAreaElement>(null)
-  const change = (t: string) => {
+  const change = (typed: string) => {
+    const t = applyMask(def, typed)
     setText(t)
     onDraft(parseInput(def, t, env), t)
   }

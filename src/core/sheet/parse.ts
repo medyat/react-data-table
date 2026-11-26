@@ -2,7 +2,7 @@
 // "2.240,00", "2,240.00"; "%20" → 20), tarih "24.10", "24.10.2026", "+7d", "today"/"bugün", ISO; seçenek etiketle
 // (büyük/küçük harf ve İ/ı duyarsız). Çözülemeyen giriş ham metin kalır; doğrulama onu tip hatası sayar.
 import type { ColumnDef, OptionDef } from '../../types/columns'
-import { optionLabel } from '../cells/format'
+import { applyMask, optionLabel } from '../cells/format'
 import { TYPE_SPECS } from '../cells/specs'
 import { isoDay } from '../filters/model'
 import { isDecimalType } from '../format/decimal'
@@ -211,7 +211,7 @@ export function localDateTime(value: string | Date): string {
 
 /** Editör metni → hücre değeri. Boş → null; çözülemeyen → ham metin (tip hatası). */
 export function parseInput(def: ColumnDef, text: string, env: ParseEnv): unknown {
-  const s = text.trim()
+  const s = applyMask(def, text.trim())
   if (s === '') return null
   if (TYPE_SPECS[def.type].numeric || def.type === 'star') {
     // Formül yok (Vue 07 §2): "=" ile başlayan giriş sayı sütununda hata olarak kalır.
@@ -250,5 +250,5 @@ export function inputText(def: ColumnDef, value: unknown): string {
   if (def.type === 'datetime') return localDateTime(value as string | Date)
   if (Array.isArray(value)) return value.join(', ')
   if (typeof value === 'object') return JSON.stringify(value)
-  return String(value)
+  return applyMask(def, String(value))
 }

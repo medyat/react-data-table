@@ -136,6 +136,9 @@ ondan farklıdır: kilit değeri silmez, `onChange` değer yazar.
 - `password` sütunu hücrede sabit maske (`******`, uzunluk sızmaz), düzenleyicide açık değer gösterir; kopyaya, CSV'ye
   ve Excel'e boş yazılır, süzülmez ve sıralanmaz. `generate: true` paketin kendi aksiyonunu ekler ("Güçlü şifre
   oluştur"): 16 karakter, büyük ve küçük harf, rakam ve işaret her birinden en az biri; karışan karakterler yok.
+- `mask` (metin türleri: `string`, `uppercase`, `lowercase`) yazılanı maskelenmiş metne çeviren işlevdir: düzenleyicide
+  her tuşta, yapıştırmada ve içe aktarmada uygulanır, hücre değeri de onunla görünür. İşaretleri uygulama tanımlar
+  (paket maske kütüphanesi taşımaz); değer maskenin döndürdüğü metindir.
 
 ## 4. Yerleşim
 

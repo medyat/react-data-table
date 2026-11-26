@@ -1464,6 +1464,37 @@ describe('listeden seçince imleç', () => {
   }
 })
 
+describe('maskeli metin hücresi', () => {
+  type R = { iban: string | null }
+  const group = (t: string) =>
+    t
+      .replace(/\s/g, '')
+      .toUpperCase()
+      .replace(/(.{4})(?=.)/g, '$1 ')
+  const cols: Array<ColumnDef<R>> = [{ id: 'iban', header: 'IBAN', type: 'string', mask: group }]
+
+  it('hücre değeri maskeyle görünür; yazarken metin maskelenir ve taslağa maskeli gider', async () => {
+    const onChange = vi.fn()
+    render(
+      <DataTableProvider locale="tr-TR">
+        <FormGrid label="Satırlar" rows={[{ iban: 'TR330006' }]} columns={cols} onRowsChange={onChange} />
+      </DataTableProvider>,
+    )
+    await flush()
+    expect(cell(0, 0).textContent).toBe('TR33 0006')
+    fireEvent.pointerDown(cell(0, 0), { button: 0 })
+    fireEvent.keyDown(cell(0, 0), { key: 'F2' })
+    await flush()
+    const input = editor() as HTMLInputElement
+    expect(input.value).toBe('TR33 0006')
+    fireEvent.change(input, { target: { value: 'TR33 00061' } })
+    expect(input.value).toBe('TR33 0006 1')
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await flush()
+    expect(onChange.mock.lastCall?.[0][0].iban).toBe('TR33 0006 1')
+  })
+})
+
 describe('çoklu seçim hücresi', () => {
   type R = { roles: string[] | null; note: string | null }
   const cols: Array<ColumnDef<R>> = [

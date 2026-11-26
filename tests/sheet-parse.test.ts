@@ -158,3 +158,19 @@ describe('iki haneli yıl', () => {
     expect(parseDateInput('08.06.05', { ...env, today: new Date(2090, 0, 1) })).toBe('2105-06-08')
   })
 })
+
+describe('sütun maskesi', () => {
+  // Uygulamanın maskesi: paket işaretleri bilmez, yalnız işlevi çağırır.
+  const group = (t: string) =>
+    t
+      .replace(/\s/g, '')
+      .toUpperCase()
+      .replace(/(.{4})(?=.)/g, '$1 ')
+  const iban: ColumnDef = { id: 'iban', header: 'IBAN', type: 'string', mask: group }
+
+  it('yapıştırılan ve içe aktarılan metin maskeden geçer; düzenleyici kayıtlı değeri maskeli açar', () => {
+    expect(parseInput(iban, ' tr330006100519 ', env)).toBe('TR33 0006 1005 19')
+    expect(inputText(iban, 'TR330006')).toBe('TR33 0006')
+    expect(parseInput(iban, '', env)).toBeNull()
+  })
+})
