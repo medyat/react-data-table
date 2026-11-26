@@ -350,6 +350,8 @@ export function renderCellContent<Row extends object>(
       )
     }
     case 'ajax': {
+      if (env.labels.loading(def.id as string, value as string | number))
+        return <span className="dt-sk dt-sk-bar" role="img" aria-label={i18n.t('common.loading')} />
       const href = def.href?.(row)
       return href ? <Link href={href}>{formatted}</Link> : formatted
     }

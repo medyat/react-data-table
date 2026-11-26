@@ -1,5 +1,5 @@
 // `ajax` ve `user` hücreleri için etiket önbelleği: id'ler toplanır, bir mikro görevde tek `resolve` çağrısıyla çözülür (03).
-// Çözülene kadar ham değer görünür; çözülünce `version` artar, ızgara `useSyncExternalStore` ile yeniden çizer.
+// Çözülürken hücre iskelet çizer (`loading`); bitince `version` artar, ızgara `useSyncExternalStore` ile yeniden çizer.
 import type { OptionDef, RemoteOptions } from '../../types/columns'
 
 export class RemoteLabels {
@@ -33,6 +33,12 @@ export class RemoteLabels {
     return undefined
   }
 
+  /** Kimlik sorulmayı bekliyor ya da yolda: hücre ham değer yerine iskelet çizer. */
+  loading(columnId: string, id: string | number): boolean {
+    if (this.cache.get(columnId)?.has(id) || this.missing.get(columnId)?.has(id)) return false
+    return !!this.pending.get(columnId)?.ids.has(id) || !!this.inFlight.get(columnId)?.has(id)
+  }
+
   label(columnId: string, remote: RemoteOptions | undefined, id: string | number): string {
     return this.option(columnId, remote, id)?.label ?? String(id)
   }
@@ -58,19 +64,27 @@ export class RemoteLabels {
         let flight = this.inFlight.get(columnId)
         if (!flight) this.inFlight.set(columnId, (flight = new Set()))
         batch.forEach((id) => flight.add(id))
+        let miss = this.missing.get(columnId)
+        if (!miss) this.missing.set(columnId, (miss = new Set()))
+        const missing = miss
         remote
           .resolve(batch, { signal: new AbortController().signal })
           .then((options) => {
             const found = new Set(options.map((o) => o.value))
-            let miss = this.missing.get(columnId)
-            if (!miss) this.missing.set(columnId, (miss = new Set()))
-            for (const id of batch) if (!found.has(id)) miss.add(id)
+            for (const id of batch) if (!found.has(id)) missing.add(id)
             this.seed(columnId, options)
           })
           .catch(() => {
-            /* ham değer görünür kalır; yeniden deneme uygulamanın (D18) */
+            // Hata alan kimlik bulunamamış sayılır: ham değer görünür. Sayılmasaydı iskelet kalkınca her çizim yeniden
+            // sorardı; kalıcı hatada bu sonsuz döngüdür. Yeniden deneme uygulamanın (D18).
+            batch.forEach((id) => missing.add(id))
           })
-          .finally(() => batch.forEach((id) => flight.delete(id)))
+          .finally(() => {
+            batch.forEach((id) => flight.delete(id))
+            // Bulunamayan kimliğin hücresi de iskeletten çıkmalı: bir kez yeniden çizilir, yeniden sorulmaz.
+            this.version++
+            for (const l of this.listeners) l()
+          })
       }
     })
   }

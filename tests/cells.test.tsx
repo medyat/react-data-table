@@ -194,36 +194,43 @@ describe('seçim tipleri', () => {
     const items = await screen.findAllByRole('listitem')
     expect(items.map((li) => li.textContent)).toEqual(['AKAyşe K.', 'ETEmre T.', 'DÖDeniz Ö.', 'BYBurak Y.'])
   })
-  it('ajax: etiket çözülene kadar ham, resolve sonrası önbellekte etiket ve sürüm artar', async () => {
+  it('ajax: etiket çözülürken iskelet, resolve sonrası önbellekte etiket ve sürüm artar', async () => {
     const labels = new RemoteLabels()
     const remote = {
       search: async () => ({ items: [], hasMore: false }),
       resolve: async (ids: Array<string | number>) => ids.map((id) => ({ value: id, label: `Customer ${id}` })),
     }
     const def = col('ajax', { remote })
-    expect(render(def, 42, { id: 1 }, { ...env, labels }).text()).toBe('42')
+    const pending = render(def, 42, { id: 1 }, { ...env, labels })
+    // Ham kimlik görünmez: yavaş sorguda kullanıcı UUID okumaz.
+    expect(pending.text()).toBe('')
+    expect(pending.find('.dt-sk')?.getAttribute('aria-label')).toBe('Loading…')
     let changes = 0
     labels.subscribe(() => changes++)
     await act(() => new Promise((r) => setTimeout(r, 0)))
-    expect(changes).toBe(1)
-    expect(labels.getVersion()).toBe(1)
+    // Etiket yazılınca bir, yol bitince bir: iskeletten çıkış ayrıca haber verir.
+    expect(changes).toBe(2)
+    expect(labels.getVersion()).toBe(2)
     expect(render(def, 42, { id: 1 }, { ...env, labels }).text()).toBe('Customer 42')
   })
 })
 
 describe('ajax etiketi bulunamayınca', () => {
-  it('resolve bulamadığı id bir kez sorulur; ham değer kalır, sürüm artmaz (yeniden çizim döngüsü yok)', async () => {
+  it('resolve bulamadığı id bir kez sorulur; ham değer kalır, bir kez yeniden çizilir (döngü yok)', async () => {
     const labels = new RemoteLabels()
     const resolve = vi.fn(async () => [])
     const remote = { search: async () => ({ items: [], hasMore: false }), resolve }
     let changes = 0
     labels.subscribe(() => changes++)
     expect(labels.label('v', remote, 'P-0001')).toBe('P-0001')
+    expect(labels.loading('v', 'P-0001')).toBe(true)
     await act(() => new Promise((r) => setTimeout(r, 0)))
     expect(labels.label('v', remote, 'P-0001')).toBe('P-0001')
+    // Bulunamayan değer yüklenmiyor sayılır: hücre ham metni gösterir.
+    expect(labels.loading('v', 'P-0001')).toBe(false)
     await act(() => new Promise((r) => setTimeout(r, 0)))
     expect(resolve).toHaveBeenCalledTimes(1)
-    expect(changes).toBe(0)
+    expect(changes).toBe(1)
   })
 })
 
