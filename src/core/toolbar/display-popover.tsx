@@ -47,7 +47,7 @@ export function DisplayPopover({
     <Popover.Root open={open} onOpenChange={(o) => setOpen(o)}>
       <Popover.Trigger
         ref={trigger}
-        className={iconOnly ? 'dt-btn has-icon dt-btn-icon' : 'dt-btn has-icon'}
+        className={iconOnly ? 'dt-btn dt-btn-icon' : 'dt-btn has-icon'}
         aria-label={i18n.t('toolbar.display')}
         data-dt-tip={iconOnly ? i18n.t('toolbar.display') : undefined}
       >

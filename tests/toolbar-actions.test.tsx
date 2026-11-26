@@ -59,6 +59,19 @@ describe('araç çubuğu eylemleri (R25)', () => {
     expect(archive).toHaveBeenCalledOnce()
   })
 
+  // `.dt-btn.has-icon`'ın sol boşluğu `.dt-btn-icon`'ı ezer: ikon düğmede ortalanmaz, sağa kayar.
+  it('yazısız Display düğmesi ikon düğmesidir, yazılı düğmenin sol boşluğunu almaz', async () => {
+    render(
+      <DataTableProvider>
+        <Harness />
+      </DataTableProvider>,
+    )
+    await flush()
+    const display = screen.getByRole('button', { name: 'Display' })
+    expect(display.classList.contains('dt-btn-icon')).toBe(true)
+    expect(display.classList.contains('has-icon')).toBe(false)
+  })
+
   it('iconOnly ikincil yazısız ikon düğmesidir: adı erişilebilir ad, açıklaması tooltip', async () => {
     const load = vi.fn()
     render(
