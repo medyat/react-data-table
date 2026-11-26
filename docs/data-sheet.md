@@ -28,6 +28,7 @@ const sheet = useDataSheet({
 
 <DataSheet sheet={sheet} label="Ürünler" />
 // frame={false}: dış çerçeve uygulamanın; autoFocus: satırlar ilk gelince imleç ilk düzenlenebilir hücrede
+// (kullanıcı daha önce bir hücreye girdiyse dokunmaz: boş tabloda yazılan ilk satır odağı kaçırmaz)
 
 sheet.isDirty        // ayrılma koruması uygulamanın (yönlendirici + beforeunload)
 sheet.applyResult(results)

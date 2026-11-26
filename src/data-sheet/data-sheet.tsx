@@ -185,7 +185,10 @@ export function DataSheet<Row extends object>({
 
   const autoFocused = useRef(false)
   useLayoutEffect(() => {
-    if (!autoFocus || autoFocused.current || readOnly || !viewRows.length) return
+    if (!autoFocus || autoFocused.current || readOnly) return
+    // Kullanıcı ızgaraya girdiyse açılış odağı işini kaybetti: boş açılan tabloda ilk satır doğunca odağı geri çekmez.
+    if (store.active()) return void (autoFocused.current = true)
+    if (!viewRows.length) return
     autoFocused.current = true
     const col = columns.findIndex((_, c) => store.canEdit(0, c))
     if (col >= 0) focusCell({ row: 0, col })

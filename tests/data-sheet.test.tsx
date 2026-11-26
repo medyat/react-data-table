@@ -109,6 +109,28 @@ describe('düzenlenebilirlik', () => {
   })
 })
 
+describe('yeni satır', () => {
+  const active = () => document.querySelector('.dt-data-sheet .dt-cell[tabindex="0"]') as HTMLElement | null
+  for (const [name, rows] of [
+    ['boş tabloda', []],
+    ['dolu tabloda', loaded],
+  ] as const) {
+    it(`${name} alttaki boş satıra yazıp Tab: doğan satırın sağdaki hücresine geçer`, async () => {
+      // Uygulama ekranı autoFocus ile açar: ilk satır doğunca odağı geri çekmemeli.
+      render(<Harness rows={[...rows]} onSave={async () => {}} autoFocus />)
+      await flush()
+      const row = rows.length
+      fireEvent.pointerDown(cell(row, 1), { button: 0 })
+      fireEvent.keyDown(cell(row, 1), { key: 'Y' })
+      fireEvent.change(editor()!, { target: { value: 'Yunus' } })
+      fireEvent.keyDown(editor()!, { key: 'Tab' })
+      await flush()
+      expect(cell(row, 1).textContent).toContain('Yunus')
+      expect(active()?.dataset).toMatchObject({ row: String(row), col: '2' })
+    })
+  }
+})
+
 describe('şifre sütunu', () => {
   it('hücre maskeli; düzenleyicide değer açık, yazılır', async () => {
     const cols: Array<ColumnDef<Product>> = [columns[0]!, { id: 'note', header: 'Şifre', type: 'password' }]
