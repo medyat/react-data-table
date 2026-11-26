@@ -181,16 +181,19 @@ export function Toolbar({
 
 function ActionButton({ action, ...rest }: { action: ToolbarAction; 'data-dt-action'?: boolean }) {
   const Icon = action.icon
+  const iconOnly = action.iconOnly && Icon
   return (
     <button
       type="button"
-      className={action.checked ? 'dt-btn has-icon is-active' : 'dt-btn has-icon'}
+      className={`dt-btn ${iconOnly ? 'dt-btn-icon' : 'has-icon'}${action.checked ? ' is-active' : ''}`}
       aria-pressed={action.checked}
+      aria-label={iconOnly ? action.label : undefined}
+      data-dt-tip={action.description ?? (iconOnly ? action.label : undefined)}
       onClick={action.run}
       {...rest}
     >
       {Icon && <Icon size={16} aria-hidden="true" />}
-      {action.label}
+      {!iconOnly && action.label}
     </button>
   )
 }

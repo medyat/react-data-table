@@ -162,6 +162,10 @@ export interface ToolbarAction {
   checked?: boolean
   /** Hep ⋯ menüsünde; düğme olarak çizilmez. */
   menu?: boolean
+  /** Düğme yazısız ikondur (`icon` gerekir); `label` erişilebilir ad, ⋯ menüsünde yazı olarak kalır. */
+  iconOnly?: boolean
+  /** Düğmenin tooltip'i; verilmezse ikon düğmesinde `label`. */
+  description?: string
   run: () => void
 }
 

@@ -561,9 +561,6 @@
   font-weight: 500;
   cursor: pointer;
 }
-.dt-bulk-btn > svg {
-  color: var(--dt-bulk-fg-2);
-}
 .dt-bulk-btn:hover,
 .dt-bulk-btn[data-state='open'],
 .dt-bulk-btn[data-popup-open] {

@@ -348,7 +348,7 @@ oturunca çıkar.
   Flex satırında öğeler üst üste binemez, yalnızca boşluk daralır.
 - Display her genişlikte yazısız ikondur, adı tooltip'tedir (D43'teki "masaüstünde etiketli" kalkar).
 - Eylemler tanımdır: `primaryAction` (tek; `label`, `icon`, `run`) ve `actions` (`ToolbarAction[]`: `checked` aç/kapa,
-  `menu` hep ⋯ içinde). Paket ne olduklarını bildiği için genişliğe göre daraltır: ikinciller listedeki sırayla
+  `menu` hep ⋯ içinde, `iconOnly` yazısız ikon düğmesi: ad erişilebilir ad, `description` ya da ad tooltip'te). Paket ne olduklarını bildiği için genişliğe göre daraltır: ikinciller listedeki sırayla
   önceliklidir, sığmayan sondan başlayarak ⋯ menüsünün üstüne iner; hiçbiri kalmayınca birincil yalnızca ikondur.
   Genişlikler görünmez ölçü alanından okunur (`fitActions`, R23'teki yöntem). Telefonda ikinciller ⋯ sayfasındadır.
 - `toolbarEnd` serbest içerik olarak kalır (R3) ama paket onu daraltamaz; eylem için kullanılmaz.

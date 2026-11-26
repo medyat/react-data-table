@@ -58,4 +58,23 @@ describe('araç çubuğu eylemleri (R25)', () => {
     fireEvent.click(item)
     expect(archive).toHaveBeenCalledOnce()
   })
+
+  it('iconOnly ikincil yazısız ikon düğmesidir: adı erişilebilir ad, açıklaması tooltip', async () => {
+    const load = vi.fn()
+    render(
+      <DataTableProvider>
+        <Harness
+          actions={[
+            { id: 'import', label: 'Import', description: 'Import rows from Excel', icon: DownloadIcon, iconOnly: true, run: load },
+          ]}
+        />
+      </DataTableProvider>,
+    )
+    await flush()
+    const button = screen.getByRole('button', { name: 'Import' })
+    expect(button.textContent).toBe('')
+    expect(button.getAttribute('data-dt-tip')).toBe('Import rows from Excel')
+    fireEvent.click(button)
+    expect(load).toHaveBeenCalledOnce()
+  })
 })
