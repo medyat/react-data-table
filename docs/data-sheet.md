@@ -185,8 +185,9 @@ Vue 07 §13 ve D46, şu farklarla:
 - Excel'deki boş hücre mevcut değeri silmez. İçe aktarma tek geri al adımıdır.
 - **Penceresiz içe aktarma (R45):** `sheet.importRows(records, { addNew = true })` uygulamanın başka bir sistemden
   getirdiği kayıtları alır. Kayıt sütun kimliğiyle yazılır (`{ code, title }`); değer dosya hücresi gibi çözülür (sayı
-  ham metniyle, seçim değer ya da etiketle, `ajax` `remote.match` ile), eşleme ve sayılar penceredekiyle aynıdır, alan
-  listesi yine görünen sütunlardır. Tümü görünümüne geçer, tek geri al adımıdır; `maxRows` aşılırsa hiçbir şey
+  ham metniyle, seçim değer ya da etiketle, `ajax` `remote.match` ile), eşleme ve sayılar penceredekiyle aynıdır. Alan
+  listesi görünen sütunlardır; kayıtların doldurduğu gizli alan sütunu önce açılır (gizli sütun değişikliğe girmez,
+  yazılan kaydedilmezdi), yazma yeni çizimden sonradır. Tümü görünümüne geçer, tek geri al adımıdır; `maxRows` aşılırsa hiçbir şey
   yazılmaz ve söz reddedilir. Bildirim uygulamanındır.
 
 **Dışa aktarma:** liste tablosunun yazıcısı (`core/export`), taslak değerlerle ve listenin bütün satırlarıyla. Seçim

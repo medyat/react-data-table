@@ -363,23 +363,28 @@ describe('içe ve dışa aktarma', () => {
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Vazgeç' })))
     await expect(done).resolves.toBeNull()
   })
-  it('importRows: kayıtlar dosya gibi eşlenir; gizli sütuna yazılmaz; boş anahtar yeni satır; tek geri al adımı', async () => {
+  it('importRows: kayıtlar dosya gibi eşlenir; değer alan gizli sütun açılır; boş anahtar yeni satır; tek geri al adımı', async () => {
     await open()
-    let result: unknown
-    await act(async () => {
-      result = await sheet.importRows([
+    let result: Promise<unknown> = Promise.resolve()
+    // Gizli sütun açılınca içe aktarma yeni çizimi bekler: act içinde beklenirse çizim act'in sonuna kalır.
+    act(() => {
+      result = sheet.importRows([
         { code: 'B-1', title: 'Vana X' },
         { code: 'C-1', title: 'Conta', price: 5.5, note: 'gizli' },
         { code: null, title: 'Kodsuz' },
       ])
     })
-    expect(result).toEqual({ updated: 1, added: 2 })
+    await act(async () => {
+      await expect(result).resolves.toEqual({ updated: 1, added: 2 })
+    })
     await flush()
     expect(cell(1, 1).textContent).toBe('Vana X')
     expect(cell(2, 0).textContent).toBe('C-1')
     expect(cell(2, 2).textContent).toContain('5,5')
     expect(cell(3, 1).textContent).toBe('Kodsuz')
-    expect(sheet.getChanges().rows.find((r) => r.row.code === 'C-1')?.row.note ?? null).toBeNull()
+    // Gizli sütun değişikliğe girmez: değer alan açılır, yoksa yazılan kaydedilmezdi.
+    expect(sheet.internal.state.hidden.has('note')).toBe(false)
+    expect(sheet.getChanges().rows.find((r) => r.row.code === 'C-1')?.values.note).toBe('gizli')
     expect(sheet.summary.newRows).toBe(2)
     await act(async () => sheet.undo())
     expect(sheet.isDirty).toBe(false)
@@ -397,6 +402,8 @@ describe('içe ve dışa aktarma', () => {
         ),
       ).resolves.toEqual({ updated: 1, added: 0 })
     })
+    // Kayıtlarda değeri olmayan gizli sütun gizli kalır.
+    expect(sheet.internal.state.hidden.has('note')).toBe(true)
     await act(async () => sheet.undo())
     const many = Array.from({ length: 10_000 }, (_, i) => ({ code: `N-${i}`, title: 'x' }))
     await act(async () => {

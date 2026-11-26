@@ -1,7 +1,7 @@
 // DataSheet'in durumu (docs/data-sheet.md §1, §4, §5): taban (yüklenen + kaydedilen satırlar), taslak satır listesi,
 // sunucu hataları, kalıcı satır no ve kayıt ilerlemesi. Hücre motoru FormGrid'inki; depo burada kurulur, ızgara onu
 // kullanır. Uygulamanın `rows` dizisine dokunulmaz.
-import { useRef, useState, useSyncExternalStore, type RefObject } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react'
 import type { ColumnDef } from '../types/columns'
 import type {
   DataSheetOptions,
@@ -399,6 +399,53 @@ export function useDataSheet<Row extends object>(options: DataSheetOptions<Row>)
     else void run(changes)
   }
 
+  // Gizli sütun açılınca store yeni sütunlarını çizimde alır; bekleyen içe aktarma çizimden sonra sürer.
+  const rendered = useRef<Array<() => void>>([])
+  const latestImport = useRef<typeof importRows>(null)
+
+  const writable = (c: ColumnDef<Row>) => !c.accessor && c.editable !== false && !c.editor?.window
+  const importRows = async (
+    records: ReadonlyArray<Record<string, unknown>>,
+    { addNew = true }: { addNew?: boolean } = {},
+  ): Promise<SheetImportResult | null> => {
+    if (readOnly) return null
+    // Değişiklik gizli sütunu taşımaz: kayıtların doldurduğu gizli sütun önce açılır, yoksa yazılan kaydedilmezdi.
+    const reveal = new Set(
+      ordered
+        .filter((c) => s.hidden.has(c.id) && writable(c) && records.some((r) => !isEmptyValue(readPath(r, c.id))))
+        .map((c) => c.id),
+    )
+    if (reveal.size) {
+      await new Promise<void>((done) => {
+        rendered.current.push(done)
+        setState((p) => ({ ...p, hidden: new Set([...p.hidden].filter((id) => !reveal.has(id))) }))
+      })
+      return latestImport.current!(records, { addNew })
+    }
+    // Penceredeki alan listesi: görünen, değerle yazılan, pencere editörü olmayan sütunlar (store'un sırası).
+    const shown = ordered.filter((c) => !s.hidden.has(c.id))
+    const mapping = shown.flatMap((c, i) => (writable(c) ? [i] : []))
+    const plan = await resolveImport({
+      data: records.map((r) => mapping.map((i) => toFileCell(readPath(r, shown[i]!.id)))),
+      mapping,
+      columns: shown,
+      rows: s.rows,
+      keyColumn: key,
+      addNew,
+      labels,
+      env: parseEnv,
+    })
+    if (s.rows.length + plan.added > (options.maxRows ?? MAX_ROWS)) throw new Error('maxRows')
+    setState((p) => ({ ...p, view: 'all', viewIds: null }))
+    if (plan.cells.length && !store.importCells(plan.cells)) return null
+    return { updated: plan.updated, added: plan.added }
+  }
+
+  useEffect(() => {
+    latestImport.current = importRows
+    for (const done of rendered.current.splice(0)) done()
+  })
+
   const canUndo = useSyncExternalStore(store.subscribe, store.canUndo)
   const canRedo = useSyncExternalStore(store.subscribe, store.canRedo)
 
@@ -432,26 +479,7 @@ export function useDataSheet<Row extends object>(options: DataSheetOptions<Row>)
         if (readOnly) return resolve(null)
         setState((p) => ({ ...p, view: 'all', viewIds: null, importing: resolve }))
       }),
-    importRows: async (records, { addNew = true } = {}) => {
-      if (readOnly) return null
-      // Penceredeki alan listesi: görünen, değerle yazılan, pencere editörü olmayan sütunlar (store'un sırası).
-      const shown = ordered.filter((c) => !s.hidden.has(c.id))
-      const mapping = shown.flatMap((c, i) => (!c.accessor && c.editable !== false && !c.editor?.window ? [i] : []))
-      const plan = await resolveImport({
-        data: records.map((r) => mapping.map((i) => toFileCell(readPath(r, shown[i]!.id)))),
-        mapping,
-        columns: shown,
-        rows: s.rows,
-        keyColumn: key,
-        addNew,
-        labels,
-        env: parseEnv,
-      })
-      if (s.rows.length + plan.added > (options.maxRows ?? MAX_ROWS)) throw new Error('maxRows')
-      setState((p) => ({ ...p, view: 'all', viewIds: null }))
-      if (plan.cells.length && !store.importCells(plan.cells)) return null
-      return { updated: plan.updated, added: plan.added }
-    },
+    importRows,
     exportFile: ({ format, name, columns = 'visible' }) =>
       exportFile({
         format,
