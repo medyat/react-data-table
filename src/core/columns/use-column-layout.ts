@@ -58,6 +58,8 @@ export interface LayoutColumn<Row extends object = object> {
 /** İç içe başlığın bir grup hücresi (`group`). Konum, başlık satırındaki sütun sırasıdır: sabit + orta, dolgu, sağ sabit. */
 export interface HeaderGroupCell<Row extends object = object> {
   key: string
+  /** Grup sütununun kimliği (`group:…`): bölünen grubun parçaları aynıdır. */
+  group: string
   label: string
   /** İlk yaprak sütunun sırası (0'dan), dolgu track'i sayılır. */
   from: number
@@ -258,10 +260,14 @@ export function useColumnLayout<Row extends object>(options: ColumnLayoutOptions
         const row = (groups[level] ??= [])
         let from = 0
         for (const h of hg.headers) {
+          // Sabitleme sınırında bitişik devam eden grup adını bir kez yazar: sabit parça taşır, kayan parça boş kalır.
+          const prev = row.at(-1)
+          const continued = prev?.group === h.column.id && prev.from + prev.span === r.at + from
           if (!h.isPlaceholder && h.colSpan > 0)
             row.push({
               key: h.id,
-              label: String(h.column.columnDef.header),
+              group: h.column.id,
+              label: continued ? '' : String(h.column.columnDef.header),
               from: r.at + from,
               span: h.colSpan,
               pin: r.family === 'start' ? r.layout[from]! : r.family === 'end' ? r.layout[from + h.colSpan - 1]! : null,

@@ -132,6 +132,8 @@ export function HeaderCell<Row extends object>({
     column.pinned === 'start' && 'is-pinned-start',
     column.pinned === 'end' && 'is-pinned-end',
     column.pinEdge && 'is-pin-edge',
+    // Grupsuz sabit sütun üstteki grup satırını da kaplar: kayan grup başlığı altından görünmez (grid.css).
+    column.pinned && def.group === undefined && 'is-ungrouped',
     resizing >= 0 && 'is-resizing',
     menuOpen && 'is-menu-open',
     // ⋯ yoksa (FormGrid) etiket ona yer açmak için kaymaz.

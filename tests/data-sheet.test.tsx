@@ -313,6 +313,33 @@ describe('uygulamanın araç çubuğu için komutlar', () => {
     await act(async () => sheet.save())
     expect(onSave.mock.calls[0]![0].rows[0]!.values).toEqual({ code: 'A-1', title: 'Pompa 2' })
   })
+  it('Sütunlar penceresi listedeki gibi son sütunu sona sabitler; anahtar başta kalır', async () => {
+    await open()
+    const head = () => [...document.querySelectorAll<HTMLElement>('.dt-data-sheet .dt-head .dt-head-cell')]
+    const pinnedEnd = () =>
+      head()
+        .filter((h) => h.matches('.is-pinned-end:not(.dt-cell-menu)'))
+        .map((h) => h.textContent)
+    expect(pinnedEnd()).toEqual([])
+    await act(async () => sheet.openColumns())
+    fireEvent.click(await screen.findByText('Son sütun'))
+    fireEvent.click(screen.getByRole('button', { name: 'Kaydet' }))
+    await flush()
+    expect(pinnedEnd()).toEqual(['Fiyat'])
+    expect(
+      head()
+        .find((h) => h.textContent === 'Kod')
+        ?.classList.contains('is-pinned-start'),
+    ).toBe(true)
+    // Klavyeyle gidilen hücre sabit sütunların altında kalmaz: scrollIntoView'ün payı iki yandaki sabit genişlik.
+    const grid = document.querySelector<HTMLElement>('.dt-data-sheet .dt-form-grid')!
+    expect(grid.style.getPropertyValue('--dt-fg-pin-start')).toMatch(/^\d+px$/)
+    expect(parseFloat(grid.style.getPropertyValue('--dt-fg-pin-start'))).toBeGreaterThan(0)
+    expect(grid.style.getPropertyValue('--dt-fg-pin-end')).toMatch(/^calc\([1-9]\d*px \+ /)
+    // Pencere yeniden açılınca seçim durur.
+    await act(async () => sheet.openColumns())
+    expect((await screen.findByText('Son sütun')).querySelector('[data-state="checked"]')).toBeTruthy()
+  })
   it('undo / redo kancadan; canUndo değişiklikle açılır', async () => {
     await open()
     expect(sheet.canUndo).toBe(false)

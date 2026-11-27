@@ -147,7 +147,8 @@ Tek düzen; belgede de form içinde de aynı (POS tablosu için ayrı "gömülü
 - Solda satır numarası (gutter; hatalı satırda kırmızı ikon), sağda sabit eylem sütunu: kalem + ⋯.
 - Başlık yapışkan; satırlar sayfa ya da Sheet gövdesiyle kayar, tablo kendi içinde dikey kaymaz.
 - Yatay kaydırma tablonun kendi çubuğuyla değil, alt çubuğun hemen üstündeki her zaman görünen çubukla;
-  ikisi birlikte yapışkan alt. Satır no ve birinci sütun solda sabit.
+  ikisi birlikte yapışkan alt. Satır no ve birinci sütun solda sabit. DataSheet'te Sütunlar penceresi listedeki
+  gibi ilk / son bir-iki sütunu da sabitler (konumsal); sona sabit sütunlar eylem sütununun solunda durur.
 - Sütun sırası verilen `columns` dizisinin sırasıdır. Sonradan gelen sütun (gizliyken açılan, geç yüklenen) sona
   değil, dizideki yerine girer.
 - Altta her zaman bir boş satır (`maxRows` dolana kadar).
@@ -289,7 +290,11 @@ tablolar içindir; bütün belgelerin detayı (sipariş ve teklif dahil) göster
 - Başlık satırlarını TanStack kurar (`buildHeaderGroups`, bölge başına): `group`'lu sütunlar grup sütunlarının
   altına girer, sıra tanımdaki gibi kalır (`columnOrder` hep tam). Grup başlığı yan yana duran sütunları kaplar.
 - Grup bölünebilir (AG Grid'in varsayılanı): taşıma, Sütunlar penceresinde sürükleme ya da sabitleme araya girerse
-  aynı grup iki başlık olur. Grubu bir arada tutan seçenek (`marryChildren`) yok; ihtiyaç çıkınca eklenir.
+  aynı grup iki başlık olur. Sabitleme sınırında bitişik devam eden parça adı tekrarlamaz: ad sabit parçada, kayan
+  parça boş (ızgaranın birinci sütunu hep sabit; gruplu anahtar sütunda ad iki kez yazılıyordu). Grubu bir arada
+  tutan seçenek (`marryChildren`) yok; ihtiyaç çıkınca eklenir.
+- Kayan grubun ve sola yaslı sütunun adı yapışkandır: sağa kaydırınca sabit sütunların yanında kalır, kendi
+  hücresinin sonuna kadar (`--dt-pin-start-w`). Sağa yaslı başlık zaten hücrenin sağ ucunda. Grupsuz sabit sütunun başlığı grup satırını da kaplar; kayan grup altından görünmez.
 - Gizli sütun grubu daraltır; grubun hepsi gizliyse grup satırı da kalkar.
 - Grup satırları `.dt-head`'in üst grid satırlarıdır; tutamaç, seçim, satır no ve menü sütunu bütün satırları kaplar.
   Sabit grup hücresi sticky'dir (soldakinde ilk, sağdakinde son yaprağın ofseti).

@@ -71,6 +71,10 @@ describe('başlık ve eşleme', () => {
       null,
     ])
   })
+  it('gruplu sütun dışa aktarmanın yazdığı tam adla da eşleşir ("Kimlik · Kod"), kısa adla da', () => {
+    const grouped = columns.map((c) => ({ ...c, group: 'Kimlik' }))
+    expect(matchColumns(['Kimlik · Kod', 'ürün adı'], grouped)).toEqual(['code', 'title'])
+  })
 })
 
 describe('hücre çevirisi', () => {

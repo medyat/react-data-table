@@ -48,6 +48,8 @@ export interface SheetState<Row extends object> {
   hidden: Set<string>
   /** Sütunların sırası (Sütunlar penceresi); başta tanımların sırası. */
   order: string[]
+  /** Sabitlenen sütun sayısı (Sütunlar penceresi, listedeki gibi konumsal): anahtardan sonraki ilk `start`, son `end`. */
+  pins: { start: number; end: number }
   columnsOpen: boolean
   view: SheetView
   /** Daraltılmış görünümün satırları; seçildiği anın fotoğrafı (düzelen satır imlecin altından kaçmaz, Vue 07 §11). */
@@ -197,6 +199,7 @@ export function useDataSheet<Row extends object>(options: DataSheetOptions<Row>)
       next: base.size + 1,
       hidden: new Set(options.columns.filter((c) => c.hidden).map((c) => c.id)),
       order: options.columns.map((c) => c.id),
+      pins: { start: 0, end: 0 },
       columnsOpen: false,
       view: 'all',
       viewIds: null,

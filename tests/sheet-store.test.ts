@@ -758,3 +758,26 @@ describe('gösterim (R41)', () => {
     expect(store.range()).toEqual({ top: 0, bottom: 1, left: 1, right: 1 })
   })
 })
+
+describe('içe aktarma kilidi', () => {
+  type R = { kind: string | null; target: string | null }
+  // Hedef yalnız türü "x" olan satırda yazılır (fiyat kuralı: Kime "Cari" ise Cari hücresi).
+  const columns: Array<ColumnDef<R>> = [
+    { id: 'kind', header: 'Tür', type: 'string' },
+    { id: 'target', header: 'Hedef', type: 'string', editable: (r) => r.kind === 'x' },
+  ]
+  it('kilit, aynı içe aktarmada önce yazılan alanlarla sorulur; türü uymayan satırda hedef yine atlanır', () => {
+    let rows: R[] = [{ kind: 'y', target: null }]
+    const store = createSheetStore<R>({ rows, columns, onRowsChange: (next) => (rows = next) })
+    expect(
+      store.importCells([
+        { row: 0, col: 1, value: 'kilitli' },
+        { row: 1, col: 0, value: 'x' },
+        { row: 1, col: 1, value: 'C-1' },
+        { row: 2, col: 0, value: 'y' },
+        { row: 2, col: 1, value: 'yazılmaz' },
+      ]),
+    ).toBe(true)
+    expect(rows).toEqual([{ kind: 'y', target: null }, { kind: 'x', target: 'C-1' }, { kind: 'y' }])
+  })
+})

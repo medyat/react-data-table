@@ -186,7 +186,7 @@
    alt çizgi gösterir, iç boşluk kadar içeriden: bölünmüş iki grup yan yana birleşmez. Grupsuz sütunun üstü boş kalır.
    Yapraklar ve dolgu alt satırda, ön / son hücreler (tutamaç, seçim, satır no, menü) bütün satırları kaplar. */
 .dt-head {
-  --dt-group-h: calc(var(--dt-head-h) * 0.7);
+  --dt-group-h: var(--dt-head-h);
   /* Açık tek satır: aşağıdaki satır numaraları grupsuz başlıkta da o satırı gösterir (grup varken satırlar inline).
      1fr: başlığın yüksekliği alt çizgiyi içerir; satıra token verilirse hücreler 1 px taşıp çizgiyi örter. */
   grid-template-rows: 1fr;
@@ -195,13 +195,16 @@
 .dt-head > .dt-cell-fill {
   grid-row: -2;
 }
-/* Bütün satırları kaplar (sabitken kayan grup başlığını örter); içeriği yaprak satırının ortasında durur. */
-.dt-head > :is(.dt-head-handle, .dt-head-select, .dt-head-menu-col, .dt-gutter, .dt-cell-menu) {
+/* Bütün satırları kaplar (sabitken kayan grup başlığını örter); içeriği yaprak satırının ortasında durur. Grupsuz
+   sabit yaprak da öyle: üstü boş kalsa kayan grubun adı ve çizgisi altından görünürdü. */
+.dt-head > :is(.dt-head-handle, .dt-head-select, .dt-head-menu-col, .dt-gutter, .dt-cell-menu),
+.dt-head > .dt-head-cell[data-col].is-ungrouped {
   grid-row: 1 / -1;
   padding-top: var(--dt-head-groups, 0px);
 }
 .dt-head-cell.dt-head-group {
-  font-size: var(--dt-ui-fs-sm);
+  /* Yaprak başlığıyla aynı boy: ayrım kalınlıkta. */
+  font-size: var(--dt-fs-head);
   font-weight: 600;
   color: var(--dt-text-2);
 }
@@ -217,6 +220,18 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+/* Kayan grubun ve sola yaslı sütunun adı sağa kaydırınca sabit sütunların yanında kalır, kendi hücresinin sonuna
+   kadar (hücre sticky'nin sınırı). `--dt-pin-start-w`: soldaki sabit bölgenin genişliği, ızgaralar yazar. Sağa yaslı
+   başlık zaten hücrenin sağ ucunda, son görünen yer orası. */
+.dt-head-group:not(.is-pinned-start):not(.is-pinned-end) .dt-head-group-text {
+  position: sticky;
+  left: calc(var(--dt-pin-start-w, 0px) + var(--dt-cell-x));
+}
+.dt-head > .dt-head-cell[data-col]:not(.is-pinned-start, .is-pinned-end, .is-right) .dt-head-label {
+  position: sticky;
+  /* Etiketin -4 px payı (hover zemini) hesaba katılır: yazı grup adıyla aynı çizgide. */
+  left: calc(var(--dt-pin-start-w, 0px) + var(--dt-cell-x) - 4px);
 }
 
 /* Header hücresi (05 §4 · Header, T4). */

@@ -414,6 +414,13 @@
 .dt-form-grid[data-density='standard'] {
   --dt-row-h: 42px;
 }
+/* DataSheet tam sayfa ve uzun süre yazılır: belge satırından bir adım iri (yazı ve satır). */
+.dt-data-sheet .dt-form-grid[data-density='standard'] {
+  --dt-row-h: 48px;
+  --dt-head-h: 44px;
+  --dt-fs: 15px;
+  --dt-fs-head: 14px;
+}
 /* Kalem ve ⋯ tek grup: aralarında 2 px (menuW aynı sayıyla). */
 .dt-form-grid .dt-cell-menu {
   gap: 2px;
@@ -447,9 +454,14 @@
 .dt-form-grid .dt-row:has(> .dt-cell.is-active) {
   z-index: 1;
 }
-/* Klavyeyle odaklanan hücre yapışkan başlığın ve alt çubuğun altında kalmaz. */
+/* Klavyeyle odaklanan hücre yapışkan başlığın, alt çubuğun ve iki yandaki sabit sütunların altında kalmaz. */
 .dt-form-grid .dt-cell[data-row] {
-  scroll-margin: var(--dt-fg-head-h, var(--dt-head-h)) 0 var(--dt-fg-foot-h, 48px);
+  scroll-margin: var(--dt-fg-head-h, var(--dt-head-h)) var(--dt-fg-pin-end, 0px) var(--dt-fg-foot-h, 48px)
+    var(--dt-fg-pin-start, 0px);
+}
+.dt-form-grid .dt-cell[data-row].is-pinned-start,
+.dt-form-grid .dt-cell[data-row].is-pinned-end {
+  scroll-margin-inline: 0;
 }
 /* Yapışkan alt çubuk kaydırma kutusunun iç boşluğunun kenarında durur; altındaki şeritte satırlar görünürdü. Uygulama
    kutunun alt boşluğunu eksi olarak verir (Swors Sheet gövdesi: -18px), çubuk kutunun kenarına yapışır. */

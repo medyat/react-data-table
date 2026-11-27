@@ -4,6 +4,7 @@ import Decimal from 'decimal.js'
 import type { ColumnDef } from '../../types/columns'
 import { isEmptyValue } from '../../core/cells/format'
 import { TYPE_SPECS } from '../../core/cells/specs'
+import { columnName } from '../../core/columns/column-name'
 import { readPath } from '../../core/columns/read-path'
 import { isDecimalType } from '../../core/format/decimal'
 import { parseInput, type ParseEnv } from '../../core/sheet/parse'
@@ -43,8 +44,9 @@ export function detectHeaderRow(rows: FileCell[][]): number {
 }
 
 /**
- * Her dosya sütunu için alan id'si ya da null. Yalnız tek ve kesin eşleşme: başlık sütunun `header`'ı, `id`'si ya da
- * `importAliases`'ından biriyle aynıysa ve bunu tek alan veriyorsa. Bir alan iki dosya sütununa verilmez (ilki alır).
+ * Her dosya sütunu için alan id'si ya da null. Yalnız tek ve kesin eşleşme: başlık sütunun `header`'ı, dışa aktarmanın
+ * yazdığı tam adı (gruplu sütunda "Grup · Ad"), `id`'si ya da `importAliases`'ından biriyle aynıysa ve bunu tek alan
+ * veriyorsa. Bir alan iki dosya sütununa verilmez (ilki alır).
  */
 export function matchColumns<Row extends object>(
   headers: string[],
@@ -54,7 +56,9 @@ export function matchColumns<Row extends object>(
   return headers.map((h) => {
     const key = normalize(h)
     if (!key) return null
-    const hits = fields.filter((f) => [f.header, f.id, ...(f.importAliases ?? [])].some((n) => normalize(n) === key))
+    const hits = fields.filter((f) =>
+      [f.header, columnName(f), f.id, ...(f.importAliases ?? [])].some((n) => normalize(n) === key),
+    )
     const id = hits.length === 1 ? hits[0]!.id : null
     if (!id || used.has(id)) return null
     used.add(id)

@@ -497,6 +497,9 @@ oturunca çıkar.
 - Formda satır elle doldurulur: sıkışık 36 px dar, listenin standart 48 px'i boşluklu. FormGrid'in standart yoğunluğu
   42 px (`.dt-form-grid[data-density='standard']`), varsayılan yoğunluk `standard`; yazı ve iç boşluk standarttaki gibi.
   Liste tablosu 48 px'te kalır. Satır yüksekliği `--dt-row-h`'den okunur, sanal kaydırma aynı sayıyı kullanır.
+- DataSheet (toplu kayıt) tam sayfa ve uzun süre yazılır: standartta 48 px satır, 44 px başlık, yazı 15 / başlık
+  14 px (`.dt-data-sheet .dt-form-grid`). Belge satırı ızgarası 42 px'te kalır. Grup başlığı yaprak başlığıyla aynı
+  boy ve yükseklikte; ayrım kalınlıkta.
 - Kalem ve ⋯ arası 2 px (tek düğme grubu); üzerine gelince ⋯ de kalem gibi ghost zemin alır.
 
 ## R41 · FormGrid gösterimi: `readOnly`, `onRowOpen`, `rowHeight="auto"` (form-grid.md §1 ve §9'u değiştirir)
@@ -561,6 +564,10 @@ oturunca çıkar.
   çözülür; görünen alan sütunları yazılır (§6). Kayıtların doldurduğu gizli sütun önce açılır: gizli sütun
   değişikliğe girmez, kullanıcı gönderileni görür (Swors: kasa bakiyesi). Store sütunlarını çizimde aldığı için yazma
   açılışın çiziminden sonradır; testte `importRows` `act` içinde beklenmez. Vue'da karşılığı yok.
+- İçe aktarmada (pencere ve `importRows`) bir hücrenin kilidi (`editable(row)`) satırın aynı içe aktarmada önce yazılan
+  alanlarıyla sorulur: kayıt türü ve türe bağlı hedefi birlikte getirir (Swors fiyat kuralı: Kime "Cari" + cari kodu).
+  Eski satıra sorulsa yeni satırın hedefi hep kilitli kalır ve sessizce düşerdi. Hücreler sütun sırasıyla yazılır; kilidi
+  belirleyen sütun hedefinden solda olmalıdır.
 - Satırları `rows` tabanına koymak yeni satır yerine kayıtlı satır sayılmalarına yol açardı; eşlemeyi uygulamada
   yazmak paketin içe aktarma kurallarını kopyalardı.
 

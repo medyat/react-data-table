@@ -221,6 +221,9 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
     kind: SheetChange['kind'],
     // Yapıştırma boş Excel satırını da satır yapar: yoksa ardındaki satırların sırası kayar ve hepsi düşerdi.
     create = false,
+    // Kilit yazılırken, satırın bu işlemde yazılmış hâline sorulur: içe aktarılan kayıt türünü ve türe bağlı hedefi
+    // birlikte getirir (Kime "Cari" + cari kodu); eski satıra sorulsa yeni satırın hedefi hep kilitli kalırdı.
+    lockAsWritten = false,
   ) => {
     const next = [...rows]
     const patches: Patch[] = []
@@ -251,7 +254,8 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
         added.push({ id: idOf(row), base })
         next.push(row)
       } else if (same(readPath(row, def.id), c.value)) continue
-      else if (isEmptyValue(c.value) && derived.has(`${c.row}:${def.id}`)) continue
+      if (lockAsWritten && !canEdit(c.row, c.col, row)) continue
+      if (isEmptyValue(c.value) && derived.has(`${c.row}:${def.id}`)) continue
       put(c.row, def.id, c.value)
       const extra = def.onChange?.(next[c.row]!, c.value, { option: o.optionOf?.(def, c.value), rows: next })
       for (const [path, value] of Object.entries(extra ?? {})) {
@@ -565,14 +569,13 @@ export function createSheetStore<Row extends object>(options: SheetStoreOptions<
           if (canEdit(row, col)) cells.push({ row, col, value: readPath(rows[source]!, o.columns[col]!.id) })
       write(cells, 'fill')
     },
-    /** DataSheet içe aktarması: hücreler satır sırasıyla, listenin sonundakiler satır doğurur; kilitli hücre atlanır. Tek geri al adımı. */
+    /**
+     * DataSheet içe aktarması: hücreler satır sırasıyla, listenin sonundakiler satır doğurur; kilitli hücre atlanır.
+     * Kilit satırın aynı içe aktarmada önce yazılan alanlarıyla sorulur. Tek geri al adımı.
+     */
     importCells(cells: Array<{ row: number; col: number; value: unknown }>): boolean {
       if (o.readOnly || editing) return false
-      return write(
-        cells.filter((c) => canEdit(c.row, c.col)),
-        'import',
-        true,
-      )
+      return write(cells, 'import', true, true)
     },
     /** Tutamaç sürüklenirken hedef satır (aralığın altı; yalnız var olan satırlar). */
     previewFill(to: number) {

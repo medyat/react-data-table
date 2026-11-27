@@ -164,6 +164,20 @@ describe('iç içe başlık (group, F5)', () => {
     ])
     expect(pinned.groups[0]![0]!.edge).toBe(true)
   })
+  it('sabitleme sınırında bitişik devam eden grup adını bir kez yazar: sabit parça taşır, kayan parça boş', () => {
+    const api = renderHook(() =>
+      useColumnLayout<Order>({
+        columns: grouped,
+        layout: { order: ['number', 'value', 'dueAt', 'customer'], pinned: { left: ['value'], right: [] } },
+      }),
+    ).result.current
+    expect(cells(api)).toEqual([
+      [
+        ['İndirim', 1, 1, 'start'],
+        ['', 2, 1, null],
+      ],
+    ])
+  })
   it('gizli yaprak grubu daraltır, hepsi gizliyse grup satırı da kalkar', () => {
     const one = renderHook(() =>
       useColumnLayout<Order>({

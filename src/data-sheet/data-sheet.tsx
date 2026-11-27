@@ -207,6 +207,11 @@ export function DataSheet<Row extends object>({
     }
   }
 
+  // Sabitleme konumsal (listedeki gibi): anahtar hep başta; ondan sonraki ilk `start` ve son `end` görünür sütun.
+  const free = columns.slice(1).map((c) => c.id)
+  const pinStart = free.slice(0, s.pins.start)
+  const pinEnd = s.pins.end ? free.slice(pinStart.length).slice(-s.pins.end) : []
+
   const closeConfirm = (open: boolean) => !open && setState((p) => ({ ...p, confirm: null }))
   const maxRows = options.maxRows ?? MAX_ROWS
 
@@ -217,6 +222,7 @@ export function DataSheet<Row extends object>({
           readOnly
           rows={viewRows}
           columns={columns}
+          pinned={{ start: pinStart, end: pinEnd }}
           label={label}
           getRowId={idOf}
           newRow={newRow}
@@ -238,6 +244,7 @@ export function DataSheet<Row extends object>({
           onRowsChange={onRowsChange}
           rows={viewRows}
           columns={columns}
+          pinned={{ start: pinStart, end: pinEnd }}
           label={label}
           getRowId={idOf}
           newRow={newRow}
@@ -260,20 +267,20 @@ export function DataSheet<Row extends object>({
           <ColumnsDialog
             open
             onOpenChange={(open) => !open && setState((p) => ({ ...p, columnsOpen: false }))}
-            pinnable={false}
             columns={ordered.map((def) => ({
               id: def.id,
               def,
               visible: !s.hidden.has(def.id),
-              pinned: null,
+              pinned: pinStart.includes(def.id) ? 'start' : pinEnd.includes(def.id) ? 'end' : null,
               canHide: def.required !== true,
               // Anahtar satırları tanıtır: başta kilitli durur, gizlenmez.
               fixed: def.id === key,
             }))}
-            onSave={({ order, visible }) =>
+            onSave={({ order, visible, start, end }) =>
               setState((p) => ({
                 ...p,
                 order,
+                pins: { start, end },
                 hidden: new Set(order.filter((id) => !visible.includes(id))),
               }))
             }

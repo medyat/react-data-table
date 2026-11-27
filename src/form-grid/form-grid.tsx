@@ -215,6 +215,8 @@ export interface SheetGridExtras<Row extends object> {
   removeLabel?: (count: number) => string
   /** Uzak seçenek etiketleri (DataSheet içe aktarması eşleşen seçenekleri buraya yazar). */
   labels?: RemoteLabels
+  /** Birinci sütundan sonra başa ve sona sabitlenen sütunlar (DataSheet'in Sütunlar penceresi). */
+  pinned?: { start: string[]; end: string[] }
 }
 
 export function FormGrid<Row extends object>(props: FormGridProps<Row>) {
@@ -246,6 +248,7 @@ export function SheetGrid<Row extends object>({
   rowNo,
   rowMark,
   removeLabel,
+  pinned,
 }: FormGridProps<Row> & SheetGridExtras<Row>) {
   const ctx = useDataTableContext()
   // Paketin kendi hücre aksiyonları uygulamanınkilerden önce gelir.
@@ -273,10 +276,18 @@ export function SheetGrid<Row extends object>({
   const [store] = useState(
     () => external ?? createSheetStore({ rows, columns, onRowsChange: onRowsChange ?? (() => {}), getRowId, readOnly }),
   )
-  // Birinci sütun ve satır no solda sabit (§4); kullanıcı sütun düzenini değiştirmez.
-  const layout = useColumnLayout({
-    columns,
-    layout: { pinned: { left: columns[0] ? [columns[0].id as string] : [], right: [] } },
+  // Birinci sütun ve satır no solda sabit (§4); ek sabitleme DataSheet'in Sütunlar penceresinden gelir.
+  const pinLeft = [...(columns[0] ? [columns[0].id as string] : []), ...(pinned?.start ?? [])]
+  const pinRight = pinned?.end ?? []
+  const layout = useColumnLayout({ columns, layout: { pinned: { left: pinLeft, right: pinRight } } })
+  // Düzen ilk çizimde kurulur: sabitleme sonradan değişince uygulanır, boyamadan önce (genişlikler korunur).
+  const pinKey = `${pinLeft.join(',')}|${pinRight.join(',')}`
+  const appliedPins = useRef(pinKey)
+  useLayoutEffect(() => {
+    if (appliedPins.current === pinKey) return
+    appliedPins.current = pinKey
+    const ids = columns.map((c) => c.id as string)
+    layout.arrange({ order: ids, visible: ids, start: pinLeft.length, end: pinRight.length })
   })
   const shown = layout.columns
   const defs = shown.map((c) => c.def as ColumnDef<Row>)
@@ -345,7 +356,9 @@ export function SheetGrid<Row extends object>({
   const buttons = readOnly ? Number(!!onRowOpen) + Number(rowActions.length > 0) : rowDialog ? 2 : 1
   const menuW = buttons ? `calc(16px + ${buttons} * var(--dt-control-h-sm) + ${buttons - 1} * 2px)` : null
   const startW = () => GUTTER_W + layout.start.reduce((w, c) => w + layout.widthOf(c.id), 0)
-  const menuEnd = () => root.current?.querySelector<HTMLElement>('.dt-head .dt-cell-menu')?.offsetWidth ?? 0
+  const menuEnd = () =>
+    (root.current?.querySelector<HTMLElement>('.dt-head .dt-cell-menu')?.offsetWidth ?? 0) +
+    layout.end.reduce((w, c) => w + layout.widthOf(c.id), 0)
   const hs = useHorizontalScroll([body, head], () => ({ start: startW(), end: menuEnd() }))
 
   const count = store.rowCount()
@@ -366,10 +379,24 @@ export function SheetGrid<Row extends object>({
     const write = () => {
       el.style.setProperty('--cols', [`${GUTTER_W}px`, layout.cols(), menuW].filter(Boolean).join(' '))
       el.style.setProperty('--dt-min-w', `calc(${layout.minWidth() + GUTTER_W}px + ${menuW ?? '0px'})`)
+      // Hücrenin yatay kaydırma payı (sheet.css `scroll-margin`): scrollIntoView yapışkan sütunları bilmez.
+      const pinStart = `${GUTTER_W + layout.start.reduce((w, c) => w + layout.widthOf(c.id), 0)}px`
+      el.style.setProperty('--dt-fg-pin-start', pinStart)
+      // Grup adının yapışma payı (grid.css `.dt-head-group-text`).
+      el.style.setProperty('--dt-pin-start-w', pinStart)
+      el.style.setProperty(
+        '--dt-fg-pin-end',
+        `calc(${layout.end.reduce((w, c) => w + layout.widthOf(c.id), 0)}px + ${menuW ?? '0px'})`,
+      )
+      // Sona sabit sütunlar ⋯ sütununun solunda durur: ofsetlerine onun genişliği eklenir.
       for (const [name, value] of Object.entries(layout.offsets()))
         el.style.setProperty(
           name,
-          layout.start.some((c) => c.offsetVar === name) ? `${parseFloat(value) + GUTTER_W}px` : value,
+          layout.start.some((c) => c.offsetVar === name)
+            ? `${parseFloat(value) + GUTTER_W}px`
+            : menuW && layout.end.some((c) => c.offsetVar === name)
+              ? `calc(${value} + ${menuW})`
+              : value,
         )
     }
     write()

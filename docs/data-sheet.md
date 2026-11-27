@@ -44,7 +44,7 @@ sheet.discard()                         // paketin onayını sorar, taslağı at
 sheet.saving                            // { done, total } | null
 sheet.result                            // { created, updated, failed } | null: son kayıt, sonraki değişiklikte kalkar
 sheet.readOnly / sheet.phone            // düzenleme kapalı (telefon, yükleme, kayıt) / telefon
-sheet.openColumns()                     // liste tablosunun Sütunlar penceresi: göster / gizle, sıra; sabitleme yok
+sheet.openColumns()                     // liste tablosunun Sütunlar penceresi: göster / gizle, sıra, ilk / son sütunları sabitle (anahtar hep başta)
 sheet.focusNewRow()                     // Tümü'ne geçer, imleç alttaki boş satırın anahtardan sonraki ilk hücresinde
 sheet.importFile()                      // paketin penceresi; Promise<{ updated, added } | null>
 sheet.importRows(records, { addNew }) // uygulamanın getirdiği kayıtlar, penceresiz; aynı eşleme (§6)

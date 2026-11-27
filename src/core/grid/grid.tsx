@@ -261,6 +261,10 @@ export function Grid<Row extends object>({
       // Detay satırı düzenin ilk sütunuyla hizalanır: tutamak ve seçim payı birlikte.
       el.style.setProperty('--dt-sel-w', `${leadW}px`)
       el.style.setProperty('--dt-menu-w', menuW || '0px')
+      el.style.setProperty(
+        '--dt-pin-start-w',
+        `${leadW + layout.start.reduce((w, c) => w + layout.widthOf(c.id), 0)}px`,
+      )
       const start = new Set(layout.start.map((c) => c.offsetVar))
       const end = new Set(layout.end.map((c) => c.offsetVar))
       for (const [name, value] of Object.entries(layout.offsets())) {
